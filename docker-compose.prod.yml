@@ -54,11 +54,17 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; r=urllib.request.Request('http://127.0.0.1:8000/health', headers={'Host':'api'}); urllib.request.urlopen(r)",
+        ]
       interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+      timeout: 10s
+      retries: 8
+      start_period: 120s
     networks:
       - internal
 

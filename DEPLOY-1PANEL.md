@@ -151,6 +151,10 @@ openssl rand -hex 16
 
 با `nano .env` فقط این مقادیر را عوض کن (بقیه خطوط را دست نزن):
 
+> ⚠️ **رمز Postgres:** اگر قبلاً یک‌بار `docker compose up` زدی، رمز داخل volume ثابت مانده.
+> عوض کردن `POSTGRES_PASSWORD` در `.env` کافی نیست — یا همان رمز اول را نگه دار،
+> یا با `docker compose down -v` volume را پاک کن (دیتابیس از بین می‌رود).
+
 ```ini
 # دامنهٔ عمومی با https
 PUBLIC_SITE_URL=https://shop.example.com
@@ -342,7 +346,8 @@ docker run --rm -v coralay_uploads:/data -v $(pwd):/backup \
 | تصاویر/آپلود کار نمی‌کند | هدر `client_max_body_size 64m;` در reverse proxy خود 1Panel را اضافه کن |
 | API از مرورگر وصل نمی‌شود | `PUBLIC_SITE_URL` باید دقیقاً دامنهٔ https باشد و `NEXT_PUBLIC_API_URL` خالی بماند |
 | `failed to read .env: unexpected character "#"` | فایل `.env` خراب است — `rm .env && cp env.docker.example .env` و فقط مقادیر را عوض کن (بدون کامنت اضافه) |
-| `api` unhealthy / `dependency failed to start` | healthcheck به `localhost` می‌زند ولی `TRUSTED_HOSTS` فقط دامنه دارد — `localhost,127.0.0.1` را به `TRUSTED_HOSTS` اضافه کن و `docker compose up -d --force-recreate api` بزن |
+| `api` unhealthy / `dependency failed to start` | اول `docker compose logs api --tail 50` — اگر `password authentication failed` دیدی یعنی `POSTGRES_PASSWORD` در `.env` با volume قدیمی `pgdata` یکی نیست (پایین را ببین) |
+| `password authentication failed for user coralay` | Postgres رمز را فقط **اولین بار** ساخت volume می‌گیرد؛ یا رمز `.env` را همان اولین مقدار بگذار، یا volume را پاک کن: `docker compose down -v` سپس `up -d` (**دیتابیس پاک می‌شود**) |
 | خطای `JWT_SECRET باید...` | در `.env` یک رشتهٔ ۳۲+ کاراکتری بگذار و `DEBUG` نباید true باشد |
 | حذف پس‌زمینه کند است | اولین درخواست مدل ONNX را دانلود می‌کند؛ رم کافی لازم است |
 | لاگ‌ها | `docker compose logs -f api` و `docker compose logs -f web` (یا از تب Logs کانتینر در 1Panel) |
