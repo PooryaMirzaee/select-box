@@ -40,7 +40,7 @@ services:
       CORS_ORIGINS: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_API_URL: ${PUBLIC_SITE_URL}
       FRONTEND_URL: ${PUBLIC_SITE_URL}
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-nginx,api,localhost}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-nginx,api,localhost,127.0.0.1}
       UPLOAD_DIR: /app/uploads
       SMS_IR_API_KEY: ${SMS_IR_API_KEY:-}
       SMS_IR_TEMPLATE_ID: ${SMS_IR_TEMPLATE_ID:-0}
@@ -54,7 +54,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 5

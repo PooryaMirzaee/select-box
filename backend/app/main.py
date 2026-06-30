@@ -634,6 +634,9 @@ trusted = [h.strip() for h in settings.trusted_hosts.split(",") if h.strip()]
 if settings.debug:
     trusted = ["*"]
 elif trusted:
+    for internal in ("localhost", "127.0.0.1", "api", "nginx"):
+        if internal not in trusted:
+            trusted.append(internal)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted)
 
 # مبداهای مجاز CORS از تنظیمات خوانده می‌شوند (ویرگول‌جداکننده)
