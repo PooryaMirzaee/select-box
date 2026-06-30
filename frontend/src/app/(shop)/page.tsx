@@ -97,7 +97,8 @@ export default async function HomePage() {
     fetchHomeBanners("promo").catch(() => []),
   ]);
 
-  const config = homepage ?? DEFAULT_HOMEPAGE_CONFIG;
+  const config =
+    homepage?.sections?.length ? homepage : { ...DEFAULT_HOMEPAGE_CONFIG, ...homepage, sections: homepage?.sections ?? DEFAULT_HOMEPAGE_CONFIG.sections };
   const categories = browse?.children ?? [];
   const filteredProducts = config.featured.parent_slug
     ? products.filter((p) => p.parent_category_slug === config.featured.parent_slug)

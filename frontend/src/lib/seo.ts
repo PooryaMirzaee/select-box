@@ -6,8 +6,10 @@ import { instagramHref, telegramHref } from "@/lib/contact";
 
 /** مبدأ سایت — اولویت: تنظیمات ادمین، سپس env */
 export function getSiteUrl(settings?: Pick<ShopSettings, "site_url"> | null): string {
-  const raw = settings?.site_url?.trim() || process.env.SITE_URL || "http://localhost:3000";
-  return raw.replace(/\/$/, "");
+  const raw = (settings?.site_url?.trim() || process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  if (/^https?:\/\//i.test(raw)) return raw;
+  // دامنهٔ خام (مثلاً shop.example.com) — برای جلوگیری از crash در new URL()
+  return `https://${raw.replace(/^\/+/, "")}`;
 }
 
 export function browseCanonical(siteUrl: string, pathStr: string): string {
