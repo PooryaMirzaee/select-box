@@ -134,21 +134,22 @@ cp docker-compose.prod.yml docker-compose.yml
 
 ## گام ۴ — ساخت فایل متغیرهای محیط (`.env`)
 
-داخل همان پوشه، نمونه را کپی کن:
+> ⚠️ فایل `.env` برای Docker Compose فقط خطوط `KEY=VALUE` می‌پذیرد.
+> **کامنت‌های تزئینی (`# ====`) یا کاراکتر اضافه در خط اول باعث خطای parse می‌شود.**
+> از `env.docker.example` استفاده کن (بدون کامنت).
 
 ```bash
-cp .env.production.example .env
+cp env.docker.example .env
 ```
 
 مقادیر تصادفی امن بساز:
 
 ```bash
-openssl rand -hex 32   # برای JWT_SECRET
-openssl rand -hex 16   # برای رمز Postgres
-openssl rand -hex 16   # برای رمز MinIO
+openssl rand -hex 32
+openssl rand -hex 16
 ```
 
-حالا فایل `.env` را ویرایش کن (با `nano .env` یا از طریق **Files** در 1Panel) و این مقادیر را تنظیم کن:
+با `nano .env` فقط این مقادیر را عوض کن (بقیه خطوط را دست نزن):
 
 ```ini
 # دامنهٔ عمومی با https
@@ -340,6 +341,7 @@ docker run --rm -v coralay_uploads:/data -v $(pwd):/backup \
 | پورت ۸۰ اشغال است هنگام up | یعنی `HTTP_PORT` را روی ۸۰ گذاشتی؛ آن را در `.env` به `8090` تغییر بده و دوباره up کن |
 | تصاویر/آپلود کار نمی‌کند | هدر `client_max_body_size 64m;` در reverse proxy خود 1Panel را اضافه کن |
 | API از مرورگر وصل نمی‌شود | `PUBLIC_SITE_URL` باید دقیقاً دامنهٔ https باشد و `NEXT_PUBLIC_API_URL` خالی بماند |
+| `failed to read .env: unexpected character "#"` | فایل `.env` خراب است — `rm .env && cp env.docker.example .env` و فقط مقادیر را عوض کن (بدون کامنت اضافه) |
 | `api` unhealthy / `dependency failed to start` | healthcheck به `localhost` می‌زند ولی `TRUSTED_HOSTS` فقط دامنه دارد — `localhost,127.0.0.1` را به `TRUSTED_HOSTS` اضافه کن و `docker compose up -d --force-recreate api` بزن |
 | خطای `JWT_SECRET باید...` | در `.env` یک رشتهٔ ۳۲+ کاراکتری بگذار و `DEBUG` نباید true باشد |
 | حذف پس‌زمینه کند است | اولین درخواست مدل ONNX را دانلود می‌کند؛ رم کافی لازم است |
