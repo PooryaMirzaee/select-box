@@ -37,7 +37,7 @@ services:
       DEBUG: "false"
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-coralay}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-coralay}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      CORS_ORIGINS: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}}
       PUBLIC_API_URL: ${PUBLIC_SITE_URL}
       FRONTEND_URL: ${PUBLIC_SITE_URL}
       TRUSTED_HOSTS: ${TRUSTED_HOSTS:-nginx,api,localhost,127.0.0.1}

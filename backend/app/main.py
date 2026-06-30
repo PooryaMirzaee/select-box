@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     _ensure_chat_canned_seed()
     _ensure_header_nav_seed()
     _ensure_homepage_default()
+    _ensure_site_url_from_env()
     _ensure_ai_columns()
     _ensure_ai_suggested_seed()
     _ensure_ai_tools_seed()
@@ -234,6 +235,24 @@ def _ensure_homepage_default() -> None:
     db = SessionLocal()
     try:
         homepage_service.ensure_default(db)
+    finally:
+        db.close()
+
+
+def _ensure_site_url_from_env() -> None:
+    """در تولید site_url دیتابیس را با PUBLIC_SITE_URL هم‌تراز می‌کند."""
+    url = (settings.public_api_url or settings.frontend_url or "").strip().rstrip("/")
+    if not url or "localhost" in url or "127.0.0.1" in url:
+        return
+    from app.db.session import SessionLocal
+    from app.services import settings as shop_settings
+
+    db = SessionLocal()
+    try:
+        current = str(shop_settings.get_setting(db, "site_url", shop_settings.DEFAULTS["site_url"])).rstrip("/")
+        if current != url:
+            shop_settings.set_setting(db, "site_url", url)
+            db.commit()
     finally:
         db.close()
 
