@@ -103,7 +103,22 @@ apt-get update && apt-get install -y git
 # کلون داخل مسیر Compose خود 1Panel
 mkdir -p /opt/1panel/docker/compose
 cd /opt/1panel/docker/compose
+
+# ── روش ۱ (ساده‌تر): اگر مخزن Public است ──
 git clone https://github.com/PooryaMirzaee/coralay.git coralay
+
+# ── روش ۲ (پیشنهادی برای مخزن Private): SSH ──
+# ابتدا کلید SSH روی سرور بساز و public key را در GitHub → Settings → SSH keys اضافه کن:
+#   ssh-keygen -t ed25519 -C "coralay-server" -f ~/.ssh/id_ed25519 -N ""
+#   cat ~/.ssh/id_ed25519.pub
+# سپس:
+# git clone git@github.com:PooryaMirzaee/coralay.git coralay
+
+# ── روش ۳ (Private با HTTPS): Personal Access Token ──
+# GitHub → Settings → Developer settings → Personal access tokens → Fine-grained token
+# دسترسی: Repository → coralay → Contents: Read
+# git clone https://pooryamirzaee:<TOKEN>@github.com/PooryaMirzaee/coralay.git coralay
+
 cd coralay
 
 # فایل تولید را به نام پیش‌فرض docker-compose.yml کپی کن
@@ -320,6 +335,7 @@ docker run --rm -v coralay_uploads:/data -v $(pwd):/backup \
 
 | مشکل | راه‌حل |
 |------|--------|
+| `Password authentication is not supported` هنگام clone | مخزن Private است؛ GitHub رمز عبور نمی‌پذیرد. از **SSH** (روش ۲) یا **Personal Access Token** (روش ۳) در گام ۳ استفاده کن، یا مخزن را در GitHub → Settings → General → Danger zone → **Change visibility** به Public تغییر بده |
 | گواهی SSL صادر نمی‌شود | DNS (رکورد A) و باز بودن پورت ۸۰ را چک کن |
 | پورت ۸۰ اشغال است هنگام up | یعنی `HTTP_PORT` را روی ۸۰ گذاشتی؛ آن را در `.env` به `8090` تغییر بده و دوباره up کن |
 | تصاویر/آپلود کار نمی‌کند | هدر `client_max_body_size 64m;` در reverse proxy خود 1Panel را اضافه کن |
