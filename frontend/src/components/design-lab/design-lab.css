@@ -1,0 +1,1059 @@
+/* Design Lab — هماهنگ با تم فروشگاه + چیدمان CustomInk */
+.design-lab-root {
+  --dl-orange: var(--accent);
+  --dl-orange-hover: color-mix(in srgb, var(--accent) 82%, #000);
+  --dl-rail: color-mix(in srgb, var(--fg) 88%, var(--bg));
+  --dl-rail-active: color-mix(in srgb, var(--accent) 35%, var(--dl-rail));
+  --dl-bg: var(--bg);
+  --dl-panel: var(--card);
+  --dl-border: var(--border);
+  --dl-text: var(--fg);
+  --dl-muted: var(--fg-muted);
+  --dl-topbar-h: 48px;
+  --dl-rail-w: 72px;
+  --dl-sheet-w: 300px;
+  --dl-bottombar-h: 52px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--dl-bg);
+  color: var(--dl-text);
+  font-family: var(--font-sans);
+  direction: rtl;
+  text-align: right;
+}
+
+.design-lab-topbar {
+  height: var(--dl-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--dl-panel);
+  border-bottom: 1px solid var(--dl-border);
+}
+
+.design-lab-back {
+  display: flex;
+  color: var(--dl-muted);
+}
+
+.design-lab-brand {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.design-lab-brand-accent {
+  color: var(--dl-orange);
+}
+
+.dl-btn-next {
+  background: var(--dl-rail);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dl-btn-next:hover {
+  background: color-mix(in srgb, var(--dl-rail) 85%, #000);
+}
+
+.dl-btn-save {
+  background: var(--input-bg);
+  color: var(--dl-text);
+  border: 1px solid var(--dl-border);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dl-btn-save.is-active {
+  border-color: var(--dl-orange);
+  color: var(--dl-orange);
+}
+
+.dl-btn-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 2px dashed var(--dl-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--dl-text);
+}
+
+.dl-btn-upload:hover {
+  border-color: var(--dl-orange);
+  color: var(--dl-orange);
+}
+
+.dl-btn-upload--secondary {
+  margin-top: 8px;
+  background: transparent;
+  border-style: dashed;
+}
+
+.dl-btn-upload--secondary:hover {
+  background: color-mix(in srgb, var(--dl-orange) 8%, transparent);
+}
+
+.dl-btn-price {
+  background: var(--dl-rail);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.design-lab-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.design-lab-left {
+  display: flex;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.design-lab-rail {
+  width: var(--dl-rail-w);
+  background: var(--dl-rail);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.design-lab-rail button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.design-lab-rail button:hover,
+.design-lab-rail button.is-active {
+  background: var(--dl-rail-active);
+  color: #fff;
+}
+
+.design-lab-sheet {
+  width: var(--dl-sheet-w);
+  background: var(--dl-panel);
+  border-inline-end: 1px solid var(--dl-border);
+  overflow-y: auto;
+  padding: 20px 16px;
+}
+
+.design-lab-panel-card h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.design-lab-panel-lead {
+  font-size: 13px;
+  color: var(--dl-muted);
+  margin-bottom: 4px;
+}
+
+.design-lab-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--dl-muted);
+  text-align: center;
+}
+
+.design-lab-ai-textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--dl-border);
+  border-radius: 10px;
+  background: var(--dl-bg);
+  color: var(--dl-text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.design-lab-ai-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.design-lab-ai-hint {
+  padding: 4px 10px;
+  border: 1px solid var(--dl-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dl-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.design-lab-ai-hint:hover {
+  border-color: var(--dl-orange);
+  color: var(--dl-orange);
+}
+
+.design-lab-ai-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #c0392b;
+}
+
+.design-lab-ai-quota {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--dl-muted);
+}
+
+.design-lab-ai-style {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--dl-border);
+  border-radius: 10px;
+  background: var(--dl-bg);
+  color: var(--dl-text);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.design-lab-ai-tools {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--dl-border);
+}
+
+.design-lab-ai-tools-title {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.design-lab-ai-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.design-lab-ai-tool {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--dl-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--dl-text);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.design-lab-ai-tool:hover:not(:disabled) {
+  border-color: var(--dl-orange);
+}
+
+.design-lab-ai-tool:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.design-lab-ai-tool strong {
+  display: block;
+  font-size: 13px;
+}
+
+.design-lab-ai-tool small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--dl-muted);
+  line-height: 1.4;
+}
+
+.design-lab-ai-history {
+  margin-top: 12px;
+}
+
+.design-lab-ai-history-title {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.design-lab-ai-hint--history {
+  font-style: italic;
+}
+
+.design-lab-panel-card label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: var(--dl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.design-lab-panel-card input[type="text"],
+.design-lab-panel-card select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--dl-border);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dl-color-input {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.design-lab-quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.design-lab-quick-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: 1px solid var(--dl-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--dl-text);
+}
+
+.design-lab-quick-grid button:hover {
+  border-color: var(--dl-orange);
+  color: var(--dl-orange);
+}
+
+.design-lab-stage {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  position: relative;
+}
+
+.design-lab-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  position: relative;
+  background: var(--dl-bg);
+  padding: 12px;
+}
+
+.design-lab-view-rail {
+  width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: transparent;
+  min-height: 0;
+}
+
+.design-lab-view-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--dl-muted);
+  padding: 0;
+}
+
+.design-lab-view-thumb-img {
+  display: block;
+  width: 48px;
+  height: 56px;
+  border: 2px solid var(--dl-border);
+  border-radius: 3px;
+  background: var(--input-bg) center/cover no-repeat;
+}
+
+.design-lab-view-thumb-img[data-view="front"] {
+  background-image: url("/mockups/tshirt/front.jpg");
+}
+
+.design-lab-view-thumb-img[data-view="back"] {
+  background-image: url("/mockups/tshirt/back.jpg");
+}
+
+.design-lab-print-area-guide {
+  box-sizing: border-box;
+  border: 1px dashed var(--dl-orange, var(--accent, #e85d04));
+  background: transparent;
+  border-radius: 1px;
+}
+
+.design-lab-view-thumb.is-active .design-lab-view-thumb-img {
+  border-color: var(--dl-orange);
+  box-shadow: 0 0 0 1px var(--dl-orange);
+}
+
+.design-lab-view-thumb.is-active {
+  color: var(--dl-text);
+}
+
+.design-lab-zoom-stack {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.design-lab-zoom-stack button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--dl-border);
+  background: var(--dl-panel);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dl-text);
+}
+
+.design-lab-zoom-stack button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.design-lab-zoom-fit {
+  width: auto !important;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dl-muted) !important;
+}
+
+.design-lab-header-save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--dl-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--dl-text);
+  cursor: pointer;
+}
+
+.design-lab-bottombar {
+  height: var(--dl-bottombar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--dl-panel);
+  border-top: 1px solid var(--dl-border);
+  font-size: 13px;
+}
+
+.design-lab-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.design-lab-color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.design-lab-color-swatch.is-active {
+  border-color: var(--dl-orange);
+}
+
+.design-lab-clip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.design-lab-clip-grid button {
+  aspect-ratio: 1;
+  border: 1px solid var(--dl-border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--dl-text);
+}
+
+.design-lab-clip-grid button.design-lab-clip-image {
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.design-lab-clip-grid button.design-lab-clip-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.design-lab-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--dl-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.design-lab-change-product-modal {
+  max-width: 640px;
+  max-height: min(85vh, 720px);
+  overflow: auto;
+}
+
+.design-lab-change-product-search {
+  width: 100%;
+  border: 1px solid var(--dl-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--input-bg);
+  color: var(--dl-text);
+}
+
+.design-lab-change-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.design-lab-change-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--dl-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  padding: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.design-lab-change-product-card:hover:not(:disabled) {
+  border-color: var(--dl-orange);
+}
+
+.design-lab-change-product-card.is-current,
+.design-lab-change-product-card:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.design-lab-change-product-thumb {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.design-lab-change-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.design-lab-change-product-placeholder {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--dl-muted);
+}
+
+.design-lab-change-product-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.design-lab-change-product-meta strong {
+  font-size: 13px;
+}
+
+.design-lab-change-product-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--dl-orange);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.design-lab-publish-modal {
+  max-width: 560px;
+  max-height: min(90vh, 780px);
+  overflow: auto;
+}
+
+.design-lab-publish-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.design-lab-publish-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 2px solid var(--dl-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  padding: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.design-lab-publish-product-card.is-selected {
+  border-color: var(--dl-orange);
+}
+
+.design-lab-publish-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid var(--dl-border);
+  background: var(--dl-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.design-lab-publish-check.is-on {
+  background: var(--dl-orange);
+  border-color: var(--dl-orange);
+}
+
+.design-lab-publish-preview-thumb {
+  background: #e8e8e8;
+}
+
+.design-lab-publish-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.design-lab-publish-preview-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 9px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* Fabric.js — Design Lab: host sets size via inline style + zoom */
+.design-lab-fabric-host.coralay-fabric-preview .canvas-container,
+.design-lab-fabric-host.coralay-fabric-preview .upper-canvas,
+.design-lab-fabric-host.coralay-fabric-preview .lower-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.design-lab-fabric-host.coralay-fabric-preview {
+  flex-shrink: 0;
+}
+
+.design-lab-art-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.design-lab-art-tabs button {
+  padding: 4px 10px;
+  border: 1px solid var(--dl-border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--dl-text);
+}
+
+.design-lab-art-tabs button.is-active {
+  border-color: var(--dl-orange);
+  color: var(--dl-orange);
+}
+
+.design-lab-layer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.design-lab-layer-actions button {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px;
+  border: 1px solid var(--dl-border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--dl-text);
+}
+
+.design-lab-save-msg {
+  font-size: 12px;
+  color: var(--dl-muted);
+}
+
+.design-lab-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.design-lab-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 16px;
+}
+
+.design-lab-modal {
+  width: 100%;
+  max-width: 400px;
+  background: var(--dl-panel);
+  color: var(--dl-text);
+  border: 1px solid var(--dl-border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.design-lab-toast {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 250;
+  background: #333;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.design-lab-mobile {
+  display: none;
+}
+
+.design-lab-mobile-context,
+.design-lab-mobile-sheet-wrap {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* بدنه با ارتفاع پویا تا روی iOS هم درست پر شود */
+  .design-lab-root {
+    height: 100dvh;
+  }
+
+  .design-lab-left {
+    display: none !important;
+  }
+
+  /* —— نوار ابزار اصلی (پایین، در جریان چیدمان) —— */
+  .design-lab-mobile {
+    display: block;
+    flex-shrink: 0;
+    border-top: 1px solid var(--dl-border);
+    background: var(--dl-panel);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .design-lab-mobile .design-lab-rail {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+  }
+
+  .design-lab-mobile .design-lab-rail button {
+    flex: 1;
+    gap: 3px;
+    padding: 9px 4px;
+    min-height: 56px;
+    font-size: 10px;
+  }
+
+  /* —— صحنه و بوم —— */
+  .design-lab-canvas-wrap {
+    padding: 8px;
+  }
+
+  /* —— نوار نمای محصول (overlay گوشهٔ بالا) —— */
+  .design-lab-view-rail {
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 6px;
+    gap: 6px;
+    background: color-mix(in srgb, var(--dl-panel) 92%, transparent);
+    border: 1px solid var(--dl-border);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+
+  .design-lab-zoom-stack {
+    flex-direction: row;
+    margin-top: 0;
+    gap: 4px;
+  }
+
+  .design-lab-zoom-stack button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .design-lab-view-thumb-img {
+    width: 30px;
+    height: 36px;
+  }
+
+  .design-lab-view-thumb span:not(.design-lab-view-thumb-img) {
+    display: none;
+  }
+
+  /* —— نوار اطلاعات پایین فشرده —— */
+  .design-lab-bottombar {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .design-lab-bottombar-info {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .design-lab-sell-link {
+    display: none;
+  }
+
+  /* راهنماهای مخصوص دسکتاپ روی موبایل بی‌معنا هستند */
+  .design-lab-hint--desktop {
+    display: none;
+  }
+
+  /* —— نوار ابزار شناور لایه —— */
+  .design-lab-mobile-context {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(var(--dl-bottombar-h) + 56px + env(safe-area-inset-bottom, 0px));
+    z-index: 230;
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    background: color-mix(in srgb, var(--dl-panel) 96%, transparent);
+    border-top: 1px solid var(--dl-border);
+    box-shadow: 0 -6px 16px color-mix(in srgb, var(--fg) 10%, transparent);
+    scrollbar-width: none;
+  }
+
+  .design-lab-mobile-context::-webkit-scrollbar {
+    display: none;
+  }
+
+  .design-lab-mobile-context button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1 0 auto;
+    min-width: 60px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border: 1px solid var(--dl-border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--dl-text);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .design-lab-mobile-context button:disabled {
+    opacity: 0.5;
+  }
+
+  /* —— شیت ابزار (overlay) —— */
+  .design-lab-mobile-sheet-wrap {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+  }
+
+  .design-lab-mobile-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--fg) 35%, transparent);
+  }
+
+  .design-lab-mobile-sheet {
+    position: absolute;
+    inset-inline: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--dl-kb-offset, 0px));
+    max-height: min(55vh, 460px);
+    display: flex;
+    flex-direction: column;
+    background: var(--dl-panel);
+    border-top: 1px solid var(--dl-border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 30px color-mix(in srgb, var(--fg) 18%, transparent);
+    animation: dl-sheet-up 0.22s ease-out;
+  }
+
+  .design-lab-mobile-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--dl-border);
+  }
+
+  .design-lab-mobile-sheet-head button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--dl-muted);
+    cursor: pointer;
+  }
+
+  .design-lab-mobile-sheet-body {
+    overflow-y: auto;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @keyframes dl-sheet-up {
+    from {
+      transform: translateY(12px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

@@ -1,0 +1,37 @@
+# تنظیمات کانال‌های انتشار
+# enabled: false = غیرفعال | true = فعال
+# هر کانال می‌تواند config اختصاصی داشته باشد
+
+channels:
+  website:
+    enabled: true
+    description: "فروشگاه اصلی CORALAY (sync-only)"
+
+  instagram:
+    enabled: true
+    description: "انتشار پست/استوری اینستاگرام"
+    config:
+      # username: your_account
+      # access_token: ""
+
+  telegram:
+    enabled: true
+    description: "ارسال به کانال/گروه تلگرام"
+    config:
+      # bot_token: ""
+      # channel_id: "@your_channel"
+
+  digikala:
+    enabled: false
+    description: "ثبت/به‌روزرسانی محصول در دیجی‌کالا"
+    config: {}
+
+  torob:
+    enabled: true
+    description: "فید محصولات ترب (از API بک‌اند)"
+    config: {}
+
+  basalam:
+    enabled: false
+    description: "فروش در باسلام"
+    config: {}

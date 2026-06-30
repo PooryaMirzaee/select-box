@@ -1,0 +1,405 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "CORALAY";
+  src: url("/fonts/coralay.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* پالت گرم — light / dark یکپارچه در فروشگاه و ادمین */
+:root {
+  color-scheme: light;
+  --font-sans: "CORALAY", Tahoma, "Segoe UI", system-ui, sans-serif;
+
+  --bg: #fff;
+  --bg-elevated: #faf6f0;
+  --fg: #1c1916;
+  --fg-muted: #6b645a;
+  --border: #ddd2c4;
+  --accent: #c04e24;
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-fg: #fffaf5;
+  --card: #faf6f0;
+  --header-bg: rgba(242, 236, 228, 0.88);
+  --sidebar-bg: #e8e0d4;
+  --sidebar-fg: #4a453e;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
+  --sidebar-active-fg: var(--accent);
+  --shadow-soft: 0 8px 32px color-mix(in srgb, var(--fg) 8%, transparent);
+  --input-bg: #fffdf9;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #121118;
+  --bg-elevated: #1a1922;
+  --fg: #edeae4;
+  --fg-muted: #9c968c;
+  --border: #2f2d38;
+  --accent: #e8946a;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-fg: #121118;
+  --card: #1a1922;
+  --header-bg: rgba(18, 17, 24, 0.9);
+  --sidebar-bg: #16151d;
+  --sidebar-fg: #a8a29a;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 20%, var(--bg-elevated));
+  --sidebar-active-fg: var(--accent);
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --input-bg: #1f1e28;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 100% -15%, var(--accent-soft), transparent 55%),
+    radial-gradient(ellipse 70% 50% at -10% 110%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 50%);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.pb-mobile-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+/* توکن‌های تم */
+.bg-surface {
+  background: var(--bg-elevated);
+}
+.bg-card {
+  background: var(--card);
+}
+.text-muted {
+  color: var(--fg-muted);
+}
+.border-theme {
+  border-color: var(--border);
+}
+.bg-header {
+  background: var(--header-bg);
+}
+
+.hero-accent-glow {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent
+  );
+}
+
+@layer components {
+  .card-theme {
+    @apply rounded-2xl border border-theme bg-card;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .input-theme {
+    @apply w-full rounded-xl border border-theme px-3 py-2 text-[var(--fg)] outline-none transition;
+    background: var(--input-bg);
+  }
+
+  .input-theme:focus {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .admin-nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition;
+    color: var(--sidebar-fg);
+  }
+
+  .admin-nav-link:hover {
+    background: var(--sidebar-hover);
+    color: var(--fg);
+  }
+
+  .admin-nav-link.is-active {
+    background: var(--sidebar-active);
+    color: var(--sidebar-active-fg);
+    font-weight: 500;
+  }
+
+  .chip-theme {
+    @apply inline-flex min-h-[40px] items-center rounded-full border border-theme px-4 text-sm text-muted transition;
+  }
+
+  .chip-theme.is-active {
+    @apply border-transparent font-medium;
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .chip-theme:not(.is-active):hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    color: var(--fg);
+  }
+}
+
+@keyframes biz-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Fabric.js — اندازه canvas ثابت برای drag/resize */
+.coralay-fabric-preview .canvas-container {
+  width: 440px !important;
+  height: 440px !important;
+}
+.coralay-fabric-preview .upper-canvas,
+.coralay-fabric-preview .lower-canvas {
+  width: 440px !important;
+  height: 440px !important;
+}
+
+/* ——— صفحات خطا ——— */
+.error-page {
+  @apply relative flex flex-col items-center justify-center px-4 py-16 text-center;
+  min-height: min(72vh, 640px);
+}
+
+.error-page--standalone {
+  min-height: 100vh;
+  padding-top: 2rem;
+}
+
+.error-page--compact {
+  min-height: auto;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.error-page-brand {
+  @apply absolute start-0 top-0 w-full px-6 py-5;
+}
+
+.error-page-logo {
+  @apply text-lg font-semibold tracking-tight;
+  color: var(--accent);
+}
+
+.error-page-inner {
+  @apply mx-auto flex w-full max-w-lg flex-col items-center;
+}
+
+.error-illustration {
+  @apply relative mb-8 flex h-52 w-full max-w-xs items-center justify-center;
+  color: var(--accent);
+}
+
+.error-illustration-orbit {
+  @apply absolute rounded-full border border-dashed;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  animation: error-orbit 18s linear infinite;
+}
+
+.error-illustration-orbit--a {
+  inset: 0;
+  animation-duration: 22s;
+}
+
+.error-illustration-orbit--b {
+  inset: 1rem;
+  animation-direction: reverse;
+  animation-duration: 16s;
+}
+
+.error-illustration-orbit--c {
+  inset: 2rem;
+  opacity: 0.5;
+  animation-duration: 26s;
+}
+
+.error-illustration-svg {
+  @apply relative z-10 h-40 w-40;
+  color: color-mix(in srgb, var(--accent) 85%, var(--fg));
+}
+
+.error-illustration-path {
+  animation: error-dash 3s ease-in-out infinite;
+}
+
+.error-illustration-ring {
+  animation: error-float 4s ease-in-out infinite;
+}
+
+.error-illustration-code {
+  @apply absolute z-20 select-none font-bold leading-none;
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  color: color-mix(in srgb, var(--accent) 12%, transparent);
+  letter-spacing: -0.04em;
+}
+
+.error-page-kicker {
+  @apply mb-2 text-xs font-semibold uppercase tracking-[0.2em];
+  color: var(--accent);
+}
+
+.error-page-title {
+  @apply text-balance text-2xl font-semibold sm:text-3xl;
+}
+
+.error-page-desc {
+  @apply mt-3 text-balance text-sm leading-relaxed text-muted sm:text-base;
+}
+
+.error-page-hint {
+  @apply mt-2 text-balance text-xs text-muted;
+}
+
+.error-page-actions {
+  @apply mt-8 flex flex-wrap items-center justify-center gap-3;
+}
+
+@keyframes error-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes error-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes error-dash {
+  0%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  50% {
+    stroke-dashoffset: 18;
+    opacity: 0.65;
+  }
+}
+
+/* ——— محتوای وبلاگ ——— */
+.blog-prose {
+  @apply text-base leading-[1.85] text-[var(--fg)];
+}
+
+.blog-prose h2 {
+  @apply mb-4 mt-10 text-2xl font-semibold;
+}
+
+.blog-prose h3 {
+  @apply mb-3 mt-8 text-xl font-semibold;
+}
+
+.blog-prose p {
+  @apply mb-4 text-muted;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  @apply mb-4 me-6 space-y-2 text-muted;
+}
+
+.blog-prose ul {
+  @apply list-disc;
+}
+
+.blog-prose ol {
+  @apply list-decimal;
+}
+
+.blog-prose li {
+  @apply leading-relaxed;
+}
+
+.blog-prose strong {
+  @apply font-semibold text-[var(--fg)];
+}
+
+.blog-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.blog-prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.blog-prose blockquote {
+  @apply my-6 border-s-4 border-[var(--accent)] bg-[var(--accent-soft)] px-5 py-4 text-[var(--fg)] italic;
+}
+
+.blog-prose img {
+  @apply my-6 rounded-2xl border border-theme;
+}
+
+.blog-prose code {
+  @apply rounded bg-surface px-1.5 py-0.5 font-mono text-sm;
+}
+
+.blog-prose pre {
+  @apply my-6 overflow-x-auto rounded-2xl border border-theme bg-surface p-4 font-mono text-sm;
+}
+
+/* ویجت چت پشتیبانی */
+.chat-fab {
+  background: var(--accent);
+  color: var(--accent-fg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-fab:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-soft);
+}
+
+.chat-panel {
+  background: var(--bg);
+  animation: chat-slide-up 0.25s ease;
+}
+
+@keyframes chat-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

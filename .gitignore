@@ -1,0 +1,51 @@
+# -----------------------------------------------------------------------------
+# فایل‌هایی که نباید در مخزن قرار گیرند — اسرار، خروجی build، وابستگی‌ها
+# -----------------------------------------------------------------------------
+
+# متغیر محیط و کلیدها
+.env
+.env.local
+.env.production
+*.pem
+
+# SQLite لوکال (بدون Docker)
+backend/avan_local.db
+backend/uploads/
+*.db
+*.sqlite3
+
+get-pip.py
+
+# پایتون
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# نود و Next
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/tsconfig.tsbuildinfo
+node_modules/
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# سیستم‌عامل
+.DS_Store
+
+# آپلودهای محلی و تصاویر توسعه (در volumeهای Docker ذخیره می‌شوند)
+/uploads/
+publisher/uploads/
+New Project.png
+image.png
+Screenshot From*.png

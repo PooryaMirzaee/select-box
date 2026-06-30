@@ -1,0 +1,156 @@
+# =============================================================================
+# Docker Compose — تولید CORALAY
+# -----------------------------------------------------------------------------
+# اجرا:
+#   cp .env.production.example .env.production   # ویرایش مقادیر
+#   ./scripts/deploy.sh
+#
+# توسعهٔ لوکال (فقط Postgres + MinIO): docker compose up -d
+# =============================================================================
+
+name: coralay
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-coralay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-coralay}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coralay} -d ${POSTGRES_DB:-coralay}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    volumes:
+      - miniodata:/data
+    networks:
+      - internal
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD 2>/dev/null; do
+        echo 'waiting for minio...';
+        sleep 2;
+      done;
+      mc mb local/$$MINIO_BUCKET --ignore-existing;
+      echo 'bucket ready';
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-coralay-assets}
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      DEBUG: "false"
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-coralay}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-coralay}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-coralay-assets}
+      MINIO_SECURE: "false"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ORIGINS: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
+      PUBLIC_API_URL: ${PUBLIC_SITE_URL}
+      FRONTEND_URL: ${PUBLIC_SITE_URL}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-nginx,api,localhost}
+      UPLOAD_DIR: /app/uploads
+      SMS_IR_API_KEY: ${SMS_IR_API_KEY:-}
+      SMS_IR_TEMPLATE_ID: ${SMS_IR_TEMPLATE_ID:-0}
+      PAYMENT_GATEWAY: ${PAYMENT_GATEWAY:-mock}
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-true}
+      MOCK_PAYMENT_SECRET: ${MOCK_PAYMENT_SECRET:-}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        SITE_URL: ${PUBLIC_SITE_URL}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:8000
+      SITE_URL: ${PUBLIC_SITE_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./infra/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+  miniodata:
+  uploads:
+
+networks:
+  internal:
+    driver: bridge

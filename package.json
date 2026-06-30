@@ -1,0 +1,16 @@
+{
+  "name": "coralay",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000",
+    "build": "npm run build --prefix frontend",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:pull": "bash scripts/deploy.sh --pull",
+    "lint": "npm run lint --prefix frontend",
+    "publisher:install": "cd publisher && python3 -m venv .venv && .venv/bin/pip install -e . && cd web && npm install && npm run build",
+    "publisher": "cd publisher && .venv/bin/avan-publisher",
+    "publisher:ui": "cd publisher && .venv/bin/avan-publisher serve"
+  }
+}
