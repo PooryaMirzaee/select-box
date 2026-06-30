@@ -215,7 +215,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-باید سرویس‌های `postgres`, `minio`, `api`, `web`, `nginx` در حالت `running/healthy` باشند.
+باید سرویس‌های `postgres`, `api`, `web`, `nginx` در حالت `running/healthy` باشند.
 
 تست سلامت محلی:
 
@@ -307,7 +307,7 @@ cp docker-compose.prod.yml docker-compose.yml
 docker compose up -d --build
 ```
 
-داده‌ها حفظ می‌شوند چون در volumeهای داکر (`pgdata`, `miniodata`, `uploads`) ذخیره شده‌اند.
+داده‌ها حفظ می‌شوند چون در volumeهای داکر (`pgdata`, `uploads`) ذخیره شده‌اند.
 
 ---
 
