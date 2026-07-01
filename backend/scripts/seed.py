@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -243,7 +244,17 @@ def run() -> None:
             print("Database already seeded — برای دادهٔ جدید coralay_local.db را حذف کنید.")
             return
 
-        for key, value in DEFAULTS.items():
+        defaults = dict(DEFAULTS)
+        site_url = (
+            os.environ.get("PUBLIC_API_URL")
+            or os.environ.get("FRONTEND_URL")
+            or os.environ.get("SITE_URL")
+            or defaults["site_url"]
+        )
+        if site_url and "localhost" not in site_url and "127.0.0.1" not in site_url:
+            defaults["site_url"] = str(site_url).rstrip("/")
+
+        for key, value in defaults.items():
             db.add(SiteSetting(key=key, value=value))
 
         cat_tshirt = Category(parent_id=None, slug="tshirt", name_fa="تیشرت", sort_order=10)

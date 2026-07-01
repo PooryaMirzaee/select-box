@@ -97,8 +97,13 @@ export default async function HomePage() {
     fetchHomeBanners("promo").catch(() => []),
   ]);
 
-  const config =
-    homepage?.sections?.length ? homepage : { ...DEFAULT_HOMEPAGE_CONFIG, ...homepage, sections: homepage?.sections ?? DEFAULT_HOMEPAGE_CONFIG.sections };
+  const config = {
+    ...DEFAULT_HOMEPAGE_CONFIG,
+    ...homepage,
+    sections: homepage?.sections?.length ? homepage.sections : DEFAULT_HOMEPAGE_CONFIG.sections,
+    hero: { ...DEFAULT_HOMEPAGE_CONFIG.hero, ...homepage?.hero },
+    featured: { ...DEFAULT_HOMEPAGE_CONFIG.featured, ...homepage?.featured },
+  };
   const categories = browse?.children ?? [];
   const filteredProducts = config.featured.parent_slug
     ? products.filter((p) => p.parent_category_slug === config.featured.parent_slug)

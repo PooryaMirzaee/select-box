@@ -78,8 +78,9 @@ for i in $(seq 1 40); do
   sleep 3
 done
 
-echo "👤 ساخت ادمین..."
+echo "👤 seed دادهٔ نمونه + ادمین..."
 docker compose cp backend/scripts/seed.py api:/app/seed.py
+docker compose exec -T api python seed.py
 docker compose exec -T api python seed.py reset-admin
 
 echo ""

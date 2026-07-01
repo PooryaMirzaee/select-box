@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 PORT="${HTTP_PORT:-8090}"
-DOMAIN=""
+DOMAIN="coralay.ir"
 
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
@@ -45,6 +45,23 @@ else
   curl -sf "http://127.0.0.1:${PORT}/api/v1/catalog/shop" | head -c 200
   echo ""
 fi
+
+echo ""
+echo "=== homepage HTML (nginx :$PORT) ==="
+HOME_CODE=$(curl -s -o /tmp/coralay-home.html -w "%{http_code}" -H "Host: ${DOMAIN:-coralay.ir}" "http://127.0.0.1:${PORT}/")
+echo "HTTP $HOME_CODE"
+if [[ "$HOME_CODE" == "200" ]]; then
+  grep -o '<title>[^<]*</title>' /tmp/coralay-home.html 2>/dev/null | head -1 || true
+elif grep -q "۵۰۰\|server_error\|خطایی رخ داد" /tmp/coralay-home.html 2>/dev/null; then
+  echo "❌ صفحهٔ خطای ۵۰۰ از Next.js — docker compose logs web --tail 30"
+else
+  head -c 200 /tmp/coralay-home.html 2>/dev/null; echo ""
+fi
+
+echo ""
+echo "=== site_url in API ==="
+curl -sf -H "Host: ${DOMAIN:-coralay.ir}" "http://127.0.0.1:${PORT}/api/v1/catalog/shop" 2>/dev/null \
+  | grep -o '"site_url":"[^"]*"' || echo "(not found)"
 
 echo ""
 echo "=== admin login test ==="
