@@ -1,13 +1,11 @@
 /** کلاینت چت پشتیبانی — REST + WebSocket */
 
 import { adminFetch, apiFetch } from "@/lib/api";
+import { apiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/cart-session";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 
-const API_URL =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
+const API_URL = apiBase();
 
 export type ChatMessage = {
   id: number;

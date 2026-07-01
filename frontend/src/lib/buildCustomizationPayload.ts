@@ -1,5 +1,6 @@
 import type { CustomizationPayload, CustomizationTransform, ProductTemplate } from "@/lib/customizer";
 import { uploadArtwork } from "@/lib/customizer";
+import { apiUrl } from "@/lib/api-base";
 import { resolveTemplateSides } from "@/lib/fabricMockup/templateSides";
 import type { DesignDraft } from "@/components/design-lab/DesignLabCanvas";
 
@@ -16,7 +17,6 @@ export async function blobsToCustomizationPayload(
 ): Promise<CustomizationPayload | null> {
   const rawViews: Record<string, string> = {};
   const previewViews: Record<string, string> = {};
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   for (const [sideId, blob] of Object.entries(rawBlobs)) {
     if (!blob) continue;
@@ -41,7 +41,7 @@ export async function blobsToCustomizationPayload(
 
   return {
     product_type: target.slug,
-    artwork_url: `${apiBase}/api/v1/media/${primaryPreview}`,
+    artwork_url: apiUrl(`/api/v1/media/${primaryPreview}`),
     artwork_storage_key: primaryPreview,
     color_hex: opts.color.hex,
     color_name: opts.color.name,

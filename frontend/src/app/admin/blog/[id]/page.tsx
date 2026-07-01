@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { BlogPostEditor } from "@/components/admin/BlogPostEditor";
 import { Loader2 } from "@/components/icons";
 import { adminFetch } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import type { BlogPostAdmin } from "@/lib/blog";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 
@@ -45,14 +46,11 @@ export default function AdminBlogEditPage() {
   async function uploadCover(file: File) {
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/admin/blog/posts/${id}/cover-image`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: fd,
-      },
-    );
+    const res = await fetch(apiUrl(`/api/v1/admin/blog/posts/${id}/cover-image`), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token()}` },
+      body: fd,
+    });
     if (!res.ok) throw new Error("upload failed");
     const json = await res.json();
     setPost((p) => (p ? { ...p, cover_image_url: json.cover_image_url, cover_image_key: json.storage_key } : p));

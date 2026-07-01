@@ -1,9 +1,8 @@
 /** آدرس تصاویر آپلودشده — از پروکسی Next یا مستقیم API */
 
-const API_BASE =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL || "");
+import { apiBase } from "@/lib/api-base";
+
+const API_BASE = apiBase();
 
 /** `#` in uploaded filenames is treated as a URL fragment unless percent-encoded. */
 export function encodeMediaPath(url: string): string {

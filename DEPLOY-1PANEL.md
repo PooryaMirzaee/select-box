@@ -314,6 +314,25 @@ docker compose up -d --build
 
 داده‌ها حفظ می‌شوند چون در volumeهای داکر (`pgdata`, `uploads`) ذخیره شده‌اند.
 
+### فقط nginx عوض شده (بدون build)
+
+اگر فقط `infra/nginx/prod.conf` تغییر کرده:
+
+```bash
+git pull
+bash scripts/reload-nginx.sh
+```
+
+### فقط frontend عوض شده
+
+```bash
+git pull
+docker compose build web
+docker compose up -d web
+```
+
+> اگر `docker compose build` با **403 Forbidden** از Docker Hub شکست خورد، اول [آینهٔ رجیstry](#docker-hub-403-forbidden) را تنظیم کن. **api** در حال اجراست → لازم نیست دوباره build شود.
+
 ---
 
 ## بکاپ
@@ -336,10 +355,55 @@ docker run --rm -v coralay_uploads:/data -v $(pwd):/backup \
 
 ---
 
+## Docker Hub 403 Forbidden
+
+روی بعضی سرورها (به‌خصوص ایران) `docker pull` یا `docker compose build` خطای زیر می‌دهد:
+
+```text
+failed to resolve ... docker.io/library/python:3.12-slim: 403 Forbidden
+```
+
+**راه‌حل ۱ — آینهٔ Docker (پیشنهادی)**
+
+در 1Panel → **Container** → **Setting** → **Registry Mirrors** آدرس آینه اضافه کن، یا در سرور:
+
+```bash
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<'EOF'
+{
+  "registry-mirrors": ["https://docker.arvancloud.ir"]
+}
+EOF
+sudo systemctl restart docker
+```
+
+بعد دوباره:
+
+```bash
+docker compose build web
+docker compose up -d web
+```
+
+**راه‌حل ۲ — بدون build**
+
+اگر **api** و **web** از قبل healthy هستند و فقط nginx باید عوض شود:
+
+```bash
+git pull
+bash scripts/reload-nginx.sh
+```
+
+---
+
 ## عیب‌یابی
 
 | مشکل | راه‌حل |
 |------|--------|
+| `Invalid host header` با IP یا `:8090` | `git pull` و `bash scripts/reload-nginx.sh` — nginx باید `Host: api` به FastAPI بفرستد |
+| `403 Forbidden` هنگام build از Docker Hub | آینهٔ registry (بالا) — یا فقط `reload-nginx` اگر build لازم نیست |
+| `/api/v1/ws/chat` → 404 در لاگ | معمولاً WebSocket بدون Upgrade است؛ بعد از `reload-nginx` باید WS وصل شود |
+| صفحه ۵۰۰ در مرورگر ولی `check-deploy` → HTTP 200 | کش مرورگر — Incognito یا Ctrl+Shift+R؛ F12 → Console |
+| پنل ادمین — dropdown/لیست خالی | `bash scripts/check-admin.sh` — اگر API سرور OK ولی مرورگر نه → rebuild `web`؛ F12 → Network |
 | `Password authentication is not supported` هنگام clone | مخزن Private است؛ GitHub رمز عبور نمی‌پذیرد. از **SSH** (روش ۲) یا **Personal Access Token** (روش ۳) در گام ۳ استفاده کن، یا مخزن را در GitHub → Settings → General → Danger zone → **Change visibility** به Public تغییر بده |
 | گواهی SSL صادر نمی‌شود | DNS (رکورد A) و باز بودن پورت ۸۰ را چک کن |
 | پورت ۸۰ اشغال است هنگام up | یعنی `HTTP_PORT` را روی ۸۰ گذاشتی؛ آن را در `.env` به `8090` تغییر بده و دوباره up کن |

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { adminFetch, type CategoryAdmin, type DesignAdmin } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 
 type Asset = {
   id: number;
@@ -106,14 +107,11 @@ export default function AdminDesignsPage() {
     const fd = new FormData();
     fd.append("variant_key", variantKey);
     fd.append("file", file);
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/admin/designs/${uploadDesignId}/assets`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: fd,
-      },
-    );
+    const res = await fetch(apiUrl(`/api/v1/admin/designs/${uploadDesignId}/assets`), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token()}` },
+      body: fd,
+    });
     if (!res.ok) {
       alert(await res.text());
       return;

@@ -2,6 +2,7 @@
  * تایپ‌ها و کلاینت API سفارشی‌سازی
  */
 
+import { apiBase } from "@/lib/api-base";
 import { mediaUrl } from "@/lib/media";
 
 export type CustomizationTransform = {
@@ -65,10 +66,7 @@ export type ProductTemplate = {
   default_variation_id: number | null;
 };
 
-const API_URL =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
+const API_URL = apiBase();
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();

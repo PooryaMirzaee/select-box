@@ -8,6 +8,7 @@ import { AdminArtLibrary } from "@/components/admin/AdminArtLibrary";
 import { AdminTemplateEditor } from "@/components/admin/AdminTemplateEditor";
 import { Button } from "@/components/ui/Button";
 import { adminFetch } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import { adminCreateTemplate, type ProductTemplate } from "@/lib/customizer";
 
 export default function AdminCustomizerPage() {
@@ -25,7 +26,7 @@ export default function AdminCustomizerPage() {
     const t = localStorage.getItem("coralay_admin_token") ?? "";
     setToken(t);
     if (!t) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/customizer/templates`)
+    fetch(apiUrl("/api/v1/customizer/templates"))
       .then((r) => r.json())
       .then(setTemplates)
       .catch(() => {});

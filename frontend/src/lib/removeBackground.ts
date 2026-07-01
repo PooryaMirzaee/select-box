@@ -2,12 +2,11 @@
  * حذف پس‌زمینه — rembg روی سرور (U²-Net / ISNet، رایگان و بدون API خارجی).
  */
 
+import { apiBase } from "@/lib/api-base";
+
 type BgSource = Blob | File;
 
-const API_URL =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
+const API_URL = apiBase();
 
 const MAX_BYTES = 8 * 1024 * 1024;
 

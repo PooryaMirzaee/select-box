@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
+import { apiBase } from "@/lib/api-base";
 import { Button } from "@/components/ui/Button";
 import { formatToman } from "@/lib/utils";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = apiBase();
 
 function OrderContent() {
   const { tracking } = useParams<{ tracking: string }>();

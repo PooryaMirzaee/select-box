@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { adminFetch } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import { mediaUrl } from "@/lib/media";
 
 export type ProductImageAdmin = {
@@ -26,7 +27,6 @@ export function ProductImagesSection({ productId, onCountChange }: Props) {
   const [uploading, setUploading] = useState(false);
 
   const token = () => localStorage.getItem("coralay_admin_token")!;
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   const load = useCallback(() => {
     adminFetch<ProductImageAdmin[]>(`/api/v1/admin/products/${productId}/images`, token())
@@ -52,7 +52,7 @@ export function ProductImagesSection({ productId, onCountChange }: Props) {
     for (const file of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`${apiBase}/api/v1/admin/products/${productId}/images`, {
+      const res = await fetch(apiUrl(`/api/v1/admin/products/${productId}/images`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token()}` },
         body: fd,

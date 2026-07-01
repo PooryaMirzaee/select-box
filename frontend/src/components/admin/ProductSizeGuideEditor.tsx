@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import {
   type SizeGuideData,
 } from "@/lib/size-guide";
+import { apiUrl } from "@/lib/api-base";
 import { mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,6 @@ type Props = {
 
 export function ProductSizeGuideEditor({ productId, value, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const token = () => localStorage.getItem("coralay_admin_token")!;
 
   function patch(partial: Partial<SizeGuideData>) {
@@ -82,7 +82,7 @@ export function ProductSizeGuideEditor({ productId, value, onChange }: Props) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`${apiBase}/api/v1/admin/products/${productId}/size-guide-image`, {
+      const res = await fetch(apiUrl(`/api/v1/admin/products/${productId}/size-guide-image`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token()}` },
         body: fd,

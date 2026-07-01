@@ -5,17 +5,13 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { adminFetch } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import {
   BANNER_PLACEMENTS,
   BANNER_VARIANTS,
   type HomeBannerAdmin,
 } from "@/lib/home-banners";
 import { mediaUrl } from "@/lib/media";
-
-const API_BASE =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
 
 const emptyForm = {
   title_fa: "",
@@ -71,7 +67,7 @@ export function HomepageBannerEditor({ items, defaultPlacement, token, onChange 
     const path = mobile
       ? `/api/v1/admin/home-banners/${bannerId}/image-mobile`
       : `/api/v1/admin/home-banners/${bannerId}/image`;
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetch(apiUrl(path), {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: fd,

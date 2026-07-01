@@ -47,16 +47,36 @@ else
 fi
 
 echo ""
-echo "=== homepage HTML (nginx :$PORT) ==="
+echo "=== homepage HTML (Host: ${DOMAIN:-coralay.ir}) ==="
 HOME_CODE=$(curl -s -o /tmp/coralay-home.html -w "%{http_code}" -H "Host: ${DOMAIN:-coralay.ir}" "http://127.0.0.1:${PORT}/")
 echo "HTTP $HOME_CODE"
 if [[ "$HOME_CODE" == "200" ]]; then
   grep -o '<title>[^<]*</title>' /tmp/coralay-home.html 2>/dev/null | head -1 || true
+  if grep -q "خطایی رخ داد\|server_error" /tmp/coralay-home.html 2>/dev/null; then
+    echo "❌ HTML شامل صفحهٔ خطای Next.js است — docker compose logs web --tail 40"
+  fi
 elif grep -q "۵۰۰\|server_error\|خطایی رخ داد" /tmp/coralay-home.html 2>/dev/null; then
   echo "❌ صفحهٔ خطای ۵۰۰ از Next.js — docker compose logs web --tail 30"
 else
   head -c 200 /tmp/coralay-home.html 2>/dev/null; echo ""
 fi
+
+echo ""
+echo "=== homepage HTML (بدون Host — مثل IP مستقیم) ==="
+IP_CODE=$(curl -s -o /tmp/coralay-home-ip.html -w "%{http_code}" "http://127.0.0.1:${PORT}/")
+echo "HTTP $IP_CODE"
+if grep -q "خطایی رخ داد\|server_error" /tmp/coralay-home-ip.html 2>/dev/null; then
+  echo "❌ صفحهٔ خطا در HTML — docker compose logs web --tail 40"
+elif [[ "$IP_CODE" == "200" ]]; then
+  grep -o '<title>[^<]*</title>' /tmp/coralay-home-ip.html 2>/dev/null | head -1 || true
+fi
+
+echo ""
+echo "=== API با Host IP (قبل از fix nginx باید Invalid host header بدهد) ==="
+IP_HOST="127.0.0.1:${PORT}"
+API_IP=$(curl -s -o /tmp/coralay-api-ip.txt -w "%{http_code}" -H "Host: ${IP_HOST}" "http://127.0.0.1:${PORT}/api/v1/catalog/shop")
+echo "HTTP $API_IP"
+head -c 80 /tmp/coralay-api-ip.txt 2>/dev/null; echo ""
 
 echo ""
 echo "=== site_url in API ==="

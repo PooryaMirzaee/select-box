@@ -107,7 +107,7 @@ export function Hero({ categories, config }: Props) {
       <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-8 sm:pb-14 sm:pt-12">
         <motion.header
           initial={mounted ? { opacity: 0, y: 10 } : false}
-          animate={{ opacity: 1, y: 0 }}
+          animate={mounted ? { opacity: 1, y: 0 } : false}
           transition={{ duration: 0.4 }}
           className="mb-6 flex items-end justify-between gap-4 sm:mb-8"
         >

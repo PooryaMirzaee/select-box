@@ -3,11 +3,9 @@
  */
 
 import { getAuthToken } from "@/lib/cart-session";
+import { apiBase } from "@/lib/api-base";
 
-const API_URL =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
+const API_URL = apiBase();
 
 export type AiQuota = {
   require_login: boolean;

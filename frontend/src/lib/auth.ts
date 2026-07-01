@@ -1,9 +1,7 @@
 import { getAuthToken, getSessionId, setAuthToken } from "@/lib/cart-session";
+import { apiBase } from "@/lib/api-base";
 
-const API =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL || "");
+const API = apiBase();
 
 export type AuthUser = {
   id: number;

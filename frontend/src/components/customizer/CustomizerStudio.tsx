@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ensureCartSession } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import {
   DEFAULT_TRANSFORM,
   type CustomizationPayload,
@@ -65,7 +66,7 @@ export function CustomizerStudio({ template, categories = [] }: Props) {
     return {
       product_type: template.slug,
       artwork_url: artworkUrl.startsWith("/api/media/")
-        ? `${typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "http://localhost:8000"}/api/v1/media/${storageKey}`
+        ? apiUrl(`/api/v1/media/${storageKey}`)
         : artworkUrl,
       artwork_storage_key: storageKey,
       color_hex: color.hex,

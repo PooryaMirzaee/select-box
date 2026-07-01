@@ -3,9 +3,10 @@
  */
 
 import { apiFetch } from "@/lib/api";
+import { apiBase } from "@/lib/api-base";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = apiBase();
 
 export type AnalyticsOverview = {
   page_views: number;

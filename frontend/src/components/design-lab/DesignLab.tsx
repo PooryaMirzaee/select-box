@@ -39,6 +39,7 @@ import { preloadBackgroundRemoval, removeImageBackgroundToDataUrl } from "@/lib/
 import { prepareAiArtwork } from "@/lib/aiImagePost";
 import { blobsToCustomizationPayload, stripDraftFromPayload } from "@/lib/buildCustomizationPayload";
 import { ensureCartSession } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/cart-session";
 import { CART_EVENTS } from "@/lib/storage-keys";
 import {
@@ -592,7 +593,6 @@ export function DesignLab({
     const draft = canvas.saveDraft();
     const rawViews: Record<string, string> = {};
     const previewViews: Record<string, string> = {};
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
     for (const [sideId, blob] of Object.entries(rawBlobs)) {
       if (!blob) continue;
@@ -616,7 +616,7 @@ export function DesignLab({
 
     return {
       product_type: template.slug,
-      artwork_url: `${apiBase}/api/v1/media/${primaryPreview}`,
+      artwork_url: apiUrl(`/api/v1/media/${primaryPreview}`),
       artwork_storage_key: primaryPreview,
       color_hex: color.hex,
       color_name: color.name,

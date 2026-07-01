@@ -7,11 +7,9 @@ import type { HeaderNavLink } from "@/lib/header-nav";
 import type { HomeBanner } from "@/lib/home-banners";
 import type { HomepageConfig } from "@/lib/homepage";
 import type { SizeGuideData } from "@/lib/size-guide";
+import { apiBase } from "@/lib/api-base";
 
-const API_URL =
-  typeof window === "undefined"
-    ? (process.env.API_URL ?? "http://localhost:8000")
-    : (process.env.NEXT_PUBLIC_API_URL || "");
+const API_URL = apiBase();
 
 export type ProductSummary = {
   id: number;

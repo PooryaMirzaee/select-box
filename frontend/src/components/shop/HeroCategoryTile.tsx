@@ -30,7 +30,7 @@ export function HeroCategoryTile({
   return (
     <motion.div
       initial={mounted ? { opacity: 0, y: 12 } : false}
-      animate={{ opacity: 1, y: 0 }}
+      animate={mounted ? { opacity: 1, y: 0 } : false}
       transition={{ duration: 0.45, delay: index * 0.06 }}
       className={cn("h-full min-h-[140px]", className)}
     >

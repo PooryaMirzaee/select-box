@@ -8,6 +8,7 @@ import {
 } from "@/components/admin/AdminCategoryTree";
 import { Button } from "@/components/ui/Button";
 import { adminFetch, type CategoryAdmin } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import {
   collectDescendantIds,
   findNode,
@@ -34,7 +35,6 @@ export default function AdminCategoriesPage() {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const token = () => localStorage.getItem("coralay_admin_token")!;
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   const load = useCallback(() => {
     adminFetch<CategoryTreeNode[]>("/api/v1/admin/categories/tree", token())
@@ -127,7 +127,7 @@ export default function AdminCategoriesPage() {
       setUploading(true);
       const fd = new FormData();
       fd.append("file", iconFile);
-      const res = await fetch(`${apiBase}/api/v1/admin/categories/${categoryId}/icon`, {
+      const res = await fetch(apiUrl(`/api/v1/admin/categories/${categoryId}/icon`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token()}` },
         body: fd,
