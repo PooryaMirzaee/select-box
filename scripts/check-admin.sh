@@ -25,12 +25,18 @@ HOST_HDR=(-H "Host: ${DOMAIN}")
 BASE="http://127.0.0.1:${PORT}"
 
 echo "=== ۱) لاگین ادمین ==="
-LOGIN_JSON=$(curl -sf "${HOST_HDR[@]}" -X POST "${BASE}/api/v1/auth/admin/login" \
+LOGIN_CODE=$(curl -s -o /tmp/coralay-admin-login.json -w "%{http_code}" "${HOST_HDR[@]}" \
+  -X POST "${BASE}/api/v1/auth/admin/login" \
   -H "Content-Type: application/json" \
-  -d "{\"phone\":\"${ADMIN_PHONE}\",\"password\":\"${ADMIN_PASS}\"}" 2>/dev/null || echo "")
+  -d "{\"phone\":\"${ADMIN_PHONE}\",\"password\":\"${ADMIN_PASS}\"}")
+LOGIN_JSON=$(cat /tmp/coralay-admin-login.json 2>/dev/null || true)
 
-if [[ -z "$LOGIN_JSON" ]]; then
-  echo "❌ لاگین ادمین ناموفق — phone/password را چک کن"
+if [[ "$LOGIN_CODE" != "200" ]]; then
+  echo "❌ لاگین ادمین ناموفق — HTTP ${LOGIN_CODE}"
+  echo "   $(echo "$LOGIN_JSON" | head -c 200)"
+  if grep -q '<<<<<<<' infra/nginx/prod.conf 2>/dev/null; then
+    echo "   ⚠️  conflict در infra/nginx/prod.conf — bash scripts/fix-server-git.sh"
+  fi
   exit 1
 fi
 
