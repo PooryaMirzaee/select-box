@@ -296,23 +296,32 @@ def run() -> None:
         db.add_all([cat_bb, cat_pixel])
         db.flush()
 
-        db.add(
-            User(
-                phone="09120000000",
-                full_name="مدیر CORALAY",
-                role=UserRole.admin,
-                password_hash=hash_password("admin123"),
+        admin = db.scalar(select(User).where(User.phone == "09120000000"))
+        if admin is None:
+            db.add(
+                User(
+                    phone="09120000000",
+                    full_name="مدیر CORALAY",
+                    role=UserRole.admin,
+                    password_hash=hash_password("admin123"),
+                )
             )
-        )
-        db.add(
-            Coupon(
-                code="AVAN10",
-                discount_type="percent",
-                discount_value=10,
-                min_cart_total=20000,
-                is_active=True,
+        else:
+            admin.full_name = admin.full_name or "مدیر CORALAY"
+            admin.role = UserRole.admin
+            admin.password_hash = hash_password("admin123")
+            admin.is_active = True
+
+        if db.scalar(select(Coupon).where(Coupon.code == "AVAN10").limit(1)) is None:
+            db.add(
+                Coupon(
+                    code="AVAN10",
+                    discount_type="percent",
+                    discount_value=10,
+                    min_cart_total=20000,
+                    is_active=True,
+                )
             )
-        )
 
         designs_cfg = [
             ("BB-001", "بریکینگ بد — لوگو", "breaking-bad-logo", cat_bb.id),
