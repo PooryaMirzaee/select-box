@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
 # اعمال تنظیمات nginx — recreate کانتینر روی شبکه compose
-# -----------------------------------------------------------------------------
-# نکته: تست با docker run جداگانه کار نمی‌کند چون web/api روی شبکه compose هستند.
 # =============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/compose.sh"
+ensure_prod_compose
 
 if [[ ! -f infra/nginx/prod.conf ]]; then
   echo "❌ infra/nginx/prod.conf یافت نشد"
@@ -26,13 +27,14 @@ if [[ -f .env ]]; then
   PORT="${HTTP_PORT:-8090}"
 fi
 
+echo "=== compose: $COMPOSE_FILE ==="
 echo "=== recreate nginx (resolve مجدد web/api) ==="
-docker compose up -d --force-recreate nginx
+dc up -d --force-recreate nginx
 
 echo ""
 echo "=== تست syntax داخل کانتینر ==="
 sleep 2
-docker compose exec -T nginx nginx -t
+dc exec -T nginx nginx -t
 
 echo ""
 echo "=== health ==="
@@ -45,5 +47,5 @@ echo ""
 
 echo ""
 echo "=== upstream از داخل nginx ==="
-docker compose exec -T nginx wget -qO- http://api:8000/health 2>/dev/null && echo " ✅ api:8000" || echo "❌ api:8000 unreachable"
-docker compose exec -T nginx wget -q -S -O /dev/null http://web:3000/ 2>&1 | head -1 || echo "❌ web:3000 unreachable"
+dc exec -T nginx wget -qO- http://api:8000/health 2>/dev/null && echo " ✅ api:8000" || echo "❌ api:8000 unreachable"
+dc exec -T nginx wget -q -S -O /dev/null http://web:3000/ 2>&1 | head -1 || echo "❌ web:3000 unreachable"

@@ -6,6 +6,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/compose.sh"
 
 PORT="${HTTP_PORT:-8090}"
 DOMAIN="coralay.ir"
@@ -19,8 +21,8 @@ if [[ -f .env ]]; then
   fi
 fi
 
-echo "=== docker compose ps ==="
-docker compose ps 2>/dev/null || true
+echo "=== docker compose ps ($COMPOSE_FILE) ==="
+dc ps 2>/dev/null || true
 
 echo ""
 echo "=== .env (بدون رمز) ==="
@@ -96,8 +98,8 @@ head -c 120 /tmp/coralay-login.json 2>/dev/null; echo ""
 
 echo ""
 echo "=== web logs (last 15) ==="
-docker compose logs web --tail 15 2>/dev/null || true
+dc logs web --tail 15 2>/dev/null || true
 
 echo ""
 echo "=== api logs (last 15) ==="
-docker compose logs api --tail 15 2>/dev/null || true
+dc logs api --tail 15 2>/dev/null || true

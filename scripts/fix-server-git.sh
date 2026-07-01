@@ -26,6 +26,12 @@ if [[ -n "$ENV_BACKUP" && -f "$ENV_BACKUP" ]]; then
   echo "✅ .env بازگردانده شد"
 fi
 
+# git reset فایل dev را برمی‌گرداند — compose تولید را دوباره کپی کن
+if [[ -f docker-compose.prod.yml ]]; then
+  cp docker-compose.prod.yml docker-compose.yml
+  echo "✅ docker-compose.yml از docker-compose.prod.yml بازسازی شد"
+fi
+
 if grep -q '<<<<<<<' infra/nginx/prod.conf 2>/dev/null; then
   echo "❌ هنوز conflict در nginx — دستی گزارش کن"
   exit 1
