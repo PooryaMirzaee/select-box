@@ -400,6 +400,7 @@ bash scripts/reload-nginx.sh
 | مشکل | راه‌حل |
 |------|--------|
 | `502 Bad Gateway` از nginx | `web`/`api` دوباره ساخته شده‌اند ولی nginx قدیمی است → `bash scripts/reload-nginx.sh` یا `docker compose up -d --force-recreate nginx` |
+| `Invalid host header` با IP یا `:8090` | `bash scripts/reload-nginx.sh` — nginx باید `Host: api` به FastAPI بفرستد |
 | `reload-nginx` → `host not found in upstream web:3000` | طبیعی با `docker run` جدا — از نسخهٔ جدید اسکریپت استفاده کن |
 | `403 Forbidden` هنگام build از Docker Hub | آینهٔ registry (بالا) — یا فقط `reload-nginx` اگر build لازم نیست |
 | `/api/v1/ws/chat` → 404 در لاگ | معمولاً WebSocket بدون Upgrade است؛ بعد از `reload-nginx` باید WS وصل شود |
