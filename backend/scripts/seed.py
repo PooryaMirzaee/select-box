@@ -22,6 +22,7 @@ from app.models import Category, Coupon, Design, Product, ProductVariation, User
 from app.models.customizer import ProductTemplate
 from app.models.site_setting import SiteSetting
 from app.services.settings import DEFAULTS
+from app.services import settings as shop_settings
 
 import app.models  # noqa: F401
 
@@ -255,7 +256,10 @@ def run() -> None:
             defaults["site_url"] = str(site_url).rstrip("/")
 
         for key, value in defaults.items():
-            db.add(SiteSetting(key=key, value=value))
+            if db.get(SiteSetting, key) is None:
+                shop_settings.set_setting(db, key, value)
+            elif key == "site_url":
+                shop_settings.set_setting(db, key, value)
 
         cat_tshirt = Category(parent_id=None, slug="tshirt", name_fa="تیشرت", sort_order=10)
         cat_hoodie = Category(parent_id=None, slug="hoodie", name_fa="هودی", sort_order=15)
