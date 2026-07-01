@@ -287,6 +287,34 @@ proxy_set_header Connection "upgrade";
 
 ذخیره و reload کن.
 
+### CDN پارس‌پک (اگر IP کار می‌کند ولی دامنه نه)
+
+این یعنی Docker سالم است؛ مشکل بین **CDN / 1Panel** و سرور است.
+
+روی سرور:
+
+```bash
+bash scripts/check-domain.sh
+```
+
+در پنل پارس‌پک:
+
+1. **Purge Cache** — پاک‌سازی کامل کش
+2. **Page Rule** برای این مسیرها → **Bypass Cache / No Cache**:
+   - `/api/*`
+   - `/admin/*`
+3. **SSL** → حالت **Full** (نه Flexible) — origin باید HTTPS یا 1Panel با گواهی داشته باشد
+4. **Origin** → IP سرور، پورت **443** (1Panel)، نه مستقیم `8090`
+
+در 1Panel:
+
+1. وب‌سایت با دامنه‌های **`coralay.ir`** و **`www.coralay.ir`**
+2. Proxy: `http://127.0.0.1:8090`
+3. HTTPS فعال + Force HTTPS
+
+> ورود ادمین روی IP و دامنه **جدا** است — توکن در localStorage ذخیره می‌شود.
+> حتماً از `https://coralay.ir/admin/login` وارد شو، نه از IP.
+
 ---
 
 ## گام ۸ — بررسی نهایی
