@@ -241,7 +241,9 @@ def _ensure_homepage_default() -> None:
 
 def _ensure_site_url_from_env() -> None:
     """در تولید site_url دیتابیس را با PUBLIC_SITE_URL هم‌تراز می‌کند."""
-    url = (settings.public_api_url or settings.frontend_url or "").strip().rstrip("/")
+    from app.services.settings import normalize_site_url
+
+    url = normalize_site_url((settings.public_api_url or settings.frontend_url or "").strip())
     if not url or "localhost" in url or "127.0.0.1" in url:
         return
     from app.db.session import SessionLocal
@@ -249,10 +251,11 @@ def _ensure_site_url_from_env() -> None:
 
     db = SessionLocal()
     try:
-        current = str(shop_settings.get_setting(db, "site_url", shop_settings.DEFAULTS["site_url"])).rstrip("/")
+        current = normalize_site_url(
+            str(shop_settings.get_setting(db, "site_url", shop_settings.DEFAULTS["site_url"]))
+        )
         if current != url:
             shop_settings.set_setting(db, "site_url", url)
-            db.commit()
     finally:
         db.close()
 

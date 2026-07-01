@@ -253,7 +253,9 @@ def run() -> None:
             or defaults["site_url"]
         )
         if site_url and "localhost" not in site_url and "127.0.0.1" not in site_url:
-            defaults["site_url"] = str(site_url).rstrip("/")
+            from app.services.settings import normalize_site_url
+
+            defaults["site_url"] = normalize_site_url(str(site_url))
 
         for key, value in defaults.items():
             if db.get(SiteSetting, key) is None:

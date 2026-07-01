@@ -13,6 +13,18 @@ from app.models.site_setting import SiteSetting
 API_KEY_MASK = "••••••••"
 
 
+def normalize_site_url(url: str, *, default_scheme: str = "https") -> str:
+    """دامنهٔ خام (coralay.ir) → https://coralay.ir"""
+    raw = (url or "").strip().rstrip("/")
+    if not raw:
+        return raw
+    if "://" in raw:
+        return raw
+    if raw.startswith("localhost") or raw.startswith("127.0.0.1"):
+        return f"http://{raw}"
+    return f"{default_scheme}://{raw.lstrip('/')}"
+
+
 def default_sms_templates() -> list[dict[str, object]]:
     return [
         {
@@ -172,6 +184,8 @@ def set_settings(db: Session, data: dict[str, object]) -> dict[str, object]:
             raw = str(value or "").strip()
             if not raw or raw == API_KEY_MASK:
                 continue
+        if key == "site_url" and value:
+            value = normalize_site_url(str(value))
         row = db.get(SiteSetting, key)
         if row is None:
             db.add(SiteSetting(key=key, value=value))
@@ -193,7 +207,7 @@ def public_shop_settings(db: Session) -> dict:
         "shop_description": all_s["shop_description"],
         "default_meta_title": all_s["default_meta_title"],
         "default_meta_description": all_s["default_meta_description"],
-        "site_url": all_s["site_url"],
+        "site_url": normalize_site_url(str(all_s["site_url"])),
         "shipping_flat_toman": all_s["shipping_flat_toman"],
         "currency_label": all_s["currency_label"],
         "payment_gateway": all_s["payment_gateway"],
