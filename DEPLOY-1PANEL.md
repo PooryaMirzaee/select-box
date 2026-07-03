@@ -295,16 +295,35 @@ proxy_set_header Connection "upgrade";
 
 ```bash
 bash scripts/check-domain.sh
+bash scripts/check-ssl.sh
 ```
 
-در پنل پارس‌پک:
+#### اگر `HTTP ✅` و `HTTPS ❌ 502` (شایع‌ترین)
+
+مرورگر و CDN از **HTTPS** استفاده می‌کنند؛ SSL بین CDN و سرور (origin) خراب است.
+`http://coralay.ir` کار می‌کند ولی `https://coralay.ir` صفحه HTML/502 می‌دهد → ادمین خراب می‌شود.
+
+**راه‌حل سریع — CDN پارس‌پک:**
+
+1. SSL/TLS → حالت **Flexible** (CDN↔کاربر HTTPS، CDN↔سرور HTTP پورت 80)
+2. Purge Cache
+3. تست: `curl -s -o /dev/null -w "%{http_code}\n" https://coralay.ir/api/v1/catalog/shop` → باید **200**
+
+**راه‌حل درست — 1Panel + CDN Full:**
+
+1. 1Panel → Website → `coralay.ir` → **HTTPS** → Let's Encrypt → Apply
+2. تست روی سرور:
+   ```bash
+   curl -sk https://127.0.0.1/health -H "Host: coralay.ir"
+   ```
+   باید `{"status":"ok"}` باشد.
+3. CDN → SSL **Full** (یا Full Strict)
+
+در پنل پارس‌پک (همه حالات):
 
 1. **Purge Cache** — پاک‌سازی کامل کش
-2. **Page Rule** برای این مسیرها → **Bypass Cache / No Cache**:
-   - `/api/*`
-   - `/admin/*`
-3. **SSL** → حالت **Full** (نه Flexible) — origin باید HTTPS یا 1Panel با گواهی داشته باشد
-4. **Origin** → IP سرور، پورت **443** (1Panel)، نه مستقیم `8090`
+2. **Page Rule** → **Bypass Cache** برای `/api/*` و `/admin/*`
+3. **Origin** → IP سرور (پورت 80 برای Flexible، 443 برای Full)
 
 در 1Panel:
 
