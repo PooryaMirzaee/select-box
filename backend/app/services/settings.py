@@ -14,7 +14,7 @@ API_KEY_MASK = "••••••••"
 
 
 def normalize_site_url(url: str, *, default_scheme: str = "https") -> str:
-    """دامنهٔ خام (coralay.ir) → https://coralay.ir"""
+    """دامنهٔ خام (selectbox.ir) → https://selectbox.ir"""
     raw = (url or "").strip().rstrip("/")
     if not raw:
         return raw
@@ -68,12 +68,12 @@ def mask_api_key(key: str) -> str:
     return API_KEY_MASK if (key or "").strip() else ""
 
 DEFAULTS: dict[str, object] = {
-    "shop_name": "CORALAY",
-    "shop_description": "فروشگاه تیشرت و هودی طرح‌محور",
-    "default_meta_title": "CORALAY — پوشاک طرح‌محور",
-    "default_meta_description": "تیشرت و هودی با طرح‌های اختصاصی، چاپ باکیفیت، ارسال سریع.",
+    "shop_name": "SelectBox",
+    "shop_description": "فروشگاه آنلاین لوازم خانگی، سبک زندگی و وسایل روزمره",
+    "default_meta_title": "SelectBox — لوازم خانگی و سبک زندگی",
+    "default_meta_description": "خرید آنلاین لوازم خانگی، سبک زندگی و وسایل روزمره با گارانتی اصلی، قیمت رقابتی و ارسال سریع.",
     "site_url": "http://localhost:3000",
-    "shipping_flat_toman": 4900,
+    "shipping_flat_toman": 49000,
     "currency_label": "تومان",
     "payment_gateway": "mock",
     "zarinpal_merchant_id": "",
@@ -81,7 +81,7 @@ DEFAULTS: dict[str, object] = {
     "zarinpal_callback_url": "",
     "google_analytics_id": "",
     "contact_phone": "021-91001234",
-    "contact_email": "support@coralay.local",
+    "contact_email": "support@selectbox.ir",
     "contact_whatsapp": "",
     "contact_telegram": "",
     "contact_instagram": "",
@@ -106,11 +106,9 @@ DEFAULTS: dict[str, object] = {
     "avalai_max_per_ip_hour": 5,
     "avalai_cooldown_seconds": 45,
     "avalai_system_prompt_suffix": (
-        "خروجی باید فقط یک طرح گرافیکی تخت (flat artwork) برای چاپ روی پارچه باشد.\n"
-        "ممنوع: تیشرت، هودی، لباس، مانکن، مدل انسانی، موکاپ محصول، قاب، سایهٔ زمین.\n"
-        "ممنوع: الگوی شطرنجی خاکستری/سفید (checkerboard) — شفافیت را شبیه‌سازی نکن.\n"
-        "پس‌زمینه: یکدست و کاملاً مجنتا (#FF00FF) در تمام اطراف طرح.\n"
-        "فقط خودِ نقاشی/لوگو/گرافیک در مرکز — بدون لباس، بدون شطرنجی، آمادهٔ چاپ."
+        "خروجی باید یک تصویر محصول لوازم خانگی با کیفیت بالا باشد.\n"
+        "پس‌زمینه: سفید یا خاکستری روشن یکدست.\n"
+        "محصول در مرکز با نورپردازی حرفه‌ای — بدون متن اضافی یا واترمارک."
     ),
 }
 

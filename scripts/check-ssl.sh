@@ -9,7 +9,7 @@ cd "$ROOT"
 # shellcheck disable=SC1091
 source "$ROOT/scripts/compose.sh"
 
-DOMAIN="coralay.ir"
+DOMAIN="selectbox.ir"
 ADMIN_BODY='{"phone":"09120000000","password":"admin123"}'
 PORT="${HTTP_PORT:-8090}"
 [[ -f .env ]] && source .env 2>/dev/null || true
@@ -65,7 +65,7 @@ cat <<'HELP'
 │ راه‌حل B (درست) — 1Panel:                                       │
 │   Website → HTTPS → Let's Encrypt فعال                          │
 │   سپس CDN → SSL Full                                            │
-│   تست: curl -k https://127.0.0.1/health -H "Host: coralay.ir"   │
+│   تست: curl -k https://127.0.0.1/health -H "Host: selectbox.ir"   │
 │        باید {"status":"ok"} بدهد                                  │
 │                                                                 │
 │ تا fix نشود، ادمین فقط با http://IP:8090 کار می‌کند             │

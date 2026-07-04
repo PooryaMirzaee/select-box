@@ -12,7 +12,7 @@ export function rootMetadataFromSettings(settings: ShopSettings | null): Metadat
   const description =
     settings?.default_meta_description ??
     settings?.shop_description ??
-    "تیشرت و هودی طرح‌محور با چاپ باکیفیت و تجربهٔ خرید سریع.";
+    "خرید آنلاین لوازم خانگی — یخچال، ماشین لباسشویی، جاروبرقی و بیشتر با گارانتی و ارسال سریع.";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -21,19 +21,20 @@ export function rootMetadataFromSettings(settings: ShopSettings | null): Metadat
     applicationName: shopName,
     category: "shopping",
     icons: {
-      icon: "/brand/coralay-logo.png",
-      apple: "/brand/coralay-logo.png",
+      icon: "/brand/selectbox-logo.png",
+      apple: "/brand/selectbox-logo.png",
     },
     manifest: "/manifest.webmanifest",
     keywords: [
-      "تیشرت",
-      "هودی",
-      "ماگ",
-      "چاپ",
-      "طرح",
+      "لوازم خانگی",
+      "یخچال",
+      "ماشین لباسشویی",
+      "جاروبرقی",
+      "ظرفشویی",
+      "کولر گازی",
+      "تلویزیون",
       "فروشگاه آنلاین",
-      "پوشاک",
-      "Design Lab",
+      "selectbox",
       shopName,
     ],
     authors: [{ name: shopName, url: siteUrl }],
@@ -47,13 +48,13 @@ export function rootMetadataFromSettings(settings: ShopSettings | null): Metadat
       url: siteUrl,
       title,
       description,
-      images: [{ url: "/brand/coralay-logo.png", alt: shopName, width: 512, height: 512 }],
+      images: [{ url: "/brand/selectbox-logo.png", alt: shopName, width: 512, height: 512 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/brand/coralay-logo.png"],
+      images: ["/brand/selectbox-logo.png"],
     },
     robots: {
       index: true,

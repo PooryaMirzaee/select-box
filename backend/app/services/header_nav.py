@@ -8,10 +8,9 @@ from sqlalchemy.orm import Session
 from app.models.header_nav import HeaderNavLink
 
 DEFAULT_LINKS: list[dict[str, object]] = [
-    {"label_fa": "سفارش سازمانی", "href": "/business", "sort_order": 10},
-    {"label_fa": "سفارشی‌سازی", "href": "/customize", "sort_order": 20},
-    {"label_fa": "خالقین", "href": "/studios", "sort_order": 30},
-    {"label_fa": "مجله", "href": "/blog", "sort_order": 40},
+    {"label_fa": "سفارش عمده", "href": "/business", "sort_order": 10},
+    {"label_fa": "کاتالوگ", "href": "/catalog", "sort_order": 20},
+    {"label_fa": "مجله", "href": "/blog", "sort_order": 30},
 ]
 
 

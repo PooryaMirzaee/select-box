@@ -34,7 +34,7 @@ export default function AdminCategoriesPage() {
   const [uploading, setUploading] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
     adminFetch<CategoryTreeNode[]>("/api/v1/admin/categories/tree", token())

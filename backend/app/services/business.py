@@ -19,54 +19,53 @@ from app.schemas.business import (
     BusinessTrustLogo,
     BusinessUseCase,
 )
-from app.services.catalog import PRODUCT_TYPE_SLUGS
 from app.services.storage import public_url
 
 HUB_SLUG = "hub"
-PRODUCT_LANDING_SLUGS = frozenset(PRODUCT_TYPE_SLUGS)
+PRODUCT_LANDING_SLUGS = frozenset()
 
 
 def _default_trust_content(slug: str) -> dict:
     """محتوای پیش‌فرض گالری و اعتمادسازی."""
     gallery_titles = {
-        "hub": "نمونه کارهای سازمانی",
-        "tshirt": "گالری تیشرت سازمانی",
-        "hoodie": "گالری هودی سازمانی",
-        "mug": "گالری ماگ سازمانی",
+        "hub": "پروژه‌های تأمین لوازم خانگی",
+        "kitchen": "تأمین لوازم آشپزخانه",
+        "laundry": "تأمین لوازم شستشو",
+        "climate": "تأمین سرمایش و گرمایش",
     }
     logos = [
-        BusinessTrustLogo(name_fa="استارتاپ فناوری"),
-        BusinessTrustLogo(name_fa="رویداد خلاق"),
-        BusinessTrustLogo(name_fa="تیم محصول"),
-        BusinessTrustLogo(name_fa="آژانس دیجیتال"),
-        BusinessTrustLogo(name_fa="شرکت نرم‌افزاری"),
+        BusinessTrustLogo(name_fa="سازنده مسکن"),
+        BusinessTrustLogo(name_fa="هتل و اقامتگاه"),
+        BusinessTrustLogo(name_fa="شرکت خدماتی"),
+        BusinessTrustLogo(name_fa="مجتمع تجاری"),
+        BusinessTrustLogo(name_fa="اداره و سازمان"),
     ]
     badges = [
-        BusinessTrustBadge(icon="check", title="کنترل کیفیت", description="بررسی چاپ قبل از ارسال انبوه"),
-        BusinessTrustBadge(icon="package", title="پیش‌فاکتور رسمی", description="قیمت شفاف پیش از تولید"),
-        BusinessTrustBadge(icon="sparkles", title="Design Lab", description="طراحی و چاپ لوگوی اختصاصی"),
-        BusinessTrustBadge(icon="shirt", title="چاپ ماندگار", description="DTG و سابلیمیشن با دوام بالا"),
+        BusinessTrustBadge(icon="check", title="گارانتی اصلی", description="تمام محصولات با گارانتی معتبر"),
+        BusinessTrustBadge(icon="package", title="پیش‌فاکتور رسمی", description="قیمت شفاف پیش از خرید"),
+        BusinessTrustBadge(icon="sparkles", title="مشاوره تخصصی", description="راهنمایی در انتخاب محصول"),
+        BusinessTrustBadge(icon="shirt", title="ارسال پروژه‌ای", description="تحویل منظم برای پروژه‌های بزرگ"),
     ]
     testimonials = [
         BusinessTestimonial(
-            quote="برای رویداد سالانه‌مان ۸۰ تیشرت سفارش دادیم — کیفیت چاپ و زمان تحویل عالی بود.",
+            quote="برای ۴۰ واحد مسکونی لوازم آشپزخانه تأمین کردیم — کیفیت و زمان تحویل عالی بود.",
             author_name="سارا محمدی",
-            author_role="مدیر رویداد",
-            company="استارتاپ فناوری",
+            author_role="مدیر پروژه",
+            company="سازنده مسکن",
             rating=5,
         ),
         BusinessTestimonial(
-            quote="پیش‌فاکتور سریع و شفاف بود. تیم پشتیبانی در انتخاب سایز و رنگ راهنمایی کرد.",
+            quote="پیش‌فاکتور سریع و شفاف بود. تیم پشتیبانی در انتخاب برند و مدل راهنمایی کرد.",
             author_name="امیر رضایی",
-            author_role="مدیر منابع انسانی",
-            company="شرکت نرم‌افزاری",
+            author_role="مدیر تدارکات",
+            company="هتل پنج‌ستاره",
             rating=5,
         ),
         BusinessTestimonial(
-            quote="ماگ‌های هدیه مشتریان با لوگوی برند — بسته‌بندی مرتب و تحویل به‌موقع.",
+            quote="لوازم خانگی دفتر جدیدمان را یکجا از SelectBox خریدیم — بسته‌بندی و نصب مرتب.",
             author_name="نیلوفر کریمی",
-            author_role="مدیر مارکتینگ",
-            company="آژانس دیجیتال",
+            author_role="مدیر اداری",
+            company="شرکت فناوری",
             rating=5,
         ),
     ]
@@ -76,7 +75,7 @@ def _default_trust_content(slug: str) -> dict:
         "trust_logos": logos,
         "trust_badges": badges,
         "testimonials": testimonials,
-        "trust_section_title": "مورد اعتماد تیم‌ها و برندها",
+        "trust_section_title": "مورد اعتماد سازمان‌ها و پروژه‌ها",
     }
 
 
@@ -108,74 +107,74 @@ def _resolve_trust_logo(raw: dict) -> BusinessTrustLogo:
 def _default_hub() -> dict:
     return {
         "slug": HUB_SLUG,
-        "name_fa": "سفارش سازمانی",
-        "title": "چاپ سازمانی با کیفیت و سرعت",
-        "subtitle": "برای تیم‌ها، رویدادها و برندها — از ۱۰ عدد به بالا با قیمت عمده، چاپ اختصاصی و پشتیبانی اختصاصی.",
+        "name_fa": "سفارش عمده",
+        "title": "تأمین لوازم خانگی برای پروژه‌ها و سازمان‌ها",
+        "subtitle": "برای ساختمان، هتل، اداره و پروژه‌های بزرگ — قیمت عمده، گارانتی اصلی و ارسال منظم.",
         "hero_badge": "B2B · سفارش عمده",
-        "meta_title": "سفارش سازمانی — چاپ عمده تیشرت، هودی و ماگ",
-        "meta_description": "سفارش سازمانی CORALAY: تیشرت، هودی و ماگ با چاپ باکیفیت، قیمت پلکانی و Design Lab برای برندسازی.",
-        "min_order_qty": 10,
+        "meta_title": "سفارش عمده لوازم خانگی — SelectBox",
+        "meta_description": "تأمین لوازم خانگی برای پروژه‌ها و سازمان‌ها با قیمت پلکانی، گارانتی اصلی و پشتیبانی اختصاصی.",
+        "min_order_qty": 5,
         "features": [
             BusinessFeature(
                 icon="package",
                 title="قیمت پلکانی",
-                description="هرچه تعداد بیشتر، قیمت واحد کمتر — بدون مذاکره پیچیده.",
+                description="هرچه حجم سفارش بیشتر، قیمت واحد کمتر — مناسب پروژه‌های بزرگ.",
             ),
             BusinessFeature(
                 icon="sparkles",
-                title="Design Lab سازمانی",
-                description="لوگو و طرح اختصاصی شرکت را روی محصول چاپ می‌کنیم.",
+                title="مشاوره تخصصی",
+                description="انتخاب بهترین برند و مدل متناسب با نیاز پروژه.",
             ),
             BusinessFeature(
                 icon="check",
                 title="پیش‌فاکتور رسمی",
-                description="پیش از تولید، پیش‌فاکتور شفاف دریافت کنید.",
+                description="پیش از خرید، پیش‌فاکتور شفاف دریافت کنید.",
             ),
             BusinessFeature(
                 icon="shirt",
-                title="کیفیت یکدست",
-                description="چاپ DTG/سابلیمیشن با کنترل کیفیت قبل از ارسال.",
+                title="گارانتی اصلی",
+                description="تمام محصولات با گارانتی معتبر و خدمات پس از فروش.",
             ),
         ],
         "pricing_tiers": [],
         "use_cases": [
             BusinessUseCase(
-                title="رویدادها و کنفرانس",
-                description="تیشرت و هودی یکدست برای تیم برگزارکننده و شرکت‌کنندگان.",
+                title="پروژه‌های مسکونی",
+                description="تأمین یکجای لوازم آشپزخانه و شستشو برای واحدهای مسکونی.",
             ),
             BusinessUseCase(
-                title="هدایای سازمانی",
-                description="ماگ و پوشاک برنددار برای مشتریان و همکاران.",
+                title="هتل و اقامتگاه",
+                description="لوازم خانگی استاندارد برای اتاق‌ها و آشپزخانه.",
             ),
             BusinessUseCase(
-                title="استارتاپ‌ها و تیم‌ها",
-                description="Merch داخلی با طرح اختصاصی و تحویل سریع.",
+                title="ادارات و سازمان‌ها",
+                description="تجهیز فضای اداری و آبدارخانه با لوازم باکیفیت.",
             ),
         ],
         "process_steps": [
             BusinessProcessStep(title="ثبت درخواست", description="فرم را پر کنید یا با ما تماس بگیرید."),
             BusinessProcessStep(title="پیش‌فاکتور", description="ظرف ۲۴ ساعت پیش‌فاکتور و زمان تحویل."),
-            BusinessProcessStep(title="تأیید و تولید", description="پس از تأیید، تولید و کنترل کیفیت."),
-            BusinessProcessStep(title="ارسال", description="ارسال به سراسر کشور با بسته‌بندی مناسب."),
+            BusinessProcessStep(title="تأیید و تأمین", description="پس از تأیید، تأمین و کنترل کیفیت."),
+            BusinessProcessStep(title="ارسال", description="ارسال منظم به سراسر کشور با بسته‌بندی ایمن."),
         ],
         "faqs": [
             BusinessFaq(
                 question="حداقل سفارش چند عدد است؟",
-                answer="برای سفارش سازمانی معمولاً از ۱۰ عدد شروع می‌شود؛ بسته به نوع محصول متفاوت است.",
+                answer="بسته به نوع محصول از ۵ عدد شروع می‌شود؛ برای پروژه‌های بزرگ شرایط ویژه داریم.",
             ),
             BusinessFaq(
-                question="آیا می‌توان لوگوی شرکت را چاپ کرد؟",
-                answer="بله — فایل لوگو یا طرح را ارسال کنید یا از Design Lab استفاده کنید.",
+                question="آیا نصب هم انجام می‌دهید؟",
+                answer="برای برخی محصولات مانند کولر گازی، هماهنگی نصب امکان‌پذیر است.",
             ),
             BusinessFaq(
                 question="زمان تحویل چقدر است؟",
-                answer="بسته به تعداد و نوع چاپ، معمولاً ۵ تا ۱۴ روز کاری.",
+                answer="بسته به حجم سفارش، معمولاً ۳ تا ۱۰ روز کاری.",
             ),
         ],
         "stats": [
             BusinessStat(value="۲۴h", label="پاسخ پیش‌فاکتور"),
-            BusinessStat(value="۱۰+", label="حداقل سفارش"),
-            BusinessStat(value="۱۰۰٪", label="کنترل کیفیت"),
+            BusinessStat(value="۵+", label="حداقل سفارش"),
+            BusinessStat(value="۱۰۰٪", label="گارانتی اصلی"),
         ],
         "cta_primary": "درخواست پیش‌فاکتور",
         "cta_secondary": "مشاهده محصولات",

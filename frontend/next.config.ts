@@ -99,6 +99,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      { source: "/customize", destination: "/catalog", permanent: true },
+      { source: "/customize/:path*", destination: "/catalog", permanent: true },
+      { source: "/studios", destination: "/catalog", permanent: true },
+      { source: "/studio/:path*", destination: "/catalog", permanent: true },
+      { source: "/creator/:path*", destination: "/catalog", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

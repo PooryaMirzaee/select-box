@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { Breadcrumbs, type Crumb } from "@/components/shop/Breadcrumbs";
@@ -41,7 +40,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title = data.current.meta_title ?? data.current.name_fa;
     description =
       data.current.meta_description ??
-      `خرید تیشرت و هودی ${data.current.name_fa} — ${shopName}`;
+      `خرید ${data.current.name_fa} — ${shopName}`;
   } else {
     title = "دسته‌بندی‌ها";
     description =
@@ -120,33 +119,11 @@ export default async function BrowsePage({ params, searchParams }: Props) {
         ) : null}
 
         {data.products.length > 0 ? (
-          <>
-            <div className="mb-6 flex flex-wrap gap-2 text-sm">
-              <Link
-                href={`/browse/${pathStr}`}
-                className={`chip-theme ${!sp.type ? "is-active" : ""}`}
-              >
-                همه
-              </Link>
-              <Link
-                href={`/browse/${pathStr}?type=tshirt`}
-                className={`chip-theme ${sp.type === "tshirt" ? "is-active" : ""}`}
-              >
-                تیشرت
-              </Link>
-              <Link
-                href={`/browse/${pathStr}?type=hoodie`}
-                className={`chip-theme ${sp.type === "hoodie" ? "is-active" : ""}`}
-              >
-                هودی
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
-              {data.products.map((p, i) => (
-                <ProductCard key={p.id} product={p} index={i} />
-              ))}
-            </div>
-          </>
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
+            {data.products.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
+            ))}
+          </div>
         ) : null}
       </div>
     </>

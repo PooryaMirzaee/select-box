@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState<Dash | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("coralay_admin_token");
+    const token = localStorage.getItem("selectbox_admin_token");
     if (!token) return;
     adminFetch<Dash>("/api/v1/admin/dashboard", token).then(setData).catch(() => {});
   }, []);

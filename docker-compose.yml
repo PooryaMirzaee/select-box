@@ -1,65 +1,41 @@
 # =============================================================================
-# Docker Compose — توسعهٔ لوکال پروژه CORALAY
+# Docker Compose — توسعهٔ لوکال پروژه SelectBox
 # -----------------------------------------------------------------------------
 # سرویس‌ها: PostgreSQL (دادهٔ رابطه‌ای)، MinIO (ذخیرهٔ آبجکت مشابه S3)
 # دیپلوی تولید: ./scripts/deploy.sh  — راهنما: DEPLOY.md
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # پایگاه دادهٔ اصلی — تمام موجودیت‌های فروشگاه در اینجا نگه داشته می‌شوند.
-  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
-    container_name: coralay-postgres
+    container_name: selectbox-postgres
     environment:
-      POSTGRES_USER: coralay
-      POSTGRES_PASSWORD: coralay_dev # در تولید حتماً عوض شود
-      POSTGRES_DB: coralay
+      POSTGRES_USER: selectbox
+      POSTGRES_PASSWORD: selectbox_dev
+      POSTGRES_DB: selectbox
     ports:
-      - "5432:5432" # اتصال از میزبان لوکال؛ در compose شبکهٔ داخلی نام سرویس «postgres» است
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coralay -d coralay"]
+      test: ["CMD-SHELL", "pg_isready -U selectbox -d selectbox"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # MinIO — آپلود موکاپ‌ها و دارایی‌های طراحی؛ کلیدها در جدول design_assets ذخیره می‌شوند.
-  # کنسول وب روی پورت 9001 برای ساخت باکت و دسترسی‌ها.
-  # ---------------------------------------------------------------------------
   minio:
     image: minio/minio:latest
-    container_name: coralay-minio
+    container_name: selectbox-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: coralayminio
-      MINIO_ROOT_PASSWORD: coralayminio_dev_change_me # در تولید حتماً عوض شود
+      MINIO_ROOT_USER: selectboxminio
+      MINIO_ROOT_PASSWORD: selectboxminio_dev_change_me
     ports:
-      - "9000:9000" # API S3-compatible
-      - "9001:9001" # Console UI
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - miniodata:/data
 
-  # ---------------------------------------------------------------------------
-  # [اختیاری] معکوس‌پروکسی Nginx + ایمیج API — وقتی همه چیز در Docker است فعال کنید.
-  # فایل کانفیگ نمونه: infra/nginx/default.conf
-  # ---------------------------------------------------------------------------
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: coralay-nginx
-  #   ports:
-  #     - "8080:80"
-  #   volumes:
-  #     - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-  #   depends_on:
-  #     - api
-  # api:
-  #   build: ./backend
-  #   ...
-
 volumes:
-  pgdata: # دادهٔ Postgres پایدار بین ری‌استارت‌ها
-  miniodata: # آبجکت‌های MinIO
+  pgdata:
+  miniodata:

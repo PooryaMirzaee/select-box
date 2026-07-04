@@ -1,7 +1,6 @@
 """
-پر کردن پایگاه — دسته‌بندی سلسله‌مراتبی + ادمین + تنظیمات.
-قیمت‌ها به تومان. تصاویر طرح فقط دستی از پنل آپلود می‌شوند.
-برای دیتابیس تازه: rm backend/coralay_local.db && python scripts/seed.py
+پر کردن پایگاه — دسته‌بندی لوازم خانگی + ادمین + تنظیمات.
+قیمت‌ها به تومان. برای دیتابیس تازه: rm backend/selectbox_local.db && python scripts/seed.py
 """
 
 from __future__ import annotations
@@ -19,222 +18,124 @@ from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
 from app.models import Category, Coupon, Design, Product, ProductVariation, User, UserRole
-from app.models.customizer import ProductTemplate
 from app.models.site_setting import SiteSetting
 from app.services.settings import DEFAULTS
 from app.services import settings as shop_settings
 
 import app.models  # noqa: F401
 
-TSHIRT_SIDES = [
+PRODUCTS = [
     {
-        "id": "front",
-        "label_fa": "جلو",
-        "sort_order": 0,
-        "print_area": {"x": 0.18, "y": 0.14, "width": 0.64, "height": 0.52},
+        "code": "SB-RF-001",
+        "slug": "samsung-rt28-refrigerator",
+        "title": "یخچال فریزر سامسونگ RT28",
+        "category_slug": "refrigerator",
+        "price": 28_500_000,
+        "compare": 31_000_000,
+        "colors": [("نقره‌ای", "#c0c0c0"), ("سفید", "#f5f5f5")],
     },
     {
-        "id": "back",
-        "label_fa": "پشت",
-        "sort_order": 1,
-        "print_area": {"x": 0.18, "y": 0.14, "width": 0.64, "height": 0.52},
+        "code": "SB-WM-001",
+        "slug": "lg-f4v5ryp2w-washing-machine",
+        "title": "ماشین لباسشویی ال‌جی 8 کیلو",
+        "category_slug": "washing-machine",
+        "price": 22_800_000,
+        "compare": 24_500_000,
+        "colors": [("سفید", "#f5f5f5"), ("نقره‌ای", "#b8b8b8")],
+    },
+    {
+        "code": "SB-DW-001",
+        "slug": "bosch-serie4-dishwasher",
+        "title": "ماشین ظرفشویی بوش سری 4",
+        "category_slug": "dishwasher",
+        "price": 18_900_000,
+        "compare": 20_500_000,
+        "colors": [("استیل", "#a8a8a8")],
+    },
+    {
+        "code": "SB-VC-001",
+        "slug": "dyson-v12-vacuum",
+        "title": "جاروبرقی بی‌سیم دایسون V12",
+        "category_slug": "vacuum",
+        "price": 32_500_000,
+        "compare": 35_000_000,
+        "colors": [("طلایی", "#c9a227"), ("نقره‌ای", "#c0c0c0")],
+    },
+    {
+        "code": "SB-AC-001",
+        "slug": "gree-inverter-ac-18000",
+        "title": "کولر گازی اینورتر گری 18000",
+        "category_slug": "air-conditioner",
+        "price": 19_500_000,
+        "compare": 21_000_000,
+        "colors": [("سفید", "#ffffff")],
+    },
+    {
+        "code": "SB-MW-001",
+        "slug": "panasonic-microwave-25l",
+        "title": "مایکروویو پاناسونیک 25 لیتری",
+        "category_slug": "microwave",
+        "price": 5_200_000,
+        "compare": 5_800_000,
+        "colors": [("سفید", "#f5f5f5"), ("مشکی", "#1a1a1a")],
+    },
+    {
+        "code": "SB-TV-001",
+        "slug": "samsung-crystal-uhd-55",
+        "title": "تلویزیون سامسونگ Crystal UHD 55 اینچ",
+        "category_slug": "tv",
+        "price": 24_900_000,
+        "compare": 27_500_000,
+        "colors": [("مشکی", "#1a1a1a")],
+    },
+    {
+        "code": "SB-LS-001",
+        "slug": "philips-hair-dryer-2200w",
+        "title": "سشوار فیلیپس 2200 وات",
+        "category_slug": "personal-care",
+        "price": 1_850_000,
+        "compare": 2_100_000,
+        "colors": [("مشکی", "#1a1a1a"), ("صورتی", "#e8a0b8")],
+    },
+    {
+        "code": "SB-DL-001",
+        "slug": "tefal-electric-kettle",
+        "title": "کتری برقی تفال 1.7 لیتری",
+        "category_slug": "daily-essentials",
+        "price": 980_000,
+        "compare": 1_150_000,
+        "colors": [("استیل", "#a8a8a8"), ("مشکی", "#1a1a1a")],
+    },
+    {
+        "code": "SB-RV-001",
+        "slug": "xiaomi-robot-vacuum-s10",
+        "title": "جارو رباتیک شیائومی S10",
+        "category_slug": "robot-vacuum",
+        "price": 12_500_000,
+        "compare": 14_000_000,
+        "colors": [("سفید", "#f5f5f5")],
     },
 ]
 
-TSHIRT_CONFIG = {
-    "preview": "mockup",
-    "engine": "fabric-kuaitu",
-    "sides": TSHIRT_SIDES,
-    "colors": [
-        {"name": "مشکی", "hex": "#1a1a20"},
-        {"name": "سفید", "hex": "#f5f5f5", "views": {
-            "front": "/mockups/tshirt/front.jpg",
-            "back": "/mockups/tshirt/back.jpg",
-        }},
-        {"name": "سرمه‌ای", "hex": "#1e3a5f"},
-    ],
-    "sizes": ["S", "M", "L", "XL"],
-    "fonts": [
-        {"name": "Helvetica", "family": "Helvetica Neue, Helvetica, Arial, sans-serif"},
-        {"name": "Georgia", "family": "Georgia, serif"},
-    ],
-    "print_area": {"width": 280, "height": 350},
-    "mockup": {
-        "views": {
-            "front": "/mockups/tshirt/front.jpg",
-            "back": "/mockups/tshirt/back.jpg",
-        },
-        "layers": {
-            "base": "/mockups/tshirt/front.jpg",
-            "mask": "/mockups/tshirt/mask.svg",
-        },
-        "designArea": {
-            "tl": [430, 420],
-            "tr": [770, 410],
-            "br": [790, 780],
-            "bl": [410, 790],
-        },
-    },
-}
-
-MUG_SIDES = [
-    {
-        "id": "front",
-        "label_fa": "روی ماگ",
-        "sort_order": 0,
-        "print_area": {"x": 0.22, "y": 0.28, "width": 0.56, "height": 0.44},
-    },
+CATEGORIES = [
+    ("kitchen", "لوازم آشپزخانه", None, 10),
+    ("refrigerator", "یخچال و فریزر", "kitchen", 10),
+    ("dishwasher", "ماشین ظرفشویی", "kitchen", 20),
+    ("microwave", "مایکروویو", "kitchen", 30),
+    ("laundry", "لوازم شستشو", None, 20),
+    ("washing-machine", "ماشین لباسشویی", "laundry", 10),
+    ("cleaning", "نظافت و بهداشت", None, 30),
+    ("vacuum", "جاروبرقی", "cleaning", 10),
+    ("robot-vacuum", "جارو رباتیک", "cleaning", 20),
+    ("climate", "سرمایش و گرمایش", None, 40),
+    ("air-conditioner", "کولر گازی", "climate", 10),
+    ("entertainment", "صوتی و تصویری", None, 50),
+    ("tv", "تلویزیون", "entertainment", 10),
+    ("lifestyle", "سبک زندگی", None, 60),
+    ("personal-care", "لوازم شخصی", "lifestyle", 10),
+    ("daily", "لوازم روزمره", None, 70),
+    ("daily-essentials", "وسایل روزانه", "daily", 10),
 ]
-
-MUG_CONFIG = {
-    "preview": "fabric",
-    "engine": "fabric-kuaitu",
-    "sides": MUG_SIDES,
-    "capacity_oz": 11,
-    "capacity_ml": 325,
-    "dimensions_mm": {"height": 95, "top_diameter": 82, "bottom_diameter": 57},
-    "colors": [
-        {"name": "سفید", "hex": "#f5f5f5"},
-        {"name": "مشکی", "hex": "#1a1a20"},
-    ],
-    "sizes": [],
-    "print_area": {"width": 200, "height": 100},
-    "mockup": {
-        "layers": {
-            "base": "/mockups/mug/base.jpg",
-            "mask": "/mockups/mug/mask.svg",
-        },
-        "designArea": {
-            "tl": [420, 380],
-            "tr": [780, 360],
-            "br": [790, 720],
-            "bl": [430, 740],
-        },
-    },
-}
-
-
-def seed_customizer(db) -> None:
-    """قالب‌ها و محصولات پایهٔ سفارشی — idempotent."""
-    if db.scalar(select(ProductTemplate).limit(1)):
-        return
-
-    cat_tshirt = db.scalar(select(Category).where(Category.slug == "tshirt", Category.parent_id.is_(None)))
-    cat_mug = db.scalar(select(Category).where(Category.slug == "mug", Category.parent_id.is_(None)))
-    if cat_tshirt is None or cat_mug is None:
-        return
-
-    cat_custom = db.scalar(select(Category).where(Category.slug == "custom-designs"))
-    if cat_custom is None:
-        cat_custom = Category(
-            parent_id=None,
-            slug="custom-designs",
-            name_fa="طرح‌های سفارشی",
-            sort_order=5,
-        )
-        db.add(cat_custom)
-        db.flush()
-
-    design = db.scalar(select(Design).where(Design.code == "CUSTOM-BASE"))
-    if design is None:
-        design = Design(
-            code="CUSTOM-BASE",
-            title="سفارشی",
-            slug="custom-base",
-            thematic_category_id=cat_custom.id,
-            description="پایهٔ سفارش محصولات شخصی‌سازی‌شده",
-            status="published",
-            source_type="admin",
-        )
-        db.add(design)
-        db.flush()
-
-    products: dict[str, Product] = {}
-    for pcat, slug_suffix, title, price in [
-        (cat_tshirt, "custom-tshirt", "تیشرت سفارشی", 45900),
-        (cat_mug, "custom-mug", "ماگ سفارشی", 32900),
-    ]:
-        existing = db.scalar(select(Product).where(Product.slug == slug_suffix))
-        if existing:
-            products[pcat.slug] = existing
-            continue
-        p = Product(
-            design_id=design.id,
-            parent_category_id=pcat.id,
-            slug=slug_suffix,
-            title=title,
-            base_price=price,
-            status="published",
-            meta_title=f"{title} | CORALAY",
-            meta_description=f"سفارش {title} با طرح دلخواه",
-        )
-        db.add(p)
-        db.flush()
-        products[pcat.slug] = p
-        if pcat.slug == "mug":
-            db.add(
-                ProductVariation(
-                    product_id=p.id,
-                    sku="CUST-MUG-WHT",
-                    color_name="سفید",
-                    color_hex="#f5f5f5",
-                    size_label=None,
-                    price_delta=0,
-                    stock_quantity=100,
-                )
-            )
-            db.add(
-                ProductVariation(
-                    product_id=p.id,
-                    sku="CUST-MUG-BLK",
-                    color_name="مشکی",
-                    color_hex="#1a1a20",
-                    size_label=None,
-                    price_delta=2000,
-                    stock_quantity=100,
-                )
-            )
-        else:
-            for color_name, color_hex in [("مشکی", "#1a1a20"), ("سفید", "#f5f5f5")]:
-                for sz in ["S", "M", "L", "XL"]:
-                    db.add(
-                        ProductVariation(
-                            product_id=p.id,
-                            sku=f"CUST-T-{color_name[:1]}-{sz}",
-                            color_name=color_name,
-                            color_hex=color_hex,
-                            size_label=sz,
-                            price_delta=1500 if sz == "XL" else (1000 if color_name == "سفید" else 0),
-                            stock_quantity=100,
-                        )
-                    )
-
-    db.add(
-        ProductTemplate(
-            slug="tshirt",
-            name_fa="تیشرت",
-            description="تیشرت با طرح دلخواه شما",
-            category_id=cat_tshirt.id,
-            base_product_id=products["tshirt"].id,
-            base_price=45900,
-            config_json=TSHIRT_CONFIG,
-            sort_order=10,
-        )
-    )
-    db.add(
-        ProductTemplate(
-            slug="mug",
-            name_fa="ماگ",
-            description="ماگ سرامیکی 11oz (325ml) — ابعاد استاندارد چاپ",
-            category_id=cat_mug.id,
-            base_product_id=products["mug"].id,
-            base_price=32900,
-            config_json=MUG_CONFIG,
-            sort_order=20,
-        )
-    )
-    db.commit()
-    print("  Customizer templates seeded")
 
 
 def run() -> None:
@@ -242,7 +143,7 @@ def run() -> None:
     db = SessionLocal()
     try:
         if db.scalar(select(Category).limit(1)):
-            print("Database already seeded — برای دادهٔ جدید coralay_local.db را حذف کنید.")
+            print("Database already seeded — برای دادهٔ جدید selectbox_local.db را حذف کنید.")
             return
 
         defaults = dict(DEFAULTS)
@@ -263,139 +164,102 @@ def run() -> None:
             elif key == "site_url":
                 shop_settings.set_setting(db, key, value)
 
-        cat_tshirt = Category(parent_id=None, slug="tshirt", name_fa="تیشرت", sort_order=10)
-        cat_hoodie = Category(parent_id=None, slug="hoodie", name_fa="هودی", sort_order=15)
-        cat_mug = Category(parent_id=None, slug="mug", name_fa="ماگ", sort_order=12)
-        db.add_all([cat_tshirt, cat_hoodie, cat_mug])
-        db.flush()
-
-        cat_cinema = Category(
-            parent_id=None,
-            slug="cinema",
-            name_fa="سینما",
-            meta_title="تیشرت و هودی سینمایی | CORALAY",
-            sort_order=20,
-        )
-        db.add(cat_cinema)
-        db.flush()
-        cat_film = Category(
-            parent_id=cat_cinema.id,
-            slug="film-series",
-            name_fa="فیلم و سریال",
-            sort_order=10,
-        )
-        cat_gaming_root = Category(parent_id=None, slug="gaming", name_fa="گیمینگ", sort_order=30)
-        db.add_all([cat_film, cat_gaming_root])
-        db.flush()
-        cat_bb = Category(
-            parent_id=cat_film.id,
-            slug="breaking-bad",
-            name_fa="بریکینگ بد",
-            meta_description="تیشرت و هودی طرح بریکینگ بد",
-            sort_order=10,
-        )
-        cat_pixel = Category(parent_id=cat_gaming_root.id, slug="pixel", name_fa="پیکسل", sort_order=10)
-        db.add_all([cat_bb, cat_pixel])
-        db.flush()
+        slug_to_cat: dict[str, Category] = {}
+        for slug, name_fa, parent_slug, sort_order in CATEGORIES:
+            parent_id = slug_to_cat[parent_slug].id if parent_slug else None
+            cat = Category(
+                parent_id=parent_id,
+                slug=slug,
+                name_fa=name_fa,
+                sort_order=sort_order,
+                meta_title=f"{name_fa} | SelectBox",
+            )
+            db.add(cat)
+            db.flush()
+            slug_to_cat[slug] = cat
 
         admin = db.scalar(select(User).where(User.phone == "09120000000"))
         if admin is None:
             db.add(
                 User(
                     phone="09120000000",
-                    full_name="مدیر CORALAY",
+                    full_name="مدیر SelectBox",
                     role=UserRole.admin,
                     password_hash=hash_password("admin123"),
                 )
             )
         else:
-            admin.full_name = admin.full_name or "مدیر CORALAY"
+            admin.full_name = admin.full_name or "مدیر SelectBox"
             admin.role = UserRole.admin
             admin.password_hash = hash_password("admin123")
             admin.is_active = True
 
-        if db.scalar(select(Coupon).where(Coupon.code == "AVAN10").limit(1)) is None:
+        if db.scalar(select(Coupon).where(Coupon.code == "SELECTBOX10").limit(1)) is None:
             db.add(
                 Coupon(
-                    code="AVAN10",
+                    code="SELECTBOX10",
                     discount_type="percent",
                     discount_value=10,
-                    min_cart_total=20000,
+                    min_cart_total=500_000,
                     is_active=True,
                 )
             )
 
-        designs_cfg = [
-            ("BB-001", "بریکینگ بد — لوگو", "breaking-bad-logo", cat_bb.id),
-            ("GM-001", "Pixel Quest", "pixel-quest", cat_pixel.id),
-        ]
+        id_to_cat = {c.id: c for c in slug_to_cat.values()}
 
-        for code, title, slug, thematic_id in designs_cfg:
+        for item in PRODUCTS:
+            cat = slug_to_cat[item["category_slug"]]
+            root = cat
+            while root.parent_id:
+                root = id_to_cat[root.parent_id]
+
+            design_slug = item["slug"]
             d = Design(
-                code=code,
-                title=title,
-                slug=slug,
-                thematic_category_id=thematic_id,
-                description=title,
+                code=item["code"],
+                title=item["title"],
+                slug=design_slug,
+                thematic_category_id=cat.id,
+                description=item["title"],
                 status="published",
+                source_type="admin",
             )
             db.add(d)
             db.flush()
-            for pcat, pslug_suffix, ptitle_prefix, price in [
-                (cat_tshirt, "tshirt", "تیشرت", 38900),
-                (cat_hoodie, "hoodie", "هودی", 62900),
-            ]:
-                p = Product(
-                    design_id=d.id,
-                    parent_category_id=pcat.id,
-                    slug=f"{slug}-{pslug_suffix}",
-                    title=f"{ptitle_prefix} {title}",
-                    base_price=price,
-                    compare_at_price=price + 6000,
-                    status="published",
-                    meta_title=f"{ptitle_prefix} {title} | CORALAY",
-                    meta_description=f"خرید {ptitle_prefix} طرح {title}",
-                )
-                db.add(p)
-                db.flush()
-                prefix = code.split("-")[0]
-                for sz in ["S", "M", "L", "XL"]:
-                    db.add(
-                        ProductVariation(
-                            product_id=p.id,
-                            sku=f"{prefix}-{pcat.slug[:1].upper()}-BLK-{sz}",
-                            color_name="مشکی",
-                            color_hex="#1a1a20",
-                            size_label=sz,
-                            price_delta=1500 if sz == "XL" else 0,
-                            stock_quantity=20,
-                        )
+
+            p = Product(
+                design_id=d.id,
+                parent_category_id=root.id,
+                slug=item["slug"],
+                title=item["title"],
+                base_price=item["price"],
+                compare_at_price=item["compare"],
+                status="published",
+                meta_title=f"{item['title']} | SelectBox",
+                meta_description=f"خرید {item['title']} با گارانتی اصلی و ارسال سریع",
+            )
+            db.add(p)
+            db.flush()
+
+            prefix = item["code"].replace("-", "")
+            for color_name, color_hex in item["colors"]:
+                db.add(
+                    ProductVariation(
+                        product_id=p.id,
+                        sku=f"{prefix}-{color_name[:2].upper()}",
+                        color_name=color_name,
+                        color_hex=color_hex,
+                        size_label=None,
+                        price_delta=0,
+                        stock_quantity=15,
                     )
+                )
 
         db.commit()
-        seed_customizer(db)
-        print("Seed OK (قیمت‌ها تومان — تصویر طرح از پنل آپلود شود)")
+        print("Seed OK — فروشگاه لوازم خانگی SelectBox")
         print("  ادمین: 09120000000 / admin123")
-        print("  مرور: /browse/cinema/film-series/breaking-bad")
-        print("  سفارشی‌سازی: /customize")
-    finally:
-        db.close()
-
-
-def run_customizer_only() -> None:
-    """فقط دادهٔ سفارشی‌سازی — برای دیتابیس موجود."""
-    from app.main import _ensure_customizer_columns
-
-    Base.metadata.create_all(bind=engine)
-    _ensure_customizer_columns()
-    db = SessionLocal()
-    try:
-        if db.scalar(select(Category).where(Category.slug == "mug").limit(1)) is None:
-            cat_mug = Category(parent_id=None, slug="mug", name_fa="ماگ", sort_order=12)
-            db.add(cat_mug)
-            db.commit()
-        seed_customizer(db)
-        print("Customizer seed OK")
+        print("  کوپن: SELECTBOX10")
+        print("  مرور: /browse/kitchen/refrigerator")
+        print("  محصول نمونه: /product/samsung-rt28-refrigerator")
     finally:
         db.close()
 
@@ -403,21 +267,14 @@ def run_customizer_only() -> None:
 if __name__ == "__main__":
     import sys as _sys
 
-    if len(_sys.argv) > 1 and _sys.argv[1] == "customizer":
-        run_customizer_only()
-    elif len(_sys.argv) > 1 and _sys.argv[1] == "reset-admin":
-        from sqlalchemy import select
-
-        from app.core.security import hash_password
-        from app.models import User, UserRole
-
+    if len(_sys.argv) > 1 and _sys.argv[1] == "reset-admin":
         db = SessionLocal()
         try:
             user = db.scalar(select(User).where(User.phone == "09120000000"))
             if user is None:
                 user = User(
                     phone="09120000000",
-                    full_name="ادمین",
+                    full_name="مدیر SelectBox",
                     role=UserRole.admin,
                     password_hash=hash_password("admin123"),
                 )

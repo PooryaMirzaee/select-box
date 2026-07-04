@@ -1,5 +1,5 @@
 {
-  "name": "coralay",
+  "name": "selectbox",
   "private": true,
   "scripts": {
     "dev": "npm run dev --prefix frontend",
@@ -8,7 +8,7 @@
     "build": "npm run build --prefix frontend",
     "deploy": "bash scripts/deploy.sh",
     "deploy:pull": "bash scripts/deploy.sh --pull",
-    "configure:coralay": "bash scripts/configure-coralay.sh",
+    "configure:selectbox": "bash scripts/configure-selectbox.sh",
     "check:deploy": "bash scripts/check-deploy.sh",
     "lint": "npm run lint --prefix frontend",
     "publisher:install": "cd publisher && python3 -m venv .venv && .venv/bin/pip install -e . && cd web && npm install && npm run build",

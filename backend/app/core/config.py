@@ -12,23 +12,23 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "CORALAY Shop API"
+    app_name: str = "SelectBox Shop API"
     debug: bool = False
 
     # اتصال SQLAlchemy — پیش‌فرض لوکال با Postgres docker-compose
-    database_url: str = "postgresql+psycopg2://coralay:coralay_dev@localhost:5432/coralay"
+    database_url: str = "postgresql+psycopg2://selectbox:selectbox_dev@localhost:5432/selectbox"
 
     # MinIO — endpoint بدون طرح؛ secure=false برای http لوکال
     minio_endpoint: str = "localhost:9000"
-    minio_access_key: str = "coralayminio"
-    minio_secret_key: str = "coralayminio_dev_change_me"
-    minio_bucket: str = "coralay-assets"
+    minio_access_key: str = "selectboxminio"
+    minio_secret_key: str = "selectboxminio_dev_change_me"
+    minio_bucket: str = "selectbox-assets"
     minio_secure: bool = False
 
     # لیست مبداهای مجاز برای CORS؛ برای چند دامنه با ویرگول جدا کنید
     cors_origins: str = "http://localhost:3000"
 
-    jwt_secret: str = "coralay-dev-secret-change-in-production"
+    jwt_secret: str = "selectbox-dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
 
@@ -60,9 +60,9 @@ class Settings(BaseSettings):
 
 
 WEAK_SECRETS = frozenset({
-    "coralay-dev-secret-change-in-production",
+    "selectbox-dev-secret-change-in-production",
     "change-me-in-production",
-    "coralayminio_dev_change_me",
+    "selectboxminio_dev_change_me",
 })
 
 

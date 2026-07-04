@@ -1,13 +1,12 @@
 {
-  "name": "coralay-frontend",
+  "name": "selectbox-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "postinstall": "bash scripts/fetch-mockup-layers.sh 2>/dev/null || true; bash scripts/fetch-basic-tshirt.sh 2>/dev/null || true"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

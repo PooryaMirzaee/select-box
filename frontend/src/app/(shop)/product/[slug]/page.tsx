@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddToCart } from "@/components/shop/AddToCart";
-import { ProductCreator } from "@/components/shop/ProductCreator";
 import { Breadcrumbs, type Crumb } from "@/components/shop/Breadcrumbs";
 import { ProductGallery } from "@/components/shop/ProductGallery";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
@@ -63,18 +62,16 @@ export default async function ProductPage({ params }: Props) {
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           <ProductGallery images={p.image_urls} title={p.title} />
           <div className="flex flex-col gap-4">
-            <p className="text-xs text-muted">{p.design_title}</p>
             <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{p.title}</h1>
             {p.description ? (
               <p className="text-sm leading-relaxed text-muted">{p.description}</p>
             ) : p.meta_description ? (
               <p className="text-sm leading-relaxed text-muted">{p.meta_description}</p>
             ) : null}
-            {p.creator ? <ProductCreator creator={p.creator} /> : null}
             <AddToCart product={p} />
             {p.related.length > 0 ? (
               <section className="mt-6 border-t border-theme pt-6">
-                <h2 className="mb-3 text-sm font-medium text-muted">سایر محصولات این طرح</h2>
+                <h2 className="mb-3 text-sm font-medium text-muted">محصولات مرتبط</h2>
                 <div className="grid gap-2">
                   {p.related.map((r) => (
                     <Link

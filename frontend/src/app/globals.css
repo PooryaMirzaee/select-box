@@ -2,46 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "CORALAY";
-  src: url("/fonts/coralay.woff2") format("woff2");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* پالت گرم — light / dark یکپارچه در فروشگاه و ادمین */
+/* پالت آبی — light / dark یکپارچه در فروشگاه و ادمین */
 :root {
   color-scheme: light;
-  --font-sans: "CORALAY", Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-sans: Tahoma, "Segoe UI", system-ui, sans-serif;
 
   --bg: #fff;
-  --bg-elevated: #faf6f0;
-  --fg: #1c1916;
-  --fg-muted: #6b645a;
-  --border: #ddd2c4;
-  --accent: #c04e24;
+  --bg-elevated: #f0f4f8;
+  --fg: #1a1f2e;
+  --fg-muted: #5a6478;
+  --border: #d4dce8;
+  --accent: #1d6fd8;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-fg: #fffaf5;
-  --card: #faf6f0;
-  --header-bg: rgba(242, 236, 228, 0.88);
-  --sidebar-bg: #e8e0d4;
+  --accent-fg: #ffffff;
+  --card: #f0f4f8;
+  --header-bg: rgba(240, 244, 248, 0.92);
+  --sidebar-bg: #e4eaf2;
   --sidebar-fg: #4a453e;
   --sidebar-hover: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
   --sidebar-active: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
   --sidebar-active-fg: var(--accent);
   --shadow-soft: 0 8px 32px color-mix(in srgb, var(--fg) 8%, transparent);
-  --input-bg: #fffdf9;
+  --input-bg: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #121118;
-  --bg-elevated: #1a1922;
-  --fg: #edeae4;
-  --fg-muted: #9c968c;
-  --border: #2f2d38;
-  --accent: #e8946a;
+  --bg: #0f1419;
+  --bg-elevated: #1a2332;
+  --fg: #e8ecf2;
+  --fg-muted: #8b95a8;
+  --border: #2a3548;
+  --accent: #4d9aff;
   --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
   --accent-fg: #121118;
   --card: #1a1922;

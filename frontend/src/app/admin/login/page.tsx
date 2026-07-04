@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CoralayLogo } from "@/components/brand/CoralayLogo";
+import { SelectBoxLogo } from "@/components/brand/SelectBoxLogo";
 import { adminLogin } from "@/lib/api";
 import { setAdminToken } from "@/lib/cart-session";
 
@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
       </div>
       <form onSubmit={submit} className="card-theme relative w-full max-w-sm space-y-5 p-8">
         <div className="flex flex-col items-center text-center">
-          <CoralayLogo href="/" size="lg" />
+          <SelectBoxLogo href="/" size="lg" />
           <p className="mt-4 text-xs tracking-[0.2em] text-muted">ADMIN</p>
           <h1 className="mt-2 text-2xl font-semibold">ورود پنل مدیریت</h1>
         </div>

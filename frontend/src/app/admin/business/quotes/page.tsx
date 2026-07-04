@@ -33,7 +33,7 @@ export default function AdminBusinessQuotesPage() {
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   async function load() {
     setLoading(true);

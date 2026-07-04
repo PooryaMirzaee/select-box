@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 PORT="${HTTP_PORT:-8090}"
-DOMAIN="coralay.ir"
+DOMAIN="selectbox.ir"
 ADMIN_PHONE="${ADMIN_PHONE:-09120000000}"
 ADMIN_PASS="${ADMIN_PASS:-admin123}"
 
@@ -25,11 +25,11 @@ HOST_HDR=(-H "Host: ${DOMAIN}")
 BASE="http://127.0.0.1:${PORT}"
 
 echo "=== ۱) لاگین ادمین ==="
-LOGIN_CODE=$(curl -s -o /tmp/coralay-admin-login.json -w "%{http_code}" "${HOST_HDR[@]}" \
+LOGIN_CODE=$(curl -s -o /tmp/selectbox-admin-login.json -w "%{http_code}" "${HOST_HDR[@]}" \
   -X POST "${BASE}/api/v1/auth/admin/login" \
   -H "Content-Type: application/json" \
   -d "{\"phone\":\"${ADMIN_PHONE}\",\"password\":\"${ADMIN_PASS}\"}")
-LOGIN_JSON=$(cat /tmp/coralay-admin-login.json 2>/dev/null || true)
+LOGIN_JSON=$(cat /tmp/selectbox-admin-login.json 2>/dev/null || true)
 
 if [[ "$LOGIN_CODE" != "200" ]]; then
   echo "❌ لاگین ادمین ناموفق — HTTP ${LOGIN_CODE}"

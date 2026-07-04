@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { ErrorIllustration } from "@/components/errors/ErrorIllustration";
-import { CoralayLogo } from "@/components/brand/CoralayLogo";
+import { SelectBoxLogo } from "@/components/brand/SelectBoxLogo";
 import { Button } from "@/components/ui/Button";
 import {
   ERROR_CONTENT,
@@ -44,7 +44,7 @@ export function ErrorPage({
     >
       {standalone ? (
         <header className="error-page-brand">
-          <CoralayLogo href="/" size="lg" />
+          <SelectBoxLogo href="/" size="lg" />
         </header>
       ) : null}
 

@@ -17,7 +17,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = () => {
     setLoading(true);

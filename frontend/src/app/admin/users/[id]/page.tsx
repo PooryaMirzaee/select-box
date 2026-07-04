@@ -21,7 +21,7 @@ export default function AdminUserDetailPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
     if (!Number.isFinite(id)) return;

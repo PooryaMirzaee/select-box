@@ -18,7 +18,7 @@ type Props = {
 
 export function ProductSizeGuideEditor({ productId, value, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   function patch(partial: Partial<SizeGuideData>) {
     onChange({ ...value, ...partial });

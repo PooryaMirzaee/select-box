@@ -58,7 +58,7 @@ export function CustomizerStudio({ template, categories = [] }: Props) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setUserToken(localStorage.getItem("coralay_token") ?? localStorage.getItem("coralay_admin_token"));
+    setUserToken(localStorage.getItem("selectbox_token") ?? localStorage.getItem("selectbox_admin_token"));
   }, []);
 
   const customization = useMemo((): CustomizationPayload | null => {
@@ -121,7 +121,7 @@ export function CustomizerStudio({ template, categories = [] }: Props) {
       return;
     }
     let token = userToken;
-    const isAdmin = typeof window !== "undefined" && !!localStorage.getItem("coralay_admin_token") && !localStorage.getItem("coralay_token");
+    const isAdmin = typeof window !== "undefined" && !!localStorage.getItem("selectbox_admin_token") && !localStorage.getItem("selectbox_token");
     if (!token) {
       setMessage("برای ثبت در ویترین، از حساب کاربری وارد شوید (/account)");
       setPublishOpen(true);

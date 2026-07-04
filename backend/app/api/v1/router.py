@@ -8,7 +8,6 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     admin,
-    admin_ai,
     admin_blog,
     admin_business,
     admin_ext,
@@ -16,7 +15,6 @@ from app.api.v1.endpoints import (
     admin_header,
     admin_homepage,
     admin_users,
-    ai,
     analytics,
     auth,
     blog,
@@ -26,7 +24,6 @@ from app.api.v1.endpoints import (
     chat,
     chat_ws,
     checkout,
-    customizer,
     media,
     payments,
 )
@@ -37,8 +34,6 @@ api_router.include_router(catalog.router)
 api_router.include_router(blog.router)
 api_router.include_router(business.router)
 api_router.include_router(cart.router)
-api_router.include_router(customizer.router)
-api_router.include_router(ai.router)
 api_router.include_router(auth.router)
 api_router.include_router(checkout.router)
 api_router.include_router(payments.router)
@@ -50,7 +45,6 @@ api_router.include_router(admin_homepage.router)
 api_router.include_router(admin_banners.router)
 api_router.include_router(admin_business.router)
 api_router.include_router(admin_blog.router)
-api_router.include_router(admin_ai.router)
 api_router.include_router(media.router)
 api_router.include_router(chat.router)
 api_router.include_router(chat.admin_router)

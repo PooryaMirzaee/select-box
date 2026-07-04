@@ -5,7 +5,7 @@ import { Menu, ShoppingBag, User } from "@/components/icons";
 import { useCallback, useEffect, useState } from "react";
 
 import { LoginModal } from "@/components/auth/LoginModal";
-import { CoralayLogo } from "@/components/brand/CoralayLogo";
+import { SelectBoxLogo } from "@/components/brand/SelectBoxLogo";
 import {
   CategoryMegaMenuDesktop,
   CategoryMegaMenuMobile,
@@ -91,8 +91,8 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
     <>
       <header className="sticky top-0 z-40 border-b border-theme bg-header backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <CoralayLogo size="sm" className="sm:hidden" priority />
-          <CoralayLogo
+          <SelectBoxLogo size="sm" className="sm:hidden" priority />
+          <SelectBoxLogo
             size="md"
             className="hidden sm:inline-flex"
             priority

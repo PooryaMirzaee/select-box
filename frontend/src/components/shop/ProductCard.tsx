@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import type { ProductSummary } from "@/lib/api";
-import { CoralayLogo } from "@/components/brand/CoralayLogo";
+import { SelectBoxLogo } from "@/components/brand/SelectBoxLogo";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { mediaUrl } from "@/lib/media";
 import { formatToman } from "@/lib/utils";
@@ -33,7 +33,7 @@ export function ProductCard({ product, index = 0 }: { product: ProductSummary; i
             />
           ) : (
             <div className="flex h-full items-center justify-center opacity-50">
-              <CoralayLogo href={null} size="sm" />
+              <SelectBoxLogo href={null} size="sm" />
             </div>
           )}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[color-mix(in_srgb,var(--bg)_75%,transparent)] to-transparent opacity-0 transition group-hover:opacity-100" />

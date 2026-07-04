@@ -146,7 +146,7 @@ export default function AdminAnalyticsPage() {
   const [utm, setUtm] = useState<AnalyticsRankedItem[]>([]);
   const [realtime, setRealtime] = useState<AnalyticsRealtime | null>(null);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -9,8 +9,6 @@ import {
   ImagePlus,
   Menu,
   Package,
-  Palette,
-  PenTool,
   MessageCircle,
   BarChart3,
   Newspaper,
@@ -20,12 +18,10 @@ import {
   LogOut,
   ExternalLink,
   User,
-  Sparkles,
-  Wand,
 } from "@/components/icons";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CoralayLogo } from "@/components/brand/CoralayLogo";
+import { SelectBoxLogo } from "@/components/brand/SelectBoxLogo";
 import { setAdminToken, setAuthToken } from "@/lib/cart-session";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
@@ -35,17 +31,13 @@ const links = [
   { href: "/admin/categories", label: "دسته‌ها", icon: FolderTree },
   { href: "/admin/header", label: "هدر", icon: Menu },
   { href: "/admin/homepage", label: "صفحه اصلی", icon: ImagePlus },
-  { href: "/admin/designs", label: "طرح خام", icon: Palette },
-  { href: "/admin/customizer", label: "سفارشی‌سازی", icon: PenTool },
   { href: "/admin/products", label: "محصولات", icon: Package },
-  { href: "/admin/business", label: "سفارش سازمانی", icon: ShoppingCart },
+  { href: "/admin/business", label: "سفارش عمده", icon: ShoppingCart },
   { href: "/admin/coupons", label: "کوپن‌ها", icon: Tag },
   { href: "/admin/orders", label: "سفارش‌ها", icon: ShoppingCart },
   { href: "/admin/chat", label: "چت پشتیبانی", icon: MessageCircle },
   { href: "/admin/analytics", label: "آمار و آنالیتیکس", icon: BarChart3 },
   { href: "/admin/users", label: "کاربران", icon: User },
-  { href: "/admin/creators", label: "خالقین", icon: Sparkles },
-  { href: "/admin/ai", label: "طراحی هوشمند", icon: Wand },
   { href: "/admin/blog", label: "وبلاگ", icon: Newspaper },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings },
 ];
@@ -74,8 +66,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         className="flex w-56 shrink-0 flex-col border-l border-theme p-6"
         style={{ background: "var(--sidebar-bg)" }}
       >
-        <CoralayLogo href="/" size="sm" />
-        <p className="mt-1 text-xs text-muted">ادمین</p>
+        <SelectBoxLogo href="/" size="sm" />
+        <p className="mt-1 text-xs text-muted">ادمین SelectBox</p>
         <nav className="mt-10 flex-1 space-y-1">
           {links.map(({ href, label, icon: Icon }) => (
             <Link

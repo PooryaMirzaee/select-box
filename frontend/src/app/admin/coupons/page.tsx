@@ -30,7 +30,7 @@ export default function AdminCouponsPage() {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState<number | null>(null);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = () =>
     adminFetch<Coupon[]>("/api/v1/admin/coupons", token()).then(setItems).catch(() => {});

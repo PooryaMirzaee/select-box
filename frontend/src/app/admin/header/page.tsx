@@ -20,7 +20,7 @@ export default function AdminHeaderPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = () =>
     adminFetch<HeaderNavLink[]>("/api/v1/admin/header-nav", token())

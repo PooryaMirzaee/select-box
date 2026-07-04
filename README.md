@@ -1,28 +1,18 @@
-# =============================================================================
-# آون — فروشگاه لوکس (اسکلت Local-First)
-# -----------------------------------------------------------------------------
-# راهنمای سریع اجرا؛ جزئیات معماری در پوشه docs/
-# =============================================================================
+# SelectBox — فروشگاه لوازم خانگی و سبک زندگی
 
-این مخزن شامل سه بخش است.
+پلتفرم فروشگاه آنلاین فارسی (RTL) برای **selectbox.ir** — لوازم خانگی، سبک زندگی و وسایل روزمره.
 
-کامنت‌ها در سراسر کد (بک‌اند، فرانت، Docker، …) به **فارسی** افزوده شده‌اند؛ مستندات تکمیلی در پوشه **`docs/`** است.
+## بخش‌ها
 
-- **backend**: FastAPI، مدل‌های SQLAlchemy، REST تحت `/api/v1`
-- **frontend**: Next.js 15 (App Router)، Tailwind، سئو پویا
+- **backend**: FastAPI، SQLAlchemy، REST تحت `/api/v1`
+- **frontend**: Next.js 15 (App Router)، Tailwind
 - **docker-compose.yml**: PostgreSQL 16 و MinIO
-
-## مستندات جداگانه
-
-فهرست کامل سندها: **[`docs/README.md`](docs/README.md)**
-
-راهنمای دیپلوی production: **[`docs/DEPLOY.md`](docs/DEPLOY.md)**
 
 ## پیش‌نیازها
 
 - Docker (برای Postgres و MinIO)
-- Python 3.12+ با `pip` و در صورت تمایل `venv`
-- Node.js 20+ و npm (برای فرانت‌اند)
+- Python 3.12+
+- Node.js 20+ و npm
 
 ## ۱) زیرساخت
 
@@ -32,19 +22,17 @@ docker compose up -d
 
 ## ۲) بک‌اند
 
-اگر **Docker / Postgres** در دسترس نیست، در `backend/.env` مقدار `DATABASE_URL=sqlite:///./avan_local.db` را بگذارید (فایل `.env` نمونه در مخزن برای همین تنظیم شده است). برای Postgres رسمی همان رشتهٔ اتصال `postgresql+psycopg2://...` را پس از `docker compose up` استفاده کنید.
-
 ```bash
 cd backend
 python3 -m venv .venv
-source .venv/bin/activate   # ویندوز: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 export PYTHONPATH=.
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-در ترمینال دیگر (با همان `PYTHONPATH` و venv):
+Seed دادهٔ نمونه:
 
 ```bash
 cd backend && source .venv/bin/activate && PYTHONPATH=. python scripts/seed.py
@@ -59,27 +47,24 @@ cp .env.example .env.local
 npm run dev
 ```
 
-- ویترین: [http://localhost:3000](http://localhost:3000)
-- API سلامت: [http://localhost:8000/health](http://localhost:8000/health)
-- نمونه محصول (پس از seed): `/product/batman-tshirt`
-
-## Nginx
-
-نمونهٔ پروکسی معکوس در `infra/nginx/default.conf`؛ جزئیات در [`docs/setup-and-deploy.md`](docs/setup-and-deploy.md).
+- فروشگاه: http://localhost:3000
+- API: http://localhost:8000/health
+- محصول نمونه: `/product/samsung-rt28-refrigerator`
 
 ## پنل ادمین
 
 - آدرس: `http://localhost:3000/admin/login`
-- پس از seed: موبایل `09120000000` — رمز `admin123`
-- آپلود موکاپ در بخش «طرح‌ها»
+- پس از seed: `09120000000` / `admin123`
 
 ## مشتری
 
-- ورود OTP (توسعه): کد ثابت `123456` در `DEV_OTP_CODE`
-- کوپن نمونه: `AVAN10` (۱۰٪ تخفیف)
+- OTP توسعه: کد `123456`
+- کوپن نمونه: `SELECTBOX10` (۱۰٪ تخفیف)
 
-## نکات تولید
+## دیپلوی
 
-- `JWT_SECRET` و رمز ادمین را عوض کنید
-- برای Postgres/MinIO از `docker compose` استفاده کنید
-- درگاه پرداخت فعلاً شبیه‌ساز است؛ اتصال زرین‌پال در `payments` باقی مانده
+```bash
+bash scripts/configure-selectbox.sh
+```
+
+راهنمای کامل: `DEPLOY.md`

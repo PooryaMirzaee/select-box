@@ -34,7 +34,7 @@ export default function AdminUsersPage() {
   const [staffName, setStaffName] = useState("");
   const [staffMsg, setStaffMsg] = useState<string | null>(null);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
     setLoading(true);

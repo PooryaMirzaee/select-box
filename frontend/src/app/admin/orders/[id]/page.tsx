@@ -68,7 +68,7 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
     if (!Number.isFinite(orderId)) return;

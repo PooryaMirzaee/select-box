@@ -16,11 +16,7 @@ export function browseCanonical(siteUrl: string, pathStr: string): string {
   return pathStr ? `${siteUrl}/browse/${pathStr}` : `${siteUrl}/browse`;
 }
 
-const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  tshirt: "تیشرت",
-  hoodie: "هودی",
-  mug: "ماگ",
-};
+const PRODUCT_TYPE_LABELS: Record<string, string> = {};
 
 export function productTypeLabel(slug: string | undefined): string | null {
   if (!slug) return null;

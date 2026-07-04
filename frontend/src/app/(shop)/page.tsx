@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description =
     settings?.default_meta_description ??
     settings?.shop_description ??
-    "تیشرت و هودی طرح‌محور با چاپ باکیفیت.";
+    "خرید آنلاین لوازم خانگی و سبک زندگی با گارانتی اصلی.";
 
   return buildPageMetadata({ title, description, canonical: siteUrl, shopName });
 }
@@ -44,17 +44,17 @@ function DefaultPromoSections() {
           />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">سفارش سازمانی</p>
-              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">چاپ عمده برای تیم و رویداد</h2>
+              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">سفارش عمده</p>
+              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">تأمین لوازم خانگی برای پروژه‌ها</h2>
               <p className="mt-2 max-w-md text-sm text-muted">
-                تیشرت، هودی و ماگ با قیمت پلکانی، Design Lab سازمانی و پیش‌فاکتور رسمی — از ۱۰ عدد.
+                برای ساختمان، هتل و سازمان‌ها — قیمت پلکانی، گارانتی اصلی و پیش‌فاکتور رسمی.
               </p>
             </div>
             <Link
               href="/business"
               className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full border border-theme px-8 text-sm font-medium transition hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--border))] hover:bg-[var(--bg-elevated)]"
             >
-              مشاهده سفارش سازمانی
+              سفارش عمده
             </Link>
           </div>
         </div>
@@ -68,17 +68,17 @@ function DefaultPromoSections() {
           />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">Design Lab</p>
-              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">اثر خودت را بساز</h2>
+              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">گارانتی اصلی</p>
+              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">خرید مطمئن از SelectBox</h2>
               <p className="mt-2 max-w-md text-sm text-muted">
-                در Design Lab تیشرت و هودی بساز، سفارش بده — یا در ویترین ثبت کن و استودیوی خودت را داشته باش.
+                تمام محصولات با گارانتی معتبر، ارسال سریع و پشتیبانی تخصصی — از یخچال تا لوازم روزمره.
               </p>
             </div>
             <Link
-              href="/customize"
+              href="/catalog"
               className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-sm font-medium text-[var(--accent-fg)] transition hover:opacity-90"
             >
-              ورود به Design Lab
+              مشاهده کاتالوگ
             </Link>
           </div>
         </div>
@@ -115,7 +115,7 @@ export default async function HomePage() {
   const description =
     settings?.default_meta_description ??
     settings?.shop_description ??
-    "تیشرت و هودی طرح‌محور با چاپ باکیفیت.";
+    "خرید آنلاین لوازم خانگی و سبک زندگی با گارانتی اصلی.";
 
   const sectionBlocks: Record<string, ReactNode> = {
     carousel: isSectionEnabled(config, "carousel") ? <HomeBannerCarousel banners={heroBanners} /> : null,

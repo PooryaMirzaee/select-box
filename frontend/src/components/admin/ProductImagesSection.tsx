@@ -26,7 +26,7 @@ export function ProductImagesSection({ productId, onCountChange }: Props) {
   const [files, setFiles] = useState<FileList | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
     adminFetch<ProductImageAdmin[]>(`/api/v1/admin/products/${productId}/images`, token())

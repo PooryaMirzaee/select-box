@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
     fetchShopSettings().catch(() => null),
   ]);
   const siteUrl = getSiteUrl(settings);
-  const title = hub?.hub.meta_title ?? `سفارش سازمانی — ${BRAND_NAME}`;
+  const title = hub?.hub.meta_title ?? `سفارش عمده — ${BRAND_NAME}`;
   const description =
-    hub?.hub.meta_description ?? "سفارش عمده تیشرت، هودی و ماگ برای سازمان‌ها و رویدادها.";
+    hub?.hub.meta_description ?? "تأمین لوازم خانگی برای پروژه‌ها، سازمان‌ها و ساختمان‌ها.";
 
   const shopName = settings?.shop_name ?? BRAND_NAME;
 

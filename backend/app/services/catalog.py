@@ -37,8 +37,8 @@ def normalize_slug_param(slug: str) -> str:
     return slug
 
 
-# دسته‌های نوع محصول فیزیکی (جدا از درخت موضوعی)
-PRODUCT_TYPE_SLUGS = frozenset({"tshirt", "hoodie", "mug"})
+# دسته‌های نوع محصول فیزیکی — در فروشگاه لوازم خانگی استفاده نمی‌شود
+PRODUCT_TYPE_SLUGS = frozenset()
 
 
 def all_categories_ordered(db: Session) -> list[Category]:

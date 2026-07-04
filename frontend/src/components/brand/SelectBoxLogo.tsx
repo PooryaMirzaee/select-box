@@ -22,7 +22,7 @@ type Props = {
   priority?: boolean;
 };
 
-export function CoralayLogo({
+export function SelectBoxLogo({
   href = "/",
   size = "md",
   className,
@@ -42,11 +42,7 @@ export function CoralayLogo({
       width={displayWidth}
       height={displayHeight}
       priority={priority}
-      className={cn(
-        "h-auto max-w-full object-contain",
-        "dark:invert",
-        imageClassName,
-      )}
+      className={cn("h-auto max-w-full object-contain", imageClassName)}
       style={{ height, width: "auto", maxHeight: height, ...imageStyle }}
     />
   );

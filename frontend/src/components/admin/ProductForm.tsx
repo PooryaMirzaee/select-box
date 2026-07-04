@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 type Props = { productId?: number };
 
-const PRODUCT_TYPE_SLUGS = new Set(["tshirt", "hoodie", "mug"]);
+const PRODUCT_TYPE_SLUGS = new Set<string>();
 
 export function ProductForm({ productId }: Props) {
   const router = useRouter();
@@ -80,7 +80,7 @@ export function ProductForm({ productId }: Props) {
   const [productTemplate, setProductTemplate] = useState<ProductTemplate | null>(null);
   const [sizeGuide, setSizeGuide] = useState<SizeGuideData>({ ...EMPTY_SIZE_GUIDE });
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   useEffect(() => {
     Promise.all([

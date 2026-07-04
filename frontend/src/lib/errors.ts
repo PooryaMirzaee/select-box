@@ -198,8 +198,8 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
     case "design_not_found":
     case "studio_not_found":
       return [
-        { label: "استودیوها", href: "/studios", primary: true },
-        { label: "کاتالوگ", href: "/catalog" },
+        { label: "کاتالوگ", href: "/catalog", primary: true },
+        { label: "صفحهٔ اصلی", href: "/" },
       ];
     case "order_not_found":
       return [
@@ -218,8 +218,8 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
       ];
     case "customizer_unavailable":
       return [
-        { label: "سفارشی‌سازی", href: "/customize", primary: true },
-        { label: "کاتالوگ", href: "/catalog" },
+        { label: "کاتالوگ", href: "/catalog", primary: true },
+        { label: "صفحهٔ اصلی", href: "/" },
       ];
     case "server_error":
     case "network":
@@ -230,7 +230,6 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
       return [
         { label: "صفحهٔ اصلی", href: "/", primary: true },
         { label: "کاتالوگ", href: "/catalog" },
-        { label: "آزمایشگاه طراحی", href: "/customize" },
       ];
   }
 }

@@ -2,9 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { fetchProductSlugs, fetchSitemapPaths, fetchShopSettings } from "@/lib/api";
 import { fetchBlogCategories, fetchBlogSlugs, fetchBlogTags } from "@/lib/blog";
-import { fetchStudios } from "@/lib/studio";
 import { getSiteUrl } from "@/lib/seo";
-import { studioPath } from "@/lib/studio";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const settings = await fetchShopSettings().catch(() => null);
@@ -15,12 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: siteUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/browse`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${siteUrl}/catalog`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/customize`, lastModified: now, changeFrequency: "monthly", priority: 0.75 },
-    { url: `${siteUrl}/studios`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/business`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
-    { url: `${siteUrl}/business/tshirt`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/business/hoodie`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/business/mug`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteUrl}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
   ];
 
@@ -94,26 +87,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     blogTagRoutes = [];
   }
 
-  let studioRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const { studios } = await fetchStudios();
-    studioRoutes = studios.map((s) => ({
-      url: `${siteUrl}${studioPath(s)}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.65,
-    }));
-  } catch {
-    studioRoutes = [];
-  }
-
-  return [
-    ...staticRoutes,
-    ...browseRoutes,
-    ...productRoutes,
-    ...blogRoutes,
-    ...blogCategoryRoutes,
-    ...blogTagRoutes,
-    ...studioRoutes,
-  ];
+  return [...staticRoutes, ...browseRoutes, ...productRoutes, ...blogRoutes, ...blogCategoryRoutes, ...blogTagRoutes];
 }

@@ -18,7 +18,7 @@ export default function AdminSettingsPage() {
   const [testTemplateId, setTestTemplateId] = useState("otp_login");
   const [testing, setTesting] = useState(false);
 
-  const token = () => localStorage.getItem("coralay_admin_token")!;
+  const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   useEffect(() => {
     adminFetch<ShopSettingsAdmin>("/api/v1/admin/settings", token()).then(setForm).catch(() => {});

@@ -10,7 +10,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const description =
     settings?.shop_description ??
     settings?.default_meta_description ??
-    "تیشرت و هودی طرح‌محور با چاپ باکیفیت.";
+    "خرید آنلاین لوازم خانگی با گارانتی اصلی و ارسال سریع.";
 
   return {
     name: shopName,
@@ -18,20 +18,20 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description,
     start_url: "/",
     display: "standalone",
-    background_color: "#f2ece4",
-    theme_color: "#c45c26",
+    background_color: "#f0f4f8",
+    theme_color: "#1d6fd8",
     lang: "fa",
     dir: "rtl",
     orientation: "portrait-primary",
     icons: [
       {
-        src: "/brand/coralay-logo.png",
+        src: "/brand/selectbox-logo.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/brand/coralay-logo.png",
+        src: "/brand/selectbox-logo.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
