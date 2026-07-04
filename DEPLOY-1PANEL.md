@@ -1,279 +1,188 @@
-# راهنمای دیپلوی CORALAY روی 1Panel (گام‌به‌گام)
+# راهنمای دیپلوی SelectBox روی 1Panel (گام‌به‌گام)
 
-این راهنما فرض می‌کند یک سرور لینوکسی تازه (Ubuntu 22.04+) داری و می‌خواهی کل استک
-(Next.js + FastAPI + PostgreSQL + MinIO + Nginx) را با **Docker Compose** زیر مدیریت
-**1Panel** بالا بیاوری و با دامنه و HTTPS رایگان منتشر کنی.
+فروشگاه **SelectBox** (`selectbox.ir`) — Next.js + FastAPI + PostgreSQL + Nginx داخلی.
 
-> نسخهٔ کد روی گیت‌هاب: `https://github.com/PooryaMirzaee/coralay`
+مخزن: **https://github.com/PooryaMirzaee/select-box**
 
 ---
 
-## نمای کلی معماری روی سرور
+## نمای کلی روی سرور شما
+
+روی سرور فعلاً چند استک Docker دارید:
+
+| استک | کانتینرها | شبکه |
+|------|-----------|------|
+| CORALAY | `coralay-nginx`, `coralay-web`, `coralay-api`, `coralay-postgres` | `172.20.0.x` |
+| ChillBar | `chillbar-web`, `chillbar-admin`, `chillbar-api`, `chillbar-postgres` | `172.19.0.x` |
+| 1Panel | `1Panel-openresty` | پورت **80** و **443** روی هاست |
+
+SelectBox هم **استک جدا** می‌شود (`selectbox-*`) و **نباید** پورت ۸۰/۴۴۳ را بگیرد.
 
 ```
-کاربر ──HTTPS(443)──► OpenResty (خودِ 1Panel)
+کاربر ──HTTPS(443)──► OpenResty (1Panel)
                           │  reverse proxy
                           ▼
-                   nginx پروژه  (پورت 8090 روی هاست)
-              ┌───────────┼───────────┐
-              ▼           ▼            ▼
-            web         api        postgres / minio
-          Next.js     FastAPI
+              nginx داخلی SelectBox  (پورت داخلی مثلاً 8092)
+         ┌──────────┼──────────┐
+         ▼          ▼          ▼
+       web        api     postgres (فقط داخل Docker)
+     Next.js    FastAPI
 ```
 
-نکتهٔ کلیدی: خودِ 1Panel یک وب‌سرور (OpenResty) دارد که پورت‌های ۸۰ و ۴۴۳ را می‌گیرد.
-پس nginx داخلی پروژه را روی یک پورت داخلی آزاد می‌گذاریم و دامنه را با **Reverse Proxy** خود
-1Panel به آن وصل می‌کنیم؛ گواهی SSL را هم 1Panel به‌صورت رایگان (Let's Encrypt) می‌گیرد.
+### قانون طلایی پورت‌ها
 
-> در این راهنما پورت **8090** استفاده شده است. چون روی سرور تو پورت‌های ۸۰۸۰ و ۸۰۸۱
-> توسط سایت‌های دیگر اشغال شده‌اند، از این‌ها استفاده نکن. اگر ۸۰۹۰ هم اشغال بود، هر پورت
-> آزاد دیگری (مثلاً ۸۰۹۱، ۸۰۹۲، ...) را انتخاب کن. برای دیدن پورت‌های اشغال‌شده:
->
-> ```bash
-> ss -ltnp | grep -E ':(808[0-9]|809[0-9])'   # هر چه چاپ شد یعنی اشغال است
-> ```
->
-> هر مقداری که انتخاب کردی، همان را در گام‌های بعد به‌جای `8090` بگذار (هم در `HTTP_PORT`
-> فایل `.env` و هم در آدرس Reverse Proxy).
+| پورت | وضعیت روی سرور شما | SelectBox |
+|------|-------------------|-----------|
+| **80 / 443** | اشغال — OpenResty 1Panel | ❌ استفاده نکن |
+| **5432** | احتمالاً postgresهای coralay/chillbar | ❌ Postgres SelectBox فقط داخل شبکه Docker است (پورت هاست باز نمی‌شود) |
+| **8090–8092** | معمولاً آزاد برای پروژه‌های جدید | ✅ `HTTP_PORT` را اینجا بگذار |
 
----
-
-## پیش‌نیازها
-
-| مورد | حداقل |
-|------|-------|
-| RAM | ۴ گیگ (۸ گیگ پیشنهادی، چون حذف پس‌زمینه AI رم می‌خورد) |
-| CPU | ۲ هسته |
-| دیسک | ۲۰ گیگ + فضای آپلود |
-| OS | Ubuntu 22.04+ |
-| دامنه | یک رکورد **A** که به IP سرور اشاره کند (مثلاً `shop.example.com`) |
-
-قبل از شروع مطمئن شو DNS دامنه به IP سرور وصل است (با `ping shop.example.com` چک کن).
-
----
-
-## گام ۱ — نصب 1Panel
-
-به سرور SSH بزن و اسکریپت رسمی را اجرا کن:
+قبل از دیپلوی پورت آزاد پیدا کن:
 
 ```bash
-curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_start.sh -o quick_start.sh
-sudo bash quick_start.sh
+ss -ltnp | grep -E ':(80|443|5432|808[0-9]|809[0-9])'
 ```
 
-> اگر این آدرس تغییر کرده بود، نسخهٔ به‌روز را از سایت رسمی 1Panel بردار.
-
-در پایان نصب، 1Panel این‌ها را چاپ می‌کند که **یادداشت کن**:
-- آدرس پنل (مثلاً `http://IP:PORT/خط‌چین`)
-- نام کاربری و رمز
-- پورت پنل (یک پورت تصادفی)
-
-1Panel هنگام نصب، **Docker و Docker Compose** را هم نصب می‌کند؛ پس نیازی به نصب جداگانه نیست.
-
-سپس وارد پنل وب 1Panel شو.
+اولین پورت آزاد در بازه ۸۰۹۰–۸۰۹۹ را انتخاب کن (مثلاً **8092** اگر ۸۰۹۰ اشغال است).
 
 ---
 
-## گام ۲ — باز کردن پورت‌ها در فایروال
+## گام ۱ — ورود به 1Panel
 
-در 1Panel به مسیر زیر برو و مطمئن شو این پورت‌ها باز هستند:
+از آدرس پنل (مثلاً `http://IP:PORT/...`) وارد شو.
 
-**هاست (Hosts) → فایروال (Firewall)**
-
-- پورت پنل 1Panel (همان که موقع نصب داد)
-- پورت **80** و **443** (برای سایت و SSL)
-
-پورت **8090** را عمومی **باز نکن** — فقط داخل سرور استفاده می‌شود.
+فایروال (**هاست → فایروال**):
+- **80** و **443** باز باشند (برای SSL و OpenResty)
+- پورت داخلی SelectBox (مثلاً 8092) را **عمومی باز نکن** — فقط `127.0.0.1` کافی است
 
 ---
 
-## گام ۳ — گرفتن کد روی سرور
+## گام ۲ — کلون پروژه
 
-از داخل 1Panel یک ترمینال باز کن:
-
-**هاست (Hosts) → ترمینال (Terminal)**  (یا مستقیم با SSH)
-
-پروژه را داخل پوشهٔ Compose خودِ 1Panel کلون می‌کنیم تا 1Panel آن را به‌صورت یک
-«Compose» بشناسد:
+**هاست → ترمینال** (یا SSH):
 
 ```bash
-# نصب git اگر نبود
 apt-get update && apt-get install -y git
 
-# کلون داخل مسیر Compose خود 1Panel
 mkdir -p /opt/1panel/docker/compose
 cd /opt/1panel/docker/compose
 
-# ── روش ۱ (ساده‌تر): اگر مخزن Public است ──
-git clone https://github.com/PooryaMirzaee/coralay.git coralay
+# Public
+git clone https://github.com/PooryaMirzaee/select-box.git selectbox
 
-# ── روش ۲ (پیشنهادی برای مخزن Private): SSH ──
-# ابتدا کلید SSH روی سرور بساز و public key را در GitHub → Settings → SSH keys اضافه کن:
-#   ssh-keygen -t ed25519 -C "coralay-server" -f ~/.ssh/id_ed25519 -N ""
-#   cat ~/.ssh/id_ed25519.pub
-# سپس:
-# git clone git@github.com:PooryaMirzaee/coralay.git coralay
+# یا SSH (مخزن Private)
+# git clone git@github.com:PooryaMirzaee/select-box.git selectbox
 
-# ── روش ۳ (Private با HTTPS): Personal Access Token ──
-# GitHub → Settings → Developer settings → Personal access tokens → Fine-grained token
-# دسترسی: Repository → coralay → Contents: Read
-# git clone https://pooryamirzaee:<TOKEN>@github.com/PooryaMirzaee/coralay.git coralay
-
-cd coralay
-
-# فایل تولید را به نام پیش‌فرض docker-compose.yml کپی کن
+cd selectbox
 cp docker-compose.prod.yml docker-compose.yml
 ```
 
-> چرا کپی؟ 1Panel به‌صورت پیش‌فرض دنبال فایلی به نام `docker-compose.yml` در هر پوشه
-> داخل `/opt/1panel/docker/compose/` می‌گردد. فایل اصلی تولید پروژه `docker-compose.prod.yml`
-> است؛ با کپی‌کردنش به `docker-compose.yml` هم 1Panel آن را در تب Compose نشان می‌دهد و هم
-> دستور `docker compose` به‌صورت خودکار فایل `.env` کنارش را می‌خواند.
-
 ---
 
-## گام ۴ — ساخت فایل متغیرهای محیط (`.env`)
-
-> ⚠️ فایل `.env` برای Docker Compose فقط خطوط `KEY=VALUE` می‌پذیرد.
-> **کامنت‌های تزئینی (`# ====`) یا کاراکتر اضافه در خط اول باعث خطای parse می‌شود.**
-> از `env.docker.example` استفاده کن (بدون کامنت).
+## گام ۳ — ساخت `.env`
 
 ```bash
 cp env.docker.example .env
 ```
 
-مقادیر تصادفی امن بساز:
+رمزهای تصادفی:
 
 ```bash
-openssl rand -hex 32
-openssl rand -hex 16
+openssl rand -hex 32   # JWT_SECRET
+openssl rand -hex 16   # POSTGRES_PASSWORD
 ```
 
-با `nano .env` فقط این مقادیر را عوض کن (بقیه خطوط را دست نزن):
-
-> ⚠️ **رمز Postgres:** اگر قبلاً یک‌بار `docker compose up` زدی، رمز داخل volume ثابت مانده.
-> عوض کردن `POSTGRES_PASSWORD` در `.env` کافی نیست — یا همان رمز اول را نگه دار،
-> یا با `docker compose down -v` volume را پاک کن (دیتابیس از بین می‌رود).
+ویرایش `.env` (فقط `KEY=VALUE` — بدون کامنت اضافه):
 
 ```ini
-# دامنهٔ عمومی با https
-PUBLIC_SITE_URL=https://shop.example.com
-
-# خالی بماند تا API از همان دامنه استفاده کند
+PUBLIC_SITE_URL=https://selectbox.ir
 NEXT_PUBLIC_API_URL=
+HTTP_PORT=8092
 
-# مهم: پورت داخلی آزاد (۸۰۸۰ و ۸۰۸۱ روی سرورت اشغال‌اند، پس از آن‌ها استفاده نکن)
-HTTP_PORT=8090
-
-POSTGRES_USER=coralay
+POSTGRES_USER=selectbox
 POSTGRES_PASSWORD=<خروجی openssl>
-POSTGRES_DB=coralay
-
-MINIO_ROOT_USER=coralayminio
-MINIO_ROOT_PASSWORD=<خروجی openssl>
-MINIO_BUCKET=coralay-assets
+POSTGRES_DB=selectbox
 
 JWT_SECRET=<خروجی openssl rand -hex 32>
+TRUSTED_HOSTS=selectbox.ir,www.selectbox.ir,nginx,api,localhost,127.0.0.1
+CORS_ORIGINS=https://selectbox.ir,https://www.selectbox.ir
 
-# دامنه (بدون https) + نام سرویس‌های داخلی — حتماً دامنهٔ واقعی را بگذار
-TRUSTED_HOSTS=shop.example.com,www.shop.example.com,nginx,api,localhost,127.0.0.1
-
-# پرداخت (فعلاً mock؛ بعداً زرین‌پال)
 PAYMENT_GATEWAY=mock
 ZARINPAL_MERCHANT_ID=
 ZARINPAL_SANDBOX=true
-
-# پیامک sms.ir (اختیاری)
 SMS_IR_API_KEY=
 SMS_IR_TEMPLATE_ID=0
 ```
 
-> ⚠️ نکات امنیتی: `JWT_SECRET` باید حداقل ۳۲ کاراکتر باشد و رمزها را حتماً عوض کن.
-> فایل `.env` در `.gitignore` هست و هرگز روی گیت‌هاب نمی‌رود.
+> ⚠️ اگر قبلاً `docker compose up` زدی، `POSTGRES_PASSWORD` را عوض نکن مگر `docker compose down -v` (دیتابیس پاک می‌شود).
+
+### روش سریع (اسکریپت خودکار)
+
+```bash
+HTTP_PORT=8092 bash scripts/configure-selectbox.sh
+```
+
+این اسکریپت `.env` می‌سازد، build می‌کند، seed و ادمین را هم اجرا می‌کند.
 
 ---
 
-## گام ۵ — بالا آوردن سرویس‌ها
+## گام ۴ — بالا آوردن سرویس‌ها
 
-دو روش داری؛ هر کدام راحت‌تر بود.
+### از UI 1Panel
 
-### روش A — از داخل UI خود 1Panel (پیشنهادی)
+1. **Containers → Compose**
+2. پوشه `selectbox` را ببین (یا Create → مسیر `/opt/1panel/docker/compose/selectbox`)
+3. **Up / Start**
 
-1. در 1Panel برو به **Containers → Compose (编排)**.
-2. پروژهٔ `coralay` باید در لیست دیده شود (چون داخل پوشهٔ Compose کلون شد).
-   اگر نبود، روی **Create** بزن و پوشهٔ `/opt/1panel/docker/compose/coralay` را انتخاب کن.
-3. روی **Up / Start (启动)** بزن.
-
-1Panel شروع به build و اجرای کانتینرها می‌کند. **اولین build ممکن است ۱۰ تا ۲۰ دقیقه طول بکشد**
-(دانلود مدل حذف پس‌زمینه و وابستگی‌های Next.js). صبور باش.
-
-### روش B — از ترمینال (همان نتیجه)
+### از ترمینال
 
 ```bash
-cd /opt/1panel/docker/compose/coralay
+cd /opt/1panel/docker/compose/selectbox
 docker compose up -d --build
 ```
 
-بعد از تمام شدن، وضعیت را ببین:
+اولین build حدود **۱۰–۱۵ دقیقه** (Next.js + Python).
+
+بررسی:
 
 ```bash
 docker compose ps
+# selectbox-postgres-1, selectbox-api-1, selectbox-web-1, selectbox-nginx-1 → healthy
+
+curl http://127.0.0.1:8092/health
+# {"status":"ok"}
 ```
 
-باید سرویس‌های `postgres`, `api`, `web`, `nginx` در حالت `running/healthy` باشند.
-
-تست سلامت محلی:
-
-```bash
-curl http://localhost:8090/health
-# باید {"status":"ok"} بدهد
-```
+کانتینرهای جدید (`selectbox-*`) با coralay و chillbar **تداخل نام/شبکه ندارند** چون `name: selectbox` در compose جداست.
 
 ---
 
-## گام ۶ — ساخت ادمین اولیه
-
-جداول دیتابیس هنگام بالا آمدن `api` به‌صورت خودکار ساخته می‌شوند، اما کاربر ادمین باید یک‌بار
-ساخته شود. اسکریپت `seed.py` داخل ایمیج نیست، پس آن را داخل کانتینر کپی و اجرا می‌کنیم:
+## گام ۵ — ادمین و داده نمونه
 
 ```bash
-cd /opt/1panel/docker/compose/coralay
-
-# فقط ساخت/ریست ادمین (بدون داده‌ی نمونه)
+cd /opt/1panel/docker/compose/selectbox
 docker compose cp backend/scripts/seed.py api:/app/seed.py
-docker compose exec api python seed.py reset-admin
+docker compose exec -T api python seed.py          # داده نمونه (اختیاری)
+docker compose exec -T api python seed.py reset-admin
 ```
 
-خروجی باید بدهد: `رمز ادمین بازنشانی شد: 09120000000 / admin123`
+ورود: `https://selectbox.ir/admin/login` — `09120000000` / `admin123`
 
-> اگر داده‌ی نمونه (دسته‌بندی/محصول/کوپن) هم می‌خواهی، به‌جای آرگومان `reset-admin` همان
-> `python seed.py` را اجرا کن. برای فروشگاه واقعی، فقط `reset-admin` کافی است.
-
-**حتماً بعد از اولین ورود، رمز ادمین `admin123` را از پنل عوض کن.**
+تنظیم کارت‌به‌کارت: **ادمین → تنظیمات → کارت‌به‌کارت**
 
 ---
 
-## گام ۷ — اتصال دامنه و HTTPS با 1Panel
+## گام ۶ — Reverse Proxy در 1Panel
 
-حالا سرویس روی `127.0.0.1:8090` بالاست. با OpenResty خود 1Panel آن را روی دامنه + SSL منتشر می‌کنیم.
+1. **Websites → Create Website → Reverse Proxy**
+2. دامنه: `selectbox.ir` و `www.selectbox.ir`
+3. آدرس پراکسی: `http://127.0.0.1:8092` (همان `HTTP_PORT`)
+4. تب **HTTPS** → Let's Encrypt → Apply
+5. **Force HTTPS** را فعال کن
 
-1. در 1Panel برو به **Websites (网站) → Create Website (创建网站)**.
-2. نوع را **Reverse Proxy (反向代理)** انتخاب کن.
-3. مقادیر:
-   - **Domain (主域名):** `shop.example.com`
-   - **Proxy address (代理地址):** `http://127.0.0.1:8090`
-4. ذخیره کن.
-5. وارد همان وب‌سایت شو → تب **HTTPS** → گزینهٔ صدور گواهی **Let's Encrypt** را فعال کن و
-   **Apply** بزن. (1Panel خودش گواهی رایگان می‌گیرد و تمدید خودکار می‌کند.)
-6. گزینهٔ **Force HTTPS / HTTP→HTTPS** را روشن کن.
+### هدرهای سفارشی (آپلود رسید و فایل)
 
-> اگر هنگام صدور گواهی خطا گرفتی، یعنی DNS هنوز به سرور وصل نیست یا پورت ۸۰ بسته است؛
-> اول گام ۲ و رکورد A را چک کن.
-
-### تنظیم هدرهای پراکسی (مهم برای آپلود فایل و WebSocket)
-
-در تنظیمات همان وب‌سایت، بخش **Reverse Proxy → Config / Custom Nginx** این‌ها را اضافه کن
-(تا آپلود فایل بزرگ و اتصال درست کار کند):
+در **Reverse Proxy → Custom Nginx**:
 
 ```nginx
 client_max_body_size 64m;
@@ -285,159 +194,57 @@ proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";
 ```
 
-ذخیره و reload کن.
+### CDN (پارس‌پک و مشابه)
 
-### CDN پارس‌پک (اگر IP کار می‌کند ولی دامنه نه)
+- رکورد **A** → IP سرور
+- **Bypass Cache** برای `/api/*` و `/admin/*`
+- اگر HTTP کار می‌کند ولی HTTPS نه → SSL CDN را **Flexible** یا در 1Panel گواهی فعال کن
 
-این یعنی Docker سالم است؛ مشکل بین **CDN / 1Panel** و سرور است.
+---
 
-روی سرور:
+## گام ۷ — بررسی نهایی
 
 ```bash
-bash scripts/check-domain.sh
-bash scripts/check-ssl.sh
+bash scripts/check-deploy.sh
 ```
 
-#### اگر `HTTP ✅` و `HTTPS ❌ 502` (شایع‌ترین)
+در مرورگر:
 
-مرورگر و CDN از **HTTPS** استفاده می‌کنند؛ SSL بین CDN و سرور (origin) خراب است.
-`http://coralay.ir` کار می‌کند ولی `https://coralay.ir` صفحه HTML/502 می‌دهد → ادمین خراب می‌شود.
-
-**راه‌حل سریع — CDN پارس‌پک:**
-
-1. SSL/TLS → حالت **Flexible** (CDN↔کاربر HTTPS، CDN↔سرور HTTP پورت 80)
-2. Purge Cache
-3. تست: `curl -s -o /dev/null -w "%{http_code}\n" https://coralay.ir/api/v1/catalog/shop` → باید **200**
-
-**راه‌حل درست — 1Panel + CDN Full:**
-
-1. 1Panel → Website → `coralay.ir` → **HTTPS** → Let's Encrypt → Apply
-2. تست روی سرور:
-   ```bash
-   curl -sk https://127.0.0.1/health -H "Host: coralay.ir"
-   ```
-   باید `{"status":"ok"}` باشد.
-3. CDN → SSL **Full** (یا Full Strict)
-
-در پنل پارس‌پک (همه حالات):
-
-1. **Purge Cache** — پاک‌سازی کامل کش
-2. **Page Rule** → **Bypass Cache** برای `/api/*` و `/admin/*`
-3. **Origin** → IP سرور (پورت 80 برای Flexible، 443 برای Full)
-
-در 1Panel:
-
-1. وب‌سایت با دامنه‌های **`coralay.ir`** و **`www.coralay.ir`**
-2. Proxy: `http://127.0.0.1:8090`
-3. HTTPS فعال + Force HTTPS
-
-> ورود ادمین روی IP و دامنه **جدا** است — توکن در localStorage ذخیره می‌شود.
-> حتماً از `https://coralay.ir/admin/login` وارد شو، نه از IP.
+| آدرس | انتظار |
+|------|--------|
+| `https://selectbox.ir` | صفحه فروشگاه |
+| `https://selectbox.ir/health` | `{"status":"ok"}` |
+| `https://selectbox.ir/admin/login` | پنل ادمین |
+| `https://selectbox.ir/checkout` | تسویه + کارت‌به‌کارت |
 
 ---
 
-## گام ۸ — بررسی نهایی
-
-در مرورگر باز کن:
-
-- `https://shop.example.com` → ویترین فروشگاه
-- `https://shop.example.com/health` → `{"status":"ok"}`
-- `https://shop.example.com/admin/login` → ورود ادمین با `09120000000` / `admin123`
-
-اگر همه‌چیز بالاست، تمام است. 🎉
-
----
-
-## آپدیت در آینده (نسخهٔ جدید کد)
-
-هر وقت کد جدید روی گیت‌هاب رفت:
+## آپدیت بعدی
 
 ```bash
-cd /opt/1panel/docker/compose/coralay
+cd /opt/1panel/docker/compose/selectbox
 git pull
 cp docker-compose.prod.yml docker-compose.yml
 docker compose up -d --build
 ```
 
-داده‌ها حفظ می‌شوند چون در volumeهای داکر (`pgdata`, `uploads`) ذخیره شده‌اند.
-
-### فقط nginx عوض شده (بدون build)
-
-اگر فقط `infra/nginx/prod.conf` تغییر کرده:
+فقط nginx:
 
 ```bash
-git pull
-bash scripts/reload-nginx.sh
+git pull && bash scripts/reload-nginx.sh
 ```
-
-### فقط frontend عوض شده
-
-```bash
-git pull
-docker compose build web
-docker compose up -d web
-```
-
-> اگر `docker compose build` با **403 Forbidden** از Docker Hub شکست خورد، اول [آینهٔ رجیstry](#docker-hub-403-forbidden) را تنظیم کن. **api** در حال اجراست → لازم نیست دوباره build شود.
 
 ---
 
 ## بکاپ
 
-### دیتابیس
-
 ```bash
-cd /opt/1panel/docker/compose/coralay
-docker compose exec -T postgres pg_dump -U coralay coralay > backup-$(date +%F).sql
-```
+# دیتابیس
+docker compose exec -T postgres pg_dump -U selectbox selectbox > backup-$(date +%F).sql
 
-> 1Panel هم در بخش **Databases** و **Cron Jobs** امکان بکاپ زمان‌بندی‌شده دارد؛ می‌توانی از آن استفاده کنی.
-
-### فایل‌های آپلود
-
-```bash
-docker run --rm -v coralay_uploads:/data -v $(pwd):/backup \
+# آپلودها
+docker run --rm -v selectbox_uploads:/data -v $(pwd):/backup \
   alpine tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
-```
-
----
-
-## Docker Hub 403 Forbidden
-
-روی بعضی سرورها (به‌خصوص ایران) `docker pull` یا `docker compose build` خطای زیر می‌دهد:
-
-```text
-failed to resolve ... docker.io/library/python:3.12-slim: 403 Forbidden
-```
-
-**راه‌حل ۱ — آینهٔ Docker (پیشنهادی)**
-
-در 1Panel → **Container** → **Setting** → **Registry Mirrors** آدرس آینه اضافه کن، یا در سرور:
-
-```bash
-sudo mkdir -p /etc/docker
-sudo tee /etc/docker/daemon.json <<'EOF'
-{
-  "registry-mirrors": ["https://docker.arvancloud.ir"]
-}
-EOF
-sudo systemctl restart docker
-```
-
-بعد دوباره:
-
-```bash
-docker compose build web
-docker compose up -d web
-```
-
-**راه‌حل ۲ — بدون build**
-
-اگر **api** و **web** از قبل healthy هستند و فقط nginx باید عوض شود:
-
-```bash
-git pull
-bash scripts/reload-nginx.sh
 ```
 
 ---
@@ -446,29 +253,17 @@ bash scripts/reload-nginx.sh
 
 | مشکل | راه‌حل |
 |------|--------|
-| `no such service: nginx` | `git reset` فایل dev را برگردانده — `cp docker-compose.prod.yml docker-compose.yml` سپس `bash scripts/reload-nginx.sh` |
-| `502 Bad Gateway` از nginx | `web`/`api` دوباره ساخته شده‌اند ولی nginx قدیمی است → `bash scripts/reload-nginx.sh` |
-| `Invalid host header` با IP یا `:8090` | `bash scripts/reload-nginx.sh` — nginx باید `Host: api` به FastAPI بفرستد |
-| `reload-nginx` → `host not found in upstream web:3000` | طبیعی با `docker run` جدا — از نسخهٔ جدید اسکریپت استفاده کن |
-| `403 Forbidden` هنگام build از Docker Hub | آینهٔ registry (بالا) — یا فقط `reload-nginx` اگر build لازم نیست |
-| `/api/v1/ws/chat` → 404 در لاگ | معمولاً WebSocket بدون Upgrade است؛ بعد از `reload-nginx` باید WS وصل شود |
-| صفحه ۵۰۰ در مرورگر ولی `check-deploy` → HTTP 200 | کش مرورگر — Incognito یا Ctrl+Shift+R؛ F12 → Console |
-| پنل ادمین — dropdown/لیست خالی | `bash scripts/check-admin.sh` — اگر API سرور OK ولی مرورگر نه → rebuild `web`؛ F12 → Network |
-| `Password authentication is not supported` هنگام clone | مخزن Private است؛ GitHub رمز عبور نمی‌پذیرد. از **SSH** (روش ۲) یا **Personal Access Token** (روش ۳) در گام ۳ استفاده کن، یا مخزن را در GitHub → Settings → General → Danger zone → **Change visibility** به Public تغییر بده |
-| گواهی SSL صادر نمی‌شود | DNS (رکورد A) و باز بودن پورت ۸۰ را چک کن |
-| پورت ۸۰ اشغال است هنگام up | یعنی `HTTP_PORT` را روی ۸۰ گذاشتی؛ آن را در `.env` به `8090` تغییر بده و دوباره up کن |
-| تصاویر/آپلود کار نمی‌کند | هدر `client_max_body_size 64m;` در reverse proxy خود 1Panel را اضافه کن |
-| API از مرورگر وصل نمی‌شود | `PUBLIC_SITE_URL` باید دقیقاً دامنهٔ https باشد و `NEXT_PUBLIC_API_URL` خالی بماند |
-| `failed to read .env: unexpected character "#"` | فایل `.env` خراب است — `rm .env && cp env.docker.example .env` و فقط مقادیر را عوض کن (بدون کامنت اضافه) |
-| `api` unhealthy / `dependency failed to start` | اول `docker compose logs api --tail 50` — اگر `password authentication failed` دیدی یعنی `POSTGRES_PASSWORD` در `.env` با volume قدیمی `pgdata` یکی نیست (پایین را ببین) |
-| `password authentication failed for user coralay` | Postgres رمز را فقط **اولین بار** ساخت volume می‌گیرد؛ یا رمز `.env` را همان اولین مقدار بگذار، یا volume را پاک کن: `docker compose down -v` سپس `up -d` (**دیتابیس پاک می‌شود**) |
-| خطای `JWT_SECRET باید...` | در `.env` یک رشتهٔ ۳۲+ کاراکتری بگذار و `DEBUG` نباید true باشد |
-| حذف پس‌زمینه کند است | اولین درخواست مدل ONNX را دانلود می‌کند؛ رم کافی لازم است |
-| لاگ‌ها | `docker compose logs -f api` و `docker compose logs -f web` (یا از تب Logs کانتینر در 1Panel) |
+| پورت اشغال / `address already in use` | `HTTP_PORT` دیگری انتخاب کن (8093، 8094، ...) |
+| `JWT_SECRET باید...` | در `.env` رشته ۳۲+ کاراکتری؛ `DEBUG` نباید true باشد |
+| `password authentication failed` | رمز Postgres با volume قدیمی فرق دارد → `docker compose down -v` و دوباره up |
+| 502 از دامنه | `docker compose ps` — api/web healthy؟ پراکسی به پورت درست؟ |
+| ادمین خالی | `bash scripts/check-admin.sh` — rebuild `web` |
+| build → 403 Docker Hub | آینه registry در 1Panel → Container → Setting → Registry Mirrors |
+| کارت‌به‌کارت | شماره کارت در ادمین → تنظیمات؛ رسید در جزئیات سفارش |
 
 ---
 
-## درگاه پرداخت زرین‌پال (بعداً)
+## زرین‌پال (بعداً)
 
 در `.env`:
 
@@ -478,4 +273,4 @@ ZARINPAL_MERCHANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ZARINPAL_SANDBOX=false
 ```
 
-سپس `docker compose up -d --build` را دوباره اجرا کن.
+سپس `docker compose up -d --build` و در ادمین callback را هم چک کن.

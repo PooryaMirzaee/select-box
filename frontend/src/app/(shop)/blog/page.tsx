@@ -19,7 +19,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const siteUrl = getSiteUrl(settings);
   const shopName = settings?.shop_name ?? BRAND_NAME;
   const title = `مجله — ${shopName}`;
-  const description = "مقالات طراحی، ترندهای چاپ و راهنمای خالقین.";
+  const description = "راهنمای خرید لوازم خانگی، نکات نگهداری و سبک زندگی.";
 
   return buildPageMetadata({
     title,

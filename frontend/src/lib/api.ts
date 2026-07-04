@@ -163,6 +163,10 @@ export type PaymentAdmin = {
   gateway_ref: string | null;
   amount: string;
   status: string;
+  receipt_url: string | null;
+  customer_note: string | null;
+  admin_note: string | null;
+  reviewed_at: string | null;
   created_at: string | null;
 };
 
@@ -335,6 +339,11 @@ export type ShopSettings = {
   shipping_flat_toman: number;
   currency_label: string;
   payment_gateway: string;
+  card_transfer_enabled: boolean;
+  card_number: string;
+  card_holder: string;
+  card_bank_name: string;
+  card_transfer_instructions: string;
   contact_phone: string;
   contact_email: string;
   contact_whatsapp: string;
@@ -589,6 +598,77 @@ export async function initiatePayment(orderId: number) {
   }>(`/api/v1/payments/orders/${orderId}/initiate`, {
     method: "POST",
     headers: { ...sessionHeaders(sid), ...authHeaders() },
+  });
+}
+
+export type CardTransferInit = {
+  payment_id: number;
+  gateway: "card_transfer";
+  amount: string;
+  tracking_code: string;
+  card_number: string;
+  card_holder: string;
+  card_bank_name: string;
+  instructions: string;
+  receipt_uploaded: boolean;
+  payment_url: string;
+};
+
+export async function initiateCardTransfer(orderId: number) {
+  const sid = await ensureCartSession();
+  const { authHeaders } = await import("@/lib/auth");
+  return apiFetch<CardTransferInit>(`/api/v1/payments/orders/${orderId}/card-transfer`, {
+    method: "POST",
+    headers: { ...sessionHeaders(sid), ...authHeaders() },
+  });
+}
+
+export async function uploadPaymentReceipt(paymentId: number, file: File, customerNote?: string) {
+  const sid = await ensureCartSession();
+  const { authHeaders } = await import("@/lib/auth");
+  const form = new FormData();
+  form.append("file", file);
+  if (customerNote?.trim()) form.append("customer_note", customerNote.trim());
+
+  const headers: Record<string, string> = { ...sessionHeaders(sid), ...authHeaders() };
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/v1/payments/${paymentId}/receipt`, {
+      method: "POST",
+      body: form,
+      headers,
+    });
+  } catch {
+    throw new Error("اتصال به سرور برقرار نشد");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = text || res.statusText;
+    try {
+      const j = JSON.parse(text) as { detail?: string };
+      if (typeof j.detail === "string") detail = j.detail;
+    } catch {
+      /* plain text */
+    }
+    throw new Error(detail);
+  }
+  return res.json() as Promise<{ ok: boolean; receipt_url: string; message: string }>;
+}
+
+export async function adminApproveCardPayment(paymentId: number, token: string) {
+  return adminFetch<PaymentAdmin>(`/api/v1/admin/payments/${paymentId}/approve-card`, token, {
+    method: "POST",
+  });
+}
+
+export async function adminRejectCardPayment(
+  paymentId: number,
+  token: string,
+  adminNote?: string,
+) {
+  return adminFetch<PaymentAdmin>(`/api/v1/admin/payments/${paymentId}/reject-card`, token, {
+    method: "POST",
+    body: JSON.stringify({ admin_note: adminNote || null }),
   });
 }
 

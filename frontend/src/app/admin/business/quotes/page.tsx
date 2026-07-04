@@ -17,9 +17,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const PRODUCT_LABELS: Record<string, string> = {
-  tshirt: "تیشرت",
-  hoodie: "هودی",
-  mug: "ماگ",
+  kitchen: "آشپزخانه",
+  laundry: "شستشو",
+  cleaning: "نظافت",
+  climate: "سرمایش/گرمایش",
+  lifestyle: "سبک زندگی",
   mixed: "ترکیبی",
   hub: "صفحه اصلی",
 };

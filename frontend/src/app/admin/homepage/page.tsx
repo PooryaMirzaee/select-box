@@ -415,7 +415,7 @@ export default function AdminHomepagePage() {
                   checked={draft.show_promo_fallback}
                   onChange={(e) => setDraft({ ...draft, show_promo_fallback: e.target.checked })}
                 />
-                اگر بنر promo نباشد، بخش‌های پیش‌فرض (سفارش سازمانی + Design Lab) نمایش داده شوند
+                اگر بنر promo نباشد، بخش‌های پیش‌فرض (سفارش عمده + گارانتی) نمایش داده شوند
               </label>
               <HomepageBannerEditor
                 items={bundle.banners_promo}

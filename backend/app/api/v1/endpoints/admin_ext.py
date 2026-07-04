@@ -14,6 +14,7 @@ from app.models import (
     DesignAsset,
     Order,
     OrderItem,
+    Payment,
     Product,
     ProductImage,
     ProductVariation,
@@ -415,6 +416,10 @@ def get_order_admin(order_id: int, db: Session = Depends(get_db)):
                 gateway_ref=p.gateway_ref,
                 amount=str(p.amount),
                 status=p.status,
+                receipt_url=public_url(p.receipt_storage_key) if p.receipt_storage_key else None,
+                customer_note=p.customer_note,
+                admin_note=p.admin_note,
+                reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
                 created_at=p.created_at.isoformat() if p.created_at else None,
             )
             for p in (o.payments or [])

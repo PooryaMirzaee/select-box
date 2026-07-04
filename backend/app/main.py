@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
     _ensure_category_icon_column()
     _ensure_product_media_columns()
     _ensure_product_size_guide_column()
+    _ensure_payment_receipt_columns()
     _ensure_customizer_columns()
     _ensure_user_studio_columns()
     _ensure_mockup_configs()
@@ -135,19 +136,19 @@ def _ensure_blog_seed() -> None:
             return
 
         categories = [
-            BlogCategory(slug="design-tips", name_fa="نکات طراحی", description="راهنمای طراحی برای چاپ و فروش", sort_order=1),
-            BlogCategory(slug="trends", name_fa="ترندها", description="آخرین ترندهای مد و چاپ", sort_order=2),
-            BlogCategory(slug="creator-guide", name_fa="راهنمای خالقین", description="کسب درآمد از Design Lab", sort_order=3),
+            BlogCategory(slug="home-tips", name_fa="نکات خانه‌داری", description="راهنمای نگهداری و استفاده از لوازم خانگی", sort_order=1),
+            BlogCategory(slug="buying-guide", name_fa="راهنمای خرید", description="چطور بهترین لوازم خانگی را انتخاب کنیم", sort_order=2),
+            BlogCategory(slug="lifestyle", name_fa="سبک زندگی", description="لوازم روزمره و بهبود کیفیت زندگی", sort_order=3),
         ]
         for c in categories:
             db.add(c)
         db.flush()
 
         tags = [
-            BlogTag(slug="tshirt", name_fa="تیشرت"),
-            BlogTag(slug="print-quality", name_fa="کیفیت چاپ"),
-            BlogTag(slug="design-lab", name_fa="Design Lab"),
-            BlogTag(slug="b2b", name_fa="سفارش سازمانی"),
+            BlogTag(slug="refrigerator", name_fa="یخچال"),
+            BlogTag(slug="energy-saving", name_fa="صرفه‌جویی انرژی"),
+            BlogTag(slug="lifestyle", name_fa="سبک زندگی"),
+            BlogTag(slug="b2b", name_fa="سفارش عمده"),
         ]
         for t in tags:
             db.add(t)
@@ -156,57 +157,57 @@ def _ensure_blog_seed() -> None:
         now = datetime.now(timezone.utc)
         posts = [
             BlogPost(
-                slug="choose-tshirt-fabric-guide",
-                title="راهنمای انتخاب پارچه تیشرت برای چاپ با کیفیت",
-                excerpt="پارچه مناسب تفاوت بین یک چاپ معمولی و یک محصول لوکس را مشخص می‌کند. در این مقاله انواع پارچه و نکات انتخاب را مرور می‌کنیم.",
-                content_html="""<h2>چرا انتخاب پارچه مهم است؟</h2>
-<p>کیفیت چاپ مستقیماً به بافت و ترکیب پارچه وابسته است. پنبه ۱۰۰٪ برای DTG و سابلیمیشن انتخاب‌های محبوب هستند.</p>
-<h2>انواع پارچه</h2>
-<ul><li><strong>پنبه ringspun:</strong> نرم‌تر و مناسب‌تر برای چاپ جزئیات</li>
-<li><strong>پلی‌استر:</strong> مناسب سابلیمیشن و رنگ‌های زنده</li>
-<li><strong>ترکیبی:</strong> تعادل بین دوام و راحتی</li></ul>
-<h2>نکته برای خالقین</h2>
-<p>در Design Lab می‌توانید طرح خود را روی mockup واقعی ببینید و قبل از انتشار، جزئیات را بررسی کنید.</p>""",
-                category_id=categories[0].id,
-                status=BlogPostStatus.published,
-                is_featured=True,
-                reading_time_minutes=4,
-                meta_title="راهنمای انتخاب پارچه تیشرت",
-                meta_description="انتخاب پارچه مناسب برای چاپ با کیفیت — پنبه، پلی‌استر و نکات حرفه‌ای.",
-                published_at=now,
-            ),
-            BlogPost(
-                slug="2026-print-trends",
-                title="ترندهای چاپ و مد ۲۰۲۶: مینیمالیسم گرم و تایپوگرافی فارسی",
-                excerpt="از رنگ‌های خاکی گرفته تا تایپوگرافی فارسی جسور — نگاهی به ترندهایی که امسال فروشگاه‌های print-on-demand را متحول می‌کنند.",
-                content_html="""<h2>پالت رنگی گرم</h2>
-<p>رنگ‌های terracotta، کرم و زیتونی جایگزین مینیمالیسم سرد شده‌اند. این پالت با هویت بصری CORALAY هم‌خوان است.</p>
-<h2>تایپوگرافی فارسی</h2>
-<p>طرح‌هایی که از فونت‌های فارسی معاصر استفاده می‌کنند، در شبکه‌های اجتماعی بیشتر share می‌شوند.</p>
-<blockquote>طراحی خوب، داستان برند شما را بدون کلام می‌گوید.</blockquote>""",
+                slug="how-to-choose-refrigerator",
+                title="راهنمای خرید یخچال — ۷ نکته قبل از انتخاب",
+                excerpt="ظرفیت، رتبه انرژی، نوع برفک و ابعاد از مهم‌ترین معیارهای خرید یخچال هستند. در این مقاله همه را مرور می‌کنیم.",
+                content_html="""<h2>ظرفیت مناسب</h2>
+<p>برای خانواده ۳–۴ نفره یخچال ۲۸ تا ۳۲ فوت کافی است. برای خانواده بزرگ‌تر به مدل‌های side-by-side یا french door فکر کنید.</p>
+<h2>رتبه انرژی</h2>
+<p>مدل‌های اینورتر و برچسب انرژی A+ در بلندمدت هزینه برق را کم می‌کنند.</p>
+<h2>گارانتی و خدمات</h2>
+<p>حتماً گارانتی معتبر و دسترسی به خدمات پس از فروش را بررسی کنید — SelectBox تمام محصولات را با گارانتی اصلی عرضه می‌کند.</p>""",
                 category_id=categories[1].id,
                 status=BlogPostStatus.published,
-                is_featured=False,
-                reading_time_minutes=3,
+                is_featured=True,
+                reading_time_minutes=5,
+                meta_title="راهنمای خرید یخچال",
+                meta_description="نکات مهم انتخاب یخچال — ظرفیت، انرژی، برند و گارانتی.",
                 published_at=now,
             ),
             BlogPost(
-                slug="creator-earnings-guide",
-                title="چطور از Design Lab درآمد کسب کنید؟",
-                excerpt="راهنمای گام‌به‌گام برای خالقین: از ساخت طرح تا انتشار در استودیو و دریافت کمیسیون.",
-                content_html="""<h2>شروع سریع</h2>
-<ol><li>وارد Design Lab شوید</li><li>طرح خود را بسازید</li><li>محصول را منتشر کنید</li><li>لینک استودیو را به اشتراک بگذارید</li></ol>
-<h2>نکات فروش</h2>
-<p>عکس mockup با کیفیت، توضیحات SEO-friendly و اشتراک‌گذاری در اینستاگرام سه عامل کلیدی فروش هستند.</p>""",
+                slug="home-appliance-trends-2026",
+                title="ترندهای لوازم خانگی ۲۰۲۶: هوشمند، کم‌مصرف، مینیمال",
+                excerpt="از یخچال‌های متصل تا جاروهای رباتیک — نگاهی به محصولاتی که امسال آشپزخانه و خانه را متحول می‌کنند.",
+                content_html="""<h2>لوازم هوشمند</h2>
+<p>ماشین لباسشویی و جارو رباتیک با اتصال Wi-Fi و اپلیکیشن موبایل هر روز محبوب‌تر می‌شوند.</p>
+<h2>طراحی مینیمال</h2>
+<p>رنگ‌های سفید، استیل و خطوط ساده در آشپزخانه‌های مدرن ایرانی جایگاه ویژه دارند.</p>
+<blockquote>خانه راحت با انتخاب درست شروع می‌شود.</blockquote>""",
                 category_id=categories[2].id,
                 status=BlogPostStatus.published,
                 is_featured=False,
-                reading_time_minutes=5,
+                reading_time_minutes=4,
+                published_at=now,
+            ),
+            BlogPost(
+                slug="daily-essentials-checklist",
+                title="چک‌لیست لوازم ضروری خانه تازه‌عروس",
+                excerpt="از کتری برقی تا جاروبرقی — فهرستی عملی برای تجهیز خانه جدید بدون خرید اضافی.",
+                content_html="""<h2>آشپزخانه</h2>
+<ul><li>مایکروویو یا آون توستر</li><li>کتری برقی یا چای‌ساز</li><li>مخلوط‌کن دستی</li></ul>
+<h2>نظافت</h2>
+<p>یک جاروبرقی قدرتمند یا جارو رباتیک برای کف، و بخارشو برای آشپزخانه انتخاب‌های هوشمندانه‌اند.</p>
+<h2>سبک زندگی</h2>
+<p>سشوار، اتو و لوازم مراقبت شخصی را در یک دسته جدا بخرید تا بودجه را بهتر مدیریت کنید.</p>""",
+                category_id=categories[0].id,
+                status=BlogPostStatus.published,
+                is_featured=False,
+                reading_time_minutes=6,
                 published_at=now,
             ),
         ]
         posts[0].tags = [tags[0], tags[1]]
-        posts[1].tags = [tags[0]]
+        posts[1].tags = [tags[2]]
         posts[2].tags = [tags[2], tags[3]]
 
         for p in posts:
@@ -408,6 +409,28 @@ def _ensure_product_size_guide_column() -> None:
     if "size_guide_json" not in cols:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE products ADD COLUMN size_guide_json JSON"))
+
+
+def _ensure_payment_receipt_columns() -> None:
+    """ستون‌های رسید کارت‌به‌کارت."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "payments" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("payments")}
+    dialect = engine.dialect.name
+    additions = [
+        ("receipt_storage_key", "VARCHAR(512)"),
+        ("customer_note", "VARCHAR(500)"),
+        ("admin_note", "VARCHAR(500)"),
+        ("reviewed_at", "TIMESTAMP WITH TIME ZONE" if dialect != "sqlite" else "DATETIME"),
+    ]
+    with engine.begin() as conn:
+        for name, col_type in additions:
+            if name in cols:
+                continue
+            conn.execute(text(f"ALTER TABLE payments ADD COLUMN {name} {col_type}"))
 
 
 def _ensure_customizer_columns() -> None:

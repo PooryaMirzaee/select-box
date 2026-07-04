@@ -148,15 +148,6 @@ export default function AdminUserDetailPage() {
               </>
             ) : null}
           </dl>
-          {user.is_creator && user.studio_slug ? (
-            <Link
-              href={`/studio/${user.studio_slug}`}
-              target="_blank"
-              className="mt-4 inline-block text-sm text-[var(--accent)] hover:underline"
-            >
-              استودیوی عمومی
-            </Link>
-          ) : null}
         </div>
       </div>
 

@@ -14,7 +14,8 @@ from app.api.deps import SESSION_HEADER
 from app.core.deps_auth import get_current_user_optional
 from app.db.session import get_db
 from app.models import User
-from app.models import CartItem, Coupon, Order, OrderItem, ProductVariation
+from app.models import CartItem, Coupon, Order, OrderItem, Payment, ProductVariation
+from app.core.config import settings as env
 from app.services import catalog as catalog_service
 from app.services import settings as shop_settings
 
@@ -157,7 +158,23 @@ def get_order(tracking_code: str, db: Session = Depends(get_db)):
     order = db.scalar(select(Order).where(Order.tracking_code == tracking_code.upper()))
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
+
+    card_transfer_url: str | None = None
+    if order.status == "pending_payment":
+        pay = db.scalar(
+            select(Payment)
+            .where(Payment.order_id == order.id, Payment.gateway == "card_transfer")
+            .order_by(Payment.id.desc())
+        )
+        if pay is not None and pay.status in ("redirected", "failed", "created"):
+            cfg = shop_settings.get_all_settings(db)
+            frontend = str(cfg.get("site_url") or env.frontend_url).rstrip("/")
+            card_transfer_url = (
+                f"{frontend}/checkout/card-transfer?order_id={order.id}&payment_id={pay.id}"
+            )
+
     return {
+        "id": order.id,
         "tracking_code": order.tracking_code,
         "status": order.status,
         "total": str(order.total),
@@ -167,4 +184,5 @@ def get_order(tracking_code: str, db: Session = Depends(get_db)):
         "created_at": order.created_at.isoformat(),
         "snapshot": order.cart_snapshot,
         "shipping_address": order.shipping_address,
+        "card_transfer_url": card_transfer_url,
     }

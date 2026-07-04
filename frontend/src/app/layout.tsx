@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("coralay_theme");if(t==="dark")document.documentElement.classList.add("dark")}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("selectbox_theme");if(t==="dark")document.documentElement.classList.add("dark")}catch(e){}`,
           }}
         />
         <ThemeProvider>

@@ -419,6 +419,9 @@ class Payment(Base):
     gateway_ref: Mapped[str | None] = mapped_column(String(255))
     amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="created", nullable=False)
+    receipt_storage_key: Mapped[str | None] = mapped_column(String(512))
+    customer_note: Mapped[str | None] = mapped_column(String(500))
+    admin_note: Mapped[str | None] = mapped_column(String(500))
     raw_request: Mapped[dict | None] = mapped_column(JSON)
     raw_callback: Mapped[dict | None] = mapped_column(JSON)
 
@@ -426,6 +429,7 @@ class Payment(Base):
     updated_at: Mapped[object] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    reviewed_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
 
     order: Mapped["Order"] = relationship(back_populates="payments")
 

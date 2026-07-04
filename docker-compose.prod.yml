@@ -1,5 +1,5 @@
 # =============================================================================
-# Docker Compose — تولید CORALAY
+# Docker Compose — تولید SelectBox
 # -----------------------------------------------------------------------------
 # اجرا:
 #   cp .env.production.example .env.production   # ویرایش مقادیر
@@ -9,20 +9,20 @@
 # آپلود تولید: volume محلی uploads/ — MinIO در کد فعلاً استفاده نمی‌شود
 # =============================================================================
 
-name: coralay
+name: selectbox
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-coralay}
+      POSTGRES_USER: ${POSTGRES_USER:-selectbox}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      POSTGRES_DB: ${POSTGRES_DB:-coralay}
+      POSTGRES_DB: ${POSTGRES_DB:-selectbox}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coralay} -d ${POSTGRES_DB:-coralay}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-selectbox} -d ${POSTGRES_DB:-selectbox}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     environment:
       DEBUG: "false"
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-coralay}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-coralay}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-selectbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-selectbox}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}}
       PUBLIC_API_URL: ${PUBLIC_SITE_URL}

@@ -206,6 +206,10 @@ ORDER_STATUSES = (
 class OrderStatusPatch(BaseModel):
     status: str
 
+
+class PaymentReviewIn(BaseModel):
+    admin_note: str | None = None
+
     def validate_status(self) -> str:
         if self.status not in ORDER_STATUSES:
             raise ValueError(f"status must be one of {ORDER_STATUSES}")
@@ -231,6 +235,10 @@ class PaymentAdminOut(BaseModel):
     gateway_ref: str | None
     amount: str
     status: str
+    receipt_url: str | None = None
+    customer_note: str | None = None
+    admin_note: str | None = None
+    reviewed_at: str | None = None
     created_at: str | None
 
 

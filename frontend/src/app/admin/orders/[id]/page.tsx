@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ArrowLeft, Loader2 } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
-import { adminFetch, type OrderAdminDetail } from "@/lib/api";
+import { adminFetch, adminApproveCardPayment, adminRejectCardPayment, type OrderAdminDetail } from "@/lib/api";
 import {
   ORDER_STATUSES,
   orderStatusColor,
@@ -67,6 +67,8 @@ export default function AdminOrderDetailPage() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
@@ -89,6 +91,55 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function approveCard(paymentId: number) {
+    setReviewingId(paymentId);
+    setMsg(null);
+    setError(null);
+    try {
+      await adminApproveCardPayment(paymentId, token());
+      setMsg("پرداخت کارت‌به‌کارت تأیید شد");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا");
+    } finally {
+      setReviewingId(null);
+    }
+  }
+
+  async function rejectCard(paymentId: number) {
+    if (!confirm("رسید رد شود؟ مشتری باید دوباره واریز یا رسید جدید ارسال کند.")) return;
+    setReviewingId(paymentId);
+    setMsg(null);
+    setError(null);
+    try {
+      await adminRejectCardPayment(paymentId, token(), rejectNote || undefined);
+      setMsg("پرداخت رد شد");
+      setRejectNote("");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا");
+    } finally {
+      setReviewingId(null);
+    }
+  }
+
+  function paymentGatewayLabel(gateway: string) {
+    if (gateway === "card_transfer") return "کارت‌به‌کارت";
+    if (gateway === "zarinpal") return "زرین‌پال";
+    if (gateway === "mock") return "آزمایشی";
+    return gateway;
+  }
+
+  function paymentStatusLabel(status: string, gateway: string, hasReceipt: boolean) {
+    if (gateway === "card_transfer") {
+      if (status === "redirected" && hasReceipt) return "در انتظار تأیید رسید";
+      if (status === "redirected") return "منتظر آپلود رسید";
+      if (status === "verified") return "تأیید شده";
+      if (status === "failed") return "رد شده";
+    }
+    return status;
+  }
 
   async function saveStatus() {
     if (!order || status === order.status) return;
@@ -209,18 +260,87 @@ export default function AdminOrderDetailPage() {
       {order.payments.length > 0 ? (
         <div className="card-theme mt-6 p-5">
           <h2 className="font-medium">پرداخت‌ها</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {order.payments.map((p) => (
-              <li key={p.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-surface px-3 py-2">
-                <span>
-                  {p.gateway} · {p.status}
-                  {p.gateway_ref ? (
-                    <span className="ms-2 font-mono text-xs text-muted">{p.gateway_ref}</span>
+          <ul className="mt-3 space-y-4 text-sm">
+            {order.payments.map((p) => {
+              const isCard = p.gateway === "card_transfer";
+              const hasReceipt = Boolean(p.receipt_url);
+              const canReview =
+                isCard && hasReceipt && p.status === "redirected" && order.status === "pending_payment";
+              const isPdf = p.receipt_url?.toLowerCase().includes(".pdf");
+
+              return (
+                <li key={p.id} className="rounded-lg bg-surface px-4 py-4">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span>
+                      {paymentGatewayLabel(p.gateway)} ·{" "}
+                      {paymentStatusLabel(p.status, p.gateway, hasReceipt)}
+                    </span>
+                    <span className="font-medium">{formatToman(p.amount)}</span>
+                  </div>
+
+                  {p.customer_note ? (
+                    <p className="mt-2 text-xs text-muted">یادداشت مشتری: {p.customer_note}</p>
                   ) : null}
-                </span>
-                <span>{formatToman(p.amount)}</span>
-              </li>
-            ))}
+                  {p.admin_note ? (
+                    <p className="mt-1 text-xs text-red-500">یادداشت ادمین: {p.admin_note}</p>
+                  ) : null}
+
+                  {hasReceipt ? (
+                    <div className="mt-3">
+                      <p className="mb-2 text-xs text-muted">رسید واریز</p>
+                      {isPdf ? (
+                        <a
+                          href={p.receipt_url!}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-[var(--accent)] hover:underline"
+                        >
+                          مشاهده فایل PDF
+                        </a>
+                      ) : (
+                        <a href={p.receipt_url!} target="_blank" rel="noreferrer">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={p.receipt_url!}
+                            alt="رسید"
+                            className="max-h-64 rounded-lg border border-theme object-contain"
+                          />
+                        </a>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {canReview ? (
+                    <div className="mt-4 space-y-3 border-t border-theme pt-4">
+                      <textarea
+                        placeholder="دلیل رد (اختیاری)"
+                        rows={2}
+                        className="input-theme w-full text-sm"
+                        value={rejectNote}
+                        onChange={(e) => setRejectNote(e.target.value)}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          disabled={reviewingId === p.id}
+                          onClick={() => approveCard(p.id)}
+                        >
+                          {reviewingId === p.id ? "..." : "تأیید پرداخت"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewingId === p.id}
+                          onClick={() => rejectCard(p.id)}
+                        >
+                          رد رسید
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}

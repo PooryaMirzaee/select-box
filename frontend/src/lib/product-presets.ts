@@ -9,7 +9,7 @@ export const PRESET_COLORS: PresetColor[] = [
   { name: "طلایی", hex: "#c9a227" },
 ];
 
-export const PRESET_SIZES = ["استاندارد"] as const;
+export const PRESET_SIZES = [] as const;
 
 export function slugPart(s: string): string {
   return s

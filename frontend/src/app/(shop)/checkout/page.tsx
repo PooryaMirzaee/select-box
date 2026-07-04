@@ -8,12 +8,15 @@ import {
   createOrder,
   fetchShopSettings,
   getCartClient,
+  initiateCardTransfer,
   initiatePayment,
   validateCoupon,
   type Cart,
   type ShopSettings,
 } from "@/lib/api";
 import { formatToman } from "@/lib/utils";
+
+type PaymentMethod = "online" | "card_transfer";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -23,11 +26,16 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "" });
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
 
   useEffect(() => {
     getCartClient().then(setCart).catch(() => setCart(null));
     fetchShopSettings().then(setShop).catch(() => null);
   }, []);
+
+  const cardTransferAvailable = Boolean(
+    shop?.card_transfer_enabled && shop.card_number?.trim(),
+  );
 
   const subtotal = cart?.items.reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0) ?? 0;
   const shipping = subtotal > 0 ? (shop?.shipping_flat_toman ?? 4900) : 0;
@@ -55,6 +63,13 @@ export default function CheckoutPage() {
         coupon_code: coupon || undefined,
         shipping_address: form,
       });
+
+      if (paymentMethod === "card_transfer" && cardTransferAvailable) {
+        const cardPay = await initiateCardTransfer(order.order_id);
+        router.push(cardPay.payment_url);
+        return;
+      }
+
       const pay = await initiatePayment(order.order_id);
       if (pay.gateway === "zarinpal" && pay.payment_url.startsWith("http")) {
         window.location.href = pay.payment_url;
@@ -74,7 +89,14 @@ export default function CheckoutPage() {
     );
   }
 
-  const gatewayLabel = shop?.payment_gateway === "zarinpal" ? "زرین‌پال" : "پرداخت آزمایشی";
+  const onlineLabel = shop?.payment_gateway === "zarinpal" ? "پرداخت آنلاین (زرین‌پال)" : "پرداخت آنلاین";
+
+  const payButtonLabel =
+    paymentMethod === "card_transfer"
+      ? "ادامه — کارت‌به‌کارت"
+      : loading
+        ? "در حال انتقال..."
+        : `پرداخت با ${shop?.payment_gateway === "zarinpal" ? "زرین‌پال" : "درگاه آنلاین"}`;
 
   return (
     <div className="mx-auto grid max-w-5xl gap-10 px-4 py-10 lg:grid-cols-2 lg:py-14">
@@ -139,8 +161,33 @@ export default function CheckoutPage() {
             <dd className="font-semibold">{formatToman(total)}</dd>
           </div>
         </dl>
+
+        {cardTransferAvailable ? (
+          <div className="mt-6 space-y-2">
+            <p className="text-sm font-medium">روش پرداخت</p>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-theme px-4 py-3 has-[:checked]:border-[var(--accent)] has-[:checked]:bg-[var(--accent)]/5">
+              <input
+                type="radio"
+                name="payment_method"
+                checked={paymentMethod === "online"}
+                onChange={() => setPaymentMethod("online")}
+              />
+              <span className="text-sm">{onlineLabel}</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-theme px-4 py-3 has-[:checked]:border-[var(--accent)] has-[:checked]:bg-[var(--accent)]/5">
+              <input
+                type="radio"
+                name="payment_method"
+                checked={paymentMethod === "card_transfer"}
+                onChange={() => setPaymentMethod("card_transfer")}
+              />
+              <span className="text-sm">کارت‌به‌کارت + آپلود رسید</span>
+            </label>
+          </div>
+        ) : null}
+
         <Button className="mt-8 w-full" size="lg" disabled={loading} onClick={pay}>
-          {loading ? "در حال انتقال..." : `پرداخت با ${gatewayLabel}`}
+          {loading ? "در حال پردازش..." : payButtonLabel}
         </Button>
       </div>
     </div>

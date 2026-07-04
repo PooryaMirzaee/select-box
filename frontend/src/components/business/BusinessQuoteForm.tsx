@@ -8,10 +8,12 @@ import { submitBusinessQuote } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const PRODUCT_OPTIONS = [
-  { value: "tshirt", label: "تیشرت" },
-  { value: "hoodie", label: "هودی" },
-  { value: "mug", label: "ماگ" },
-  { value: "mixed", label: "ترکیبی / چند محصول" },
+  { value: "kitchen", label: "لوازم آشپزخانه" },
+  { value: "laundry", label: "لوازم شستشو" },
+  { value: "cleaning", label: "نظافت" },
+  { value: "climate", label: "سرمایش و گرمایش" },
+  { value: "lifestyle", label: "سبک زندگی" },
+  { value: "mixed", label: "ترکیبی / چند دسته" },
 ];
 
 type Props = {
@@ -25,7 +27,7 @@ type Props = {
 export function BusinessQuoteForm({
   defaultProductType = "mixed",
   landingSlug,
-  minOrderQty = 10,
+  minOrderQty = 5,
   className,
   compact = false,
 }: Props) {
@@ -177,12 +179,12 @@ export function BusinessQuoteForm({
             onChange={(e) => setCustomDesign(e.target.checked)}
             className="h-4 w-4 rounded border-theme accent-[var(--accent)]"
           />
-          <span>نیاز به طراحی / چاپ لوگو دارم</span>
+          <span>نیاز به نصب یا راه‌اندازی دارم</span>
         </label>
 
         <textarea
           className="input-theme min-h-[80px] resize-y text-sm"
-          placeholder="توضیحات (سایز، رنگ، زمان تحویل...)"
+          placeholder="توضیحات (برند، مدل، زمان تحویل، آدرس پروژه...)"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}

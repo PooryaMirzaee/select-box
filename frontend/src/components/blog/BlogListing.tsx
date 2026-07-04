@@ -27,7 +27,7 @@ export function BlogListing({
   activeCategory,
   activeTag,
   title = "مجله CORALAY",
-  subtitle = "ایده‌ها، ترندها و راهنمای طراحی برای چاپ و فروش",
+  subtitle = "راهنمای خرید، نگهداری لوازم خانگی و سبک زندگی",
   basePath = "/blog",
 }: Props) {
   const featured = posts.find((p) => p.is_featured) ?? posts[0];

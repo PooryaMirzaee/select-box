@@ -12,6 +12,11 @@ class ShopSettingsPublic(BaseModel):
     shipping_flat_toman: int
     currency_label: str
     payment_gateway: str
+    card_transfer_enabled: bool = True
+    card_number: str = ""
+    card_holder: str = ""
+    card_bank_name: str = ""
+    card_transfer_instructions: str = ""
     contact_phone: str = ""
     contact_email: str = ""
     contact_whatsapp: str = ""
@@ -54,6 +59,11 @@ class ShopSettingsPatch(BaseModel):
     shipping_flat_toman: int | None = None
     currency_label: str | None = None
     payment_gateway: str | None = None
+    card_transfer_enabled: bool | None = None
+    card_number: str | None = None
+    card_holder: str | None = None
+    card_bank_name: str | None = None
+    card_transfer_instructions: str | None = None
     zarinpal_merchant_id: str | None = None
     zarinpal_sandbox: bool | None = None
     zarinpal_callback_url: str | None = None

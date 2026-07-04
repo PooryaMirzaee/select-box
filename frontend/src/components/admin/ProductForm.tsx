@@ -16,8 +16,7 @@ import {
 } from "@/lib/api";
 import { canPublishProduct, evaluateProductPublish } from "@/lib/admin-status";
 import { parentSelectOptions, type CategoryTreeNode } from "@/lib/category-tree";
-import { fetchCustomizerTemplate, type ProductTemplate } from "@/lib/customizer";
-import { PRESET_COLORS, PRESET_SIZES, slugPart, type PresetColor } from "@/lib/product-presets";
+import { PRESET_COLORS, slugPart, type PresetColor } from "@/lib/product-presets";
 import { EMPTY_SIZE_GUIDE, normalizeSizeGuide, type SizeGuideData } from "@/lib/size-guide";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +76,6 @@ export function ProductForm({ productId }: Props) {
     price_delta: "",
     is_active: true,
   });
-  const [productTemplate, setProductTemplate] = useState<ProductTemplate | null>(null);
   const [sizeGuide, setSizeGuide] = useState<SizeGuideData>({ ...EMPTY_SIZE_GUIDE });
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
@@ -143,43 +141,13 @@ export function ProductForm({ productId }: Props) {
   }, [categoryTree, categories]);
 
   const typeCategories = useMemo(
-    () => categories.filter((c) => PRODUCT_TYPE_SLUGS.has(c.slug)),
+    () => categories.filter((c) => c.parent_id == null),
     [categories],
   );
 
-  const productTypeSlug = useMemo(() => {
-    const cat = categories.find((c) => c.id === Number(form.parent_category_id));
-    if (cat && PRODUCT_TYPE_SLUGS.has(cat.slug)) return cat.slug;
-    for (const slug of PRODUCT_TYPE_SLUGS) {
-      if (form.slug.endsWith(`-${slug}`) || form.slug === slug) return slug;
-    }
-    return null;
-  }, [categories, form.parent_category_id, form.slug]);
-
-  useEffect(() => {
-    if (!productTypeSlug) {
-      setProductTemplate(null);
-      return;
-    }
-    void fetchCustomizerTemplate(productTypeSlug)
-      .then(setProductTemplate)
-      .catch(() => setProductTemplate(null));
-  }, [productTypeSlug]);
-
-  const colorOptions = useMemo((): PresetColor[] => {
-    const fromTemplate = productTemplate?.config_json.colors;
-    if (fromTemplate?.length) {
-      return fromTemplate.map((c) => ({ name: c.name, hex: c.hex }));
-    }
-    return [...PRESET_COLORS];
-  }, [productTemplate]);
-
-  const sizeOptions = useMemo((): string[] => {
-    if (productTemplate) return productTemplate.config_json.sizes ?? [];
-    return [...PRESET_SIZES];
-  }, [productTemplate]);
-
-  const usesSizes = sizeOptions.length > 0;
+  const colorOptions = useMemo((): PresetColor[] => [...PRESET_COLORS], []);
+  const sizeOptions: string[] = [];
+  const usesSizes = false;
 
   const linkedDesign = useMemo(
     () => designs.find((d) => d.id === Number(form.design_id)),
@@ -547,7 +515,7 @@ export function ProductForm({ productId }: Props) {
             ))}
           </select>
           <p className="mt-1 text-xs text-muted">
-            مثلاً سینما › بریکینگ بد — از{" "}
+            مثلاً لوازم آشپزخانه › یخچال — از{" "}
             <Link href="/admin/categories" className="underline">
               مدیریت دسته‌ها
             </Link>
@@ -555,24 +523,15 @@ export function ProductForm({ productId }: Props) {
         </label>
 
         <label className="block text-sm">
-          <span className="text-muted">طرح خام (لینک تولید)</span>
+          <span className="text-muted">شناسه محصول (داخلی)</span>
           {isAutoLinkedDesign ? (
             <div className="mt-1 rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-3">
               <p className="font-medium">
-                {linkedDesignMeta?.title ?? linkedDesign?.title ?? "طرح متصل"}
+                {linkedDesignMeta?.title ?? linkedDesign?.title ?? "محصول متصل"}
               </p>
               <p className="mt-0.5 font-mono text-xs text-muted">
                 {linkedDesignMeta?.code ?? linkedDesign?.code}
               </p>
-              <p className="mt-2 text-xs text-green-600">
-                این محصول از Design Lab ساخته شده و خودکار به طرح خام لینک است.
-              </p>
-              <Link
-                href={`/admin/designs?design=${form.design_id}`}
-                className="mt-2 inline-block text-xs text-[var(--accent)] underline"
-              >
-                مشاهده فایل‌های چاپ
-              </Link>
             </div>
           ) : (
             <select
@@ -581,7 +540,7 @@ export function ProductForm({ productId }: Props) {
               value={form.design_id}
               onChange={(e) => setField("design_id", e.target.value)}
             >
-              <option value="">انتخاب طرح</option>
+              <option value="">انتخاب شناسه</option>
               {filteredDesigns.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.title} ({d.code})
@@ -590,28 +549,24 @@ export function ProductForm({ productId }: Props) {
             </select>
           )}
           <p className="mt-1 text-xs text-muted">
-            طرح = فایل خام چاپ. محصولات ساخته‌شده در Design Lab خودکار به طرح لینک می‌شوند.
+            هر محصول به یک شناسه داخلی لینک می‌شود — معمولاً هنگام seed خودکار ساخته می‌شود.
           </p>
           {!isAutoLinkedDesign && form.thematic_category_id && filteredDesigns.length === 0 ? (
             <p className="mt-1 text-xs text-amber-500">
-              طرحی برای این دسته نیست — از{" "}
-              <Link href="/admin/designs" className="underline">
-                طرح خام
-              </Link>{" "}
-              بسازید
+              شناسه‌ای برای این دسته نیست — ابتدا محصول را با seed یا API ایجاد کنید.
             </p>
           ) : null}
         </label>
 
         <label className="block text-sm">
-          <span className="text-muted">نوع محصول (تیشرت / هودی)</span>
+          <span className="text-muted">دسته اصلی</span>
           <select
             required
             className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
             value={form.parent_category_id}
             onChange={(e) => setField("parent_category_id", e.target.value)}
           >
-            <option value="">انتخاب نوع</option>
+            <option value="">انتخاب دسته اصلی</option>
             {typeCategories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name_fa}
@@ -715,19 +670,13 @@ export function ProductForm({ productId }: Props) {
         <ProductSizeGuideEditor productId={productId} value={sizeGuide} onChange={setSizeGuide} />
       ) : (
         <p className="mt-10 text-sm text-muted">
-          پس از ایجاد محصول می‌توانید راهنمای سایز را تنظیم کنید.
+          پس از ایجاد محصول می‌توانید جدول مشخصات فنی را تنظیم کنید.
         </p>
       )}
 
       {productId ? (
         <section className="mt-10 rounded-2xl border border-theme p-6">
           <h2 className="mb-4 text-lg font-medium">تنوع‌ها — افزودن سریع</h2>
-          {productTemplate ? (
-            <p className="mb-4 text-xs text-muted">
-              بر اساس قالب «{productTemplate.name_fa}»
-              {usesSizes ? ` — ${colorOptions.length} رنگ × ${sizeOptions.length} سایز` : " — فقط رنگ (بدون سایز)"}
-            </p>
-          ) : null}
 
           <div className="mb-6">
             <p className="mb-2 text-xs text-muted">رنگ‌ها</p>

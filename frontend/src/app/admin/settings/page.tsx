@@ -231,6 +231,37 @@ export default function AdminSettingsPage() {
         <section className="space-y-4 rounded-2xl border border-theme p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
+              <h2 className="font-medium">کارت‌به‌کارت</h2>
+              <p className="mt-1 text-xs text-muted">
+                مشتری مبلغ را واریز می‌کند، رسید آپلود می‌کند و شما از جزئیات سفارش تأیید می‌کنید.
+              </p>
+            </div>
+            <label className="flex shrink-0 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.card_transfer_enabled}
+                onChange={(e) => setForm({ ...form, card_transfer_enabled: e.target.checked })}
+              />
+              <span>فعال</span>
+            </label>
+          </div>
+          {field("شماره کارت", "card_number")}
+          {field("نام صاحب کارت", "card_holder")}
+          {field("نام بانک", "card_bank_name")}
+          <label className="block text-sm">
+            <span className="text-muted">راهنمای واریز برای مشتری</span>
+            <textarea
+              rows={3}
+              className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
+              value={form.card_transfer_instructions}
+              onChange={(e) => setForm({ ...form, card_transfer_instructions: e.target.value })}
+            />
+          </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-theme p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
               <h2 className="font-medium">پیامک sms.ir</h2>
               <p className="mt-1 text-xs text-muted">
                 API Key از پنل sms.ir → برنامه‌نویسان. قالب‌ها را در «ارسال سریع» بسازید و Template ID را اینجا وارد کنید.
@@ -389,10 +420,7 @@ export default function AdminSettingsPage() {
                 <a href="https://avalai.ir" target="_blank" rel="noopener noreferrer" className="underline">
                   avalai.ir
                 </a>{" "}
-                — برای تولید طرح در Design Lab.{" "}
-                <a href="/admin/ai" className="underline">
-                  مدیریت پرامپت‌ها و لاگ‌ها
-                </a>
+                — اختیاری؛ برای ابزارهای آیندهٔ فروشگاه.
               </p>
             </div>
             <label className="flex shrink-0 items-center gap-2 text-sm">

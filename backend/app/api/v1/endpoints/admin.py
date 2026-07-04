@@ -17,6 +17,7 @@ from app.models import (
     Design,
     DesignAsset,
     Order,
+    Payment,
     Product,
     ProductVariation,
 )
@@ -29,6 +30,8 @@ from app.schemas.admin import (
     ORDER_STATUSES,
     OrderAdminListItem,
     OrderStatusPatch,
+    PaymentAdminOut,
+    PaymentReviewIn,
     ProductAdminOut,
     ProductIn,
     ProductUpdateIn,
@@ -426,3 +429,72 @@ def update_order_status(order_id: int, body: OrderStatusPatch, db: Session = Dep
     o.status = body.status
     db.commit()
     return {"ok": True, "status": o.status}
+
+
+def _payment_admin_out(p: Payment) -> PaymentAdminOut:
+    return PaymentAdminOut(
+        id=p.id,
+        gateway=p.gateway,
+        gateway_ref=p.gateway_ref,
+        amount=str(p.amount),
+        status=p.status,
+        receipt_url=public_url(p.receipt_storage_key) if p.receipt_storage_key else None,
+        customer_note=p.customer_note,
+        admin_note=p.admin_note,
+        reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
+        created_at=p.created_at.isoformat() if p.created_at else None,
+    )
+
+
+@router.post("/payments/{payment_id}/approve-card", response_model=PaymentAdminOut)
+def approve_card_payment(payment_id: int, db: Session = Depends(get_db)):
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.gateway != "card_transfer":
+        raise HTTPException(status_code=400, detail="Not a card transfer payment")
+    if not payment.receipt_storage_key:
+        raise HTTPException(status_code=400, detail="رسید آپلود نشده")
+    if payment.status == "verified":
+        return _payment_admin_out(payment)
+
+    order = db.scalar(
+        select(Order).options(joinedload(Order.items)).where(Order.id == payment.order_id)
+    )
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    from app.api.v1.endpoints.payments import _mark_order_paid
+
+    try:
+        _mark_order_paid(db, order)
+    except HTTPException as e:
+        raise HTTPException(status_code=400, detail=str(e.detail)) from e
+
+    payment.status = "verified"
+    payment.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(payment)
+    return _payment_admin_out(payment)
+
+
+@router.post("/payments/{payment_id}/reject-card", response_model=PaymentAdminOut)
+def reject_card_payment(
+    payment_id: int,
+    body: PaymentReviewIn,
+    db: Session = Depends(get_db),
+):
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.gateway != "card_transfer":
+        raise HTTPException(status_code=400, detail="Not a card transfer payment")
+    if payment.status == "verified":
+        raise HTTPException(status_code=400, detail="پرداخت قبلاً تأیید شده")
+
+    payment.status = "failed"
+    payment.admin_note = (body.admin_note or "").strip() or None
+    payment.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(payment)
+    return _payment_admin_out(payment)

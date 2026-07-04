@@ -106,16 +106,16 @@ export function BlogPostView({ post }: Props) {
             <Sparkles className="h-6 w-6" />
           </div>
           <div className="flex-1">
-            <p className="font-medium">طرح خودت را بساز</p>
+            <p className="font-medium">محصول مناسب پیدا نکردید؟</p>
             <p className="mt-1 text-sm text-muted">
-              با Design Lab تیشرت و هودی اختصاصی طراحی کن و بفروش.
+              تیم SelectBox در انتخاب لوازم خانگی و سبک زندگی راهنمایی‌تان می‌کند.
             </p>
           </div>
           <Link
-            href="/customize"
+            href="/catalog"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-fg)] transition hover:opacity-90"
           >
-            شروع Design Lab
+            مشاهده کاتالوگ
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </aside>
