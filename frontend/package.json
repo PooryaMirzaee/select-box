@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@fontsource-variable/vazirmatn": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
     "clsx": "^2.1.1",
     "fabric": "^6.9.1",

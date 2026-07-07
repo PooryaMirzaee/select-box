@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "@fontsource-variable/vazirmatn";
+
 /* پالت آبی — light / dark یکپارچه در فروشگاه و ادمین */
 :root {
   color-scheme: light;
-  --font-sans: Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Vazirmatn Variable", Tahoma, "Segoe UI", system-ui, sans-serif;
 
   --bg: #fff;
   --bg-elevated: #f0f4f8;
