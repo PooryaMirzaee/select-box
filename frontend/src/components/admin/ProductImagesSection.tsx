@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
-import { adminFetch } from "@/lib/api";
+import { adminFetch, errorMessageFromResponse } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 import { mediaUrl } from "@/lib/media";
 
@@ -52,20 +52,27 @@ export function ProductImagesSection({ productId, onCountChange }: Props) {
     for (const file of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(apiUrl(`/api/v1/admin/products/${productId}/images`), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: fd,
-      });
+      let res: Response;
+      try {
+        res = await fetch(apiUrl(`/api/v1/admin/products/${productId}/images`), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token()}` },
+          body: fd,
+        });
+      } catch {
+        failed = true;
+        alert("اتصال به سرور برقرار نشد — دوباره تلاش کنید");
+        break;
+      }
       if (!res.ok) {
         failed = true;
-        alert(await res.text());
+        alert(await errorMessageFromResponse(res));
         break;
       }
     }
     setUploading(false);
     setFiles(null);
-    if (!failed) load();
+    load();
   }
 
   async function remove(imageId: number) {

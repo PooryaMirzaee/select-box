@@ -130,11 +130,11 @@ export default function AdminProductsPage() {
   async function toggleStatus(p: ProductAdmin) {
     const next = p.status === "published" ? "draft" : "published";
     if (next === "published") {
-      if (!(p.variation_count > 0)) {
+      if (p.variation_count < 1) {
         alert("برای انتشار، ابتدا از ویرایش محصول حداقل یک تنوع بسازید.");
         return;
       }
-      if (!(p.image_count > 0)) {
+      if (p.image_count < 1) {
         alert("برای انتشار، ابتدا از ویرایش محصول حداقل یک تصویر آپلود کنید.");
         return;
       }
@@ -283,13 +283,9 @@ export default function AdminProductsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={
-                        p.status !== "published" &&
-                        (!(p.variation_count > 0) || !(p.image_count > 0))
-                      }
+                      disabled={p.status !== "published" && (p.variation_count < 1 || p.image_count < 1)}
                       title={
-                        p.status !== "published" &&
-                        (!(p.variation_count > 0) || !(p.image_count > 0))
+                        p.status !== "published" && (p.variation_count < 1 || p.image_count < 1)
                           ? "ابتدا تنوع و تصویر اضافه کنید"
                           : undefined
                       }

@@ -12,7 +12,7 @@ import { apiBase } from "@/lib/api-base";
 const API_URL = apiBase();
 
 /** CDN گاهی به‌جای JSON، صفحهٔ HTML خطا برمی‌گرداند. */
-async function errorMessageFromResponse(res: Response): Promise<string> {
+export async function errorMessageFromResponse(res: Response): Promise<string> {
   const text = await res.text();
   try {
     const j = JSON.parse(text) as { detail?: string | { msg?: string }[] };
@@ -155,7 +155,7 @@ export type ProductAdmin = {
   size_guide_json?: SizeGuideData | null;
   thumbnail_url: string | null;
   image_count: number;
-  variation_count?: number;
+  variation_count: number;
   published_at?: string | null;
 };
 
