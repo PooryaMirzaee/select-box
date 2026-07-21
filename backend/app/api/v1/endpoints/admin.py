@@ -43,7 +43,12 @@ from app.schemas.admin import (
     VariationOut,
 )
 from app.services.catalog import primary_product_image_url
-from app.services.category_helpers import build_admin_category_tree, category_admin_out
+from app.services.category_helpers import (
+    build_admin_category_tree,
+    category_admin_out,
+    normalize_category_slug,
+)
+from app.services.product_admin import ensure_default_variation
 from app.services.storage import public_url
 from app.services.upload_security import secure_image_upload
 
@@ -80,9 +85,18 @@ def list_categories_tree(db: Session = Depends(get_db)):
     return build_admin_category_tree(rows)
 
 
+def _normalize_category_slug(raw: str) -> str:
+    try:
+        return normalize_category_slug(raw)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="اسلاگ دسته نامعتبر است — از / ٪ # استفاده نکنید") from None
+
+
 @router.post("/categories", response_model=CategoryOut)
 def create_category(body: CategoryIn, db: Session = Depends(get_db)):
-    c = Category(**body.model_dump())
+    data = body.model_dump()
+    data["slug"] = _normalize_category_slug(data["slug"])
+    c = Category(**data)
     db.add(c)
     db.commit()
     db.refresh(c)
@@ -226,7 +240,7 @@ def create_product(body: ProductIn, db: Session = Depends(get_db)):
     if status == "published":
         raise HTTPException(
             status_code=400,
-            detail="محصول جدید را ابتدا به‌صورت پیش‌نویس بسازید، تنوع و تصویر اضافه کنید سپس منتشر کنید",
+            detail="محصول جدید را ابتدا به‌صورت پیش‌نویس بسازید، تصویر اضافه کنید سپس منتشر کنید",
         )
 
     if design_id is not None:
@@ -272,6 +286,8 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
         if new_status not in ("draft", "published"):
             raise HTTPException(status_code=400, detail="Invalid status")
         if new_status == "published":
+            ensure_default_variation(db, p)
+            db.refresh(p, attribute_names=["variations", "images"])
             _require_publishable(p)
         _set_product_published(p, new_status)
     db.commit()
@@ -280,18 +296,17 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
 
 
 def _require_publishable(p: Product) -> None:
-    """قبل از انتشار — تنوع و تصویر اجباری است."""
-    var_count = len(p.variations or [])
+    """قبل از انتشار — تصویر اجباری است؛ تنوع در صورت نبود به‌صورت خودکار ساخته می‌شود."""
     img_count = len(p.images or [])
-    if var_count < 1:
-        raise HTTPException(
-            status_code=400,
-            detail="محصول باید حداقل یک تنوع داشته باشد — از صفحهٔ ویرایش تنوع اضافه کنید",
-        )
     if img_count < 1:
         raise HTTPException(
             status_code=400,
             detail="محصول باید حداقل یک تصویر داشته باشد — از صفحهٔ ویرایش تصویر آپلود کنید",
+        )
+    if not (p.variations or []):
+        raise HTTPException(
+            status_code=400,
+            detail="نتوانستیم تنوع پیش‌فرض بسازیم — دوباره تلاش کنید",
         )
 
 
@@ -303,7 +318,11 @@ def patch_product_status(product_id: int, body: StatusPatch, db: Session = Depen
     if body.status not in ("draft", "published"):
         raise HTTPException(status_code=400, detail="Invalid status")
     if body.status == "published":
+        ensure_default_variation(db, p, stock_quantity=body.stock_quantity)
+        db.refresh(p, attribute_names=["variations", "images"])
         _require_publishable(p)
+    elif body.stock_quantity is not None:
+        ensure_default_variation(db, p, stock_quantity=body.stock_quantity)
     _set_product_published(p, body.status)
     db.commit()
     p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()

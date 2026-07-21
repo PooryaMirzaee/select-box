@@ -1,5 +1,9 @@
 """خروجی دسته برای API فروشگاه و ادمین."""
 
+from __future__ import annotations
+
+import re
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -7,6 +11,17 @@ from app.models import Category, Design, Product
 from app.models.customizer import ProductTemplate
 from app.schemas.admin import CategoryOut
 from app.services.storage import delete_upload, public_url
+
+
+def normalize_category_slug(raw: str) -> str:
+    """اسلاگ امن برای URL — بدون / ٪ # و کاراکترهای شکننده."""
+    slug = re.sub(r"[^\w\-]+", "-", (raw or "").strip().lower(), flags=re.UNICODE)
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")
+    if not slug:
+        raise ValueError("invalid_slug")
+    if any(ch in slug for ch in ("/", "%", "#", "?", "&")):
+        raise ValueError("invalid_slug")
+    return slug[:120]
 
 
 def category_image_url(cat: Category) -> str | None:

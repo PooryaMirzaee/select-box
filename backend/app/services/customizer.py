@@ -274,6 +274,7 @@ def cart_line_dict(item: CartItem) -> dict:
         title = f"{p.title} — {custom['title']}"
     elif custom.get("product_type"):
         title = f"{p.title} ({custom['product_type']})"
+    preview = custom.get("artwork_url") or catalog_service.primary_product_image_url(p)
     line = {
         "id": item.id,
         "variation_id": v.id,
@@ -282,7 +283,7 @@ def cart_line_dict(item: CartItem) -> dict:
         "title": title,
         "unit_price": str(unit),
         "customization": item.customization_json,
-        "preview_url": custom.get("artwork_url"),
+        "preview_url": preview,
         "is_custom": bool(item.customization_json),
     }
     return line

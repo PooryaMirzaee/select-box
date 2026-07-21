@@ -12,7 +12,7 @@ import {
   type ProductAdmin,
   type VariationAdmin,
 } from "@/lib/api";
-import { canPublishProduct, evaluateProductPublish } from "@/lib/admin-status";
+import { canPublishProduct, evaluateProductPublish, isDefaultVariation } from "@/lib/admin-status";
 import { parentSelectOptions, type CategoryTreeNode } from "@/lib/category-tree";
 import { PRESET_COLORS, slugPart, type PresetColor } from "@/lib/product-presets";
 import { EMPTY_SIZE_GUIDE, normalizeSizeGuide, type SizeGuideData } from "@/lib/size-guide";
@@ -64,6 +64,7 @@ export function ProductForm({ productId }: Props) {
     is_active: true,
   });
   const [sizeGuide, setSizeGuide] = useState<SizeGuideData>({ ...EMPTY_SIZE_GUIDE });
+  const [simpleStock, setSimpleStock] = useState("10");
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
@@ -100,6 +101,11 @@ export function ProductForm({ productId }: Props) {
         setImageCount(p.image_count);
         setPublishedAt(p.published_at ?? null);
         setSizeGuide(normalizeSizeGuide(p.size_guide_json));
+        const defaults = vars.filter(isDefaultVariation);
+        const manual = vars.filter((v) => !isDefaultVariation(v));
+        if (manual.length === 0 && defaults[0]) {
+          setSimpleStock(String(defaults[0].stock_quantity ?? 10));
+        }
       })
       .catch(() => setError("محصول یافت نشد"))
       .finally(() => setLoading(false));
@@ -249,16 +255,22 @@ export function ProductForm({ productId }: Props) {
     });
   }
 
+  const manualVariations = useMemo(
+    () => variations.filter((v) => !isDefaultVariation(v)),
+    [variations],
+  );
+  const isSimpleProduct = manualVariations.length === 0;
+
   const publishChecks = useMemo(
     () =>
       evaluateProductPublish({
         title: form.title,
         slug: form.slug,
         base_price: form.base_price,
-        variationCount: variations.length,
         imageCount,
+        simpleStock: Number(simpleStock),
       }),
-    [form.title, form.slug, form.base_price, variations.length, imageCount],
+    [form.title, form.slug, form.base_price, imageCount, simpleStock],
   );
 
   const readyToPublish = canPublishProduct(publishChecks);
@@ -269,13 +281,26 @@ export function ProductForm({ productId }: Props) {
     setError(null);
     setSuccess(null);
     try {
+      const body: Record<string, unknown> = { status: "published" };
+      if (isSimpleProduct) {
+        body.stock_quantity = Math.max(0, Number(simpleStock) || 0);
+      }
       await adminFetch<ProductAdmin>(`/api/v1/admin/products/${productId}/status`, token(), {
         method: "PATCH",
-        body: JSON.stringify({ status: "published" }),
+        body: JSON.stringify(body),
       });
+      const vars = await adminFetch<VariationAdmin[]>(
+        `/api/v1/admin/products/${productId}/variations`,
+        token(),
+      );
+      setVariations(vars);
       setField("status", "published");
       setPublishedAt(new Date().toISOString());
-      setSuccess("محصول منتشر شد — در فروشگاه قابل مشاهده است");
+      setSuccess(
+        isSimpleProduct
+          ? "محصول منتشر شد (بدون نیاز به تنوع رنگ/سایز)"
+          : "محصول منتشر شد — در فروشگاه قابل مشاهده است",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "انتشار ناموفق");
     } finally {
@@ -516,6 +541,25 @@ export function ProductForm({ productId }: Props) {
 
       {productId ? <ProductImagesSection productId={productId} onCountChange={setImageCount} /> : null}
 
+      {productId && isSimpleProduct ? (
+        <section className="mt-10 rounded-2xl border border-theme p-6">
+          <h2 className="mb-2 text-lg font-medium">موجودی محصول ساده</h2>
+          <p className="mb-4 text-sm text-muted">
+            اگر رنگ یا سایز ندارید، همین کافی است — هنگام انتشار یک SKU داخلی ساخته می‌شود.
+          </p>
+          <label className="block max-w-xs text-sm">
+            <span className="text-muted">موجودی</span>
+            <input
+              type="number"
+              min={0}
+              className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
+              value={simpleStock}
+              onChange={(e) => setSimpleStock(e.target.value)}
+            />
+          </label>
+        </section>
+      ) : null}
+
       {productId ? (
         <ProductSizeGuideEditor productId={productId} value={sizeGuide} onChange={setSizeGuide} />
       ) : (
@@ -526,7 +570,10 @@ export function ProductForm({ productId }: Props) {
 
       {productId ? (
         <section className="mt-10 rounded-2xl border border-theme p-6">
-          <h2 className="mb-4 text-lg font-medium">تنوع‌ها — افزودن سریع</h2>
+          <h2 className="mb-2 text-lg font-medium">تنوع‌ها (اختیاری)</h2>
+          <p className="mb-4 text-sm text-muted">
+            فقط اگر چند رنگ یا گزینه دارید. در غیر این صورت از «موجودی محصول ساده» استفاده کنید.
+          </p>
 
           <div className="mb-6">
             <p className="mb-2 text-xs text-muted">رنگ‌ها</p>
@@ -604,9 +651,9 @@ export function ProductForm({ productId }: Props) {
             </Button>
           </div>
 
-          {variations.length > 0 ? (
+          {manualVariations.length > 0 ? (
             <ul className="mb-6 max-h-64 space-y-2 overflow-y-auto text-sm">
-              {variations.map((v) => (
+              {manualVariations.map((v) => (
                 <li key={v.id} className="rounded-lg border border-theme bg-[var(--input-bg)]/50 px-3 py-2">
                   {editingVarId === v.id ? (
                     <div className="grid gap-2 sm:grid-cols-4">

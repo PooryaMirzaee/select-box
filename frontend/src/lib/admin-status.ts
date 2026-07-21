@@ -38,32 +38,33 @@ export function orderStatusColor(status: string): string {
   return ORDER_STATUS_COLORS[status as OrderStatus] ?? "bg-surface text-muted";
 }
 
-export const PRODUCT_PUBLISH_CHECKS = [
-  { key: "title", label: "عنوان محصول" },
-  { key: "slug", label: "اسلاگ" },
-  { key: "base_price", label: "قیمت پایه" },
-  { key: "variations", label: "حداقل یک تنوع (رنگ/سایز)" },
-  { key: "images", label: "حداقل یک تصویر" },
-] as const;
-
 export type ProductPublishCheck = {
   ok: boolean;
   label: string;
 };
 
+/** تنوع داخلی محصول ساده = بدون رنگ و سایز */
+export function isDefaultVariation(v: {
+  color_name?: string | null;
+  size_label?: string | null;
+}): boolean {
+  return !(v.color_name || "").trim() && !(v.size_label || "").trim();
+}
+
 export function evaluateProductPublish(form: {
   title: string;
   slug: string;
   base_price: string;
-  variationCount: number;
   imageCount: number;
+  simpleStock?: number;
 }): ProductPublishCheck[] {
+  const stockOk = form.simpleStock === undefined || form.simpleStock >= 0;
   return [
     { ok: !!form.title.trim(), label: "عنوان محصول" },
     { ok: !!form.slug.trim(), label: "اسلاگ" },
     { ok: !!form.base_price && Number(form.base_price) > 0, label: "قیمت پایه" },
-    { ok: form.variationCount > 0, label: "حداقل یک تنوع (رنگ/سایز)" },
     { ok: form.imageCount > 0, label: "حداقل یک تصویر" },
+    { ok: stockOk, label: "موجودی محصول" },
   ];
 }
 

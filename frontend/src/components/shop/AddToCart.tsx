@@ -10,6 +10,10 @@ import { sizeGuideHasContent } from "@/lib/size-guide";
 import { CART_EVENTS } from "@/lib/storage-keys";
 import { cn, formatToman } from "@/lib/utils";
 
+function isPlainVariation(v: VariationPublic): boolean {
+  return !(v.color_name || "").trim() && !(v.size_label || "").trim();
+}
+
 export function AddToCart({ product }: { product: ProductDetail }) {
   const [selected, setSelected] = useState<VariationPublic | null>(
     product.variations[0] ?? null,
@@ -21,34 +25,46 @@ export function AddToCart({ product }: { product: ProductDetail }) {
 
   const showSizeGuide = product.size_guide && sizeGuideHasContent(product.size_guide);
 
-  const colors = [...new Set(product.variations.map((v) => v.color_name).filter(Boolean))];
+  const colors = [...new Set(product.variations.map((v) => v.color_name).filter(Boolean))] as string[];
+  const hasSizedOptions = product.variations.some((v) => !!(v.size_label || "").trim());
+  const isSimpleProduct =
+    product.variations.length === 1 && product.variations[0] && isPlainVariation(product.variations[0]);
+
   const sizes = product.variations.filter(
     (v) => !selected?.color_name || v.color_name === selected.color_name,
   );
 
   async function handleAdd() {
-    if (!selected || selected.stock_quantity < 1) return;
+    const target = selected ?? product.variations[0] ?? null;
+    if (!target || target.stock_quantity < 1) {
+      setMsg(target ? "این گزینه ناموجود است" : "گزینه‌ای برای خرید نیست");
+      return;
+    }
     setLoading(true);
     setMsg(null);
     try {
-      await addToCart(selected.id, qty);
+      await addToCart(target.id, qty);
       trackEvent("add_to_cart", window.location.pathname, {
         product_id: product.id,
         product_slug: product.slug,
-        variation_id: selected.id,
+        variation_id: target.id,
         quantity: qty,
       });
       window.dispatchEvent(new Event(CART_EVENTS.update));
       window.dispatchEvent(new Event(CART_EVENTS.open));
       setMsg("به سبد اضافه شد");
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "خطا");
+      setMsg(e instanceof Error ? e.message : "خطا در افزودن به سبد");
     } finally {
       setLoading(false);
     }
   }
 
   const price = selected?.unit_price ?? product.effective_price;
+  const canAdd =
+    product.in_stock &&
+    !!(selected ?? product.variations[0]) &&
+    (selected ?? product.variations[0])!.stock_quantity > 0;
 
   return (
     <div className="card-theme space-y-6 p-5 sm:p-6">
@@ -60,7 +76,7 @@ export function AddToCart({ product }: { product: ProductDetail }) {
         ) : null}
       </div>
 
-      {colors.length > 0 ? (
+      {!isSimpleProduct && colors.length > 0 ? (
         <div>
           <p className="mb-2 text-xs text-muted">رنگ</p>
           <div className="flex flex-wrap gap-2">
@@ -95,39 +111,51 @@ export function AddToCart({ product }: { product: ProductDetail }) {
         </div>
       ) : null}
 
-      <div>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-xs text-muted">سایز</p>
-          {showSizeGuide ? (
-            <button
-              type="button"
-              onClick={() => setSizeGuideOpen(true)}
-              className="text-xs text-[var(--accent)] underline-offset-2 hover:underline"
-            >
-              {product.size_guide!.title}
-            </button>
-          ) : null}
+      {!isSimpleProduct && hasSizedOptions ? (
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-muted">سایز</p>
+            {showSizeGuide ? (
+              <button
+                type="button"
+                onClick={() => setSizeGuideOpen(true)}
+                className="text-xs text-[var(--accent)] underline-offset-2 hover:underline"
+              >
+                {product.size_guide!.title}
+              </button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sizes
+              .filter((v) => !!(v.size_label || "").trim())
+              .map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  disabled={v.stock_quantity < 1}
+                  onClick={() => setSelected(v)}
+                  className={cn(
+                    "min-h-[44px] min-w-[3rem] rounded-xl border px-3 py-2 text-sm transition",
+                    selected?.id === v.id
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--fg)]"
+                      : "border-theme text-muted",
+                    v.stock_quantity < 1 && "opacity-40",
+                  )}
+                >
+                  {v.size_label}
+                </button>
+              ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              disabled={v.stock_quantity < 1}
-              onClick={() => setSelected(v)}
-              className={cn(
-                "min-h-[44px] min-w-[3rem] rounded-xl border px-3 py-2 text-sm transition",
-                selected?.id === v.id
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--fg)]"
-                  : "border-theme text-muted",
-                v.stock_quantity < 1 && "opacity-40",
-              )}
-            >
-              {v.size_label}
-            </button>
-          ))}
-        </div>
-      </div>
+      ) : showSizeGuide && !isSimpleProduct ? (
+        <button
+          type="button"
+          onClick={() => setSizeGuideOpen(true)}
+          className="text-xs text-[var(--accent)] underline-offset-2 hover:underline"
+        >
+          {product.size_guide!.title}
+        </button>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center justify-center rounded-full border border-theme">
@@ -149,11 +177,15 @@ export function AddToCart({ product }: { product: ProductDetail }) {
             +
           </button>
         </div>
-        <Button className="w-full sm:flex-1" disabled={loading || !product.in_stock} onClick={handleAdd}>
-          {loading ? "..." : product.in_stock ? "افزودن به سبد" : "ناموجود"}
+        <Button className="w-full sm:flex-1" disabled={loading || !canAdd} onClick={handleAdd}>
+          {loading ? "..." : canAdd ? "افزودن به سبد" : "ناموجود"}
         </Button>
       </div>
-      {msg ? <p className="text-sm text-[var(--fg)]">{msg}</p> : null}
+      {msg ? (
+        <p className={cn("text-sm", msg.includes("سبد") ? "text-green-600" : "text-red-500")}>
+          {msg}
+        </p>
+      ) : null}
 
       {showSizeGuide ? (
         <ProductSizeGuideModal

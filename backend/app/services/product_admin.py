@@ -1,10 +1,70 @@
-"""حذف امن محصول — سبدها، سفارش‌ها، تصاویر، طرح یتیم."""
+"""حذف امن محصول — سبدها، سفارش‌ها، تصاویر، طرح یتیم + تنوع پیش‌فرض."""
+
+from __future__ import annotations
+
+import re
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import CartItem, Design, OrderItem, Product
+from app.models import CartItem, Design, OrderItem, Product, ProductVariation
 from app.services.storage import delete_upload
+
+
+def is_default_variation(v: ProductVariation) -> bool:
+    """تنوع داخلی محصول ساده — بدون رنگ و سایز."""
+    return not (v.color_name or "").strip() and not (v.size_label or "").strip()
+
+
+def _default_sku(product: Product) -> str:
+    prefix = (product.sku_prefix or "").strip()
+    if prefix:
+        base = re.sub(r"[^\w-]+", "-", prefix.upper()).strip("-") or "PRD"
+    else:
+        base = re.sub(r"[^\w-]+", "-", (product.slug or "product").upper()).strip("-") or "PRD"
+    return f"{base[:100]}-STD"
+
+
+def ensure_default_variation(
+    db: Session,
+    product: Product,
+    *,
+    stock_quantity: int | None = None,
+) -> ProductVariation:
+    """
+    اگر محصول هیچ تنوعی ندارد، یک SKU داخلی می‌سازد.
+    اگر فقط یک تنوع پیش‌فرض دارد و stock داده شده، موجودی را به‌روز می‌کند.
+    """
+    variations = list(product.variations or [])
+    stock = 10 if stock_quantity is None else max(0, int(stock_quantity))
+
+    if not variations:
+        sku = _default_sku(product)
+        # جلوگیری از برخورد sku یکتا
+        exists = db.scalar(select(ProductVariation.id).where(ProductVariation.sku == sku))
+        if exists is not None:
+            sku = f"{sku}-{product.id}"
+        v = ProductVariation(
+            product_id=product.id,
+            sku=sku[:128],
+            color_name=None,
+            color_hex=None,
+            size_label=None,
+            price_delta=0,
+            stock_quantity=stock,
+            is_active=True,
+        )
+        db.add(v)
+        db.flush()
+        if product.variations is not None:
+            product.variations.append(v)
+        return v
+
+    if len(variations) == 1 and is_default_variation(variations[0]) and stock_quantity is not None:
+        variations[0].stock_quantity = stock
+        db.flush()
+
+    return variations[0]
 
 
 def delete_product_safe(db: Session, product_id: int) -> None:

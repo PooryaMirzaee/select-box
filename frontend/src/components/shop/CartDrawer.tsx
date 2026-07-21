@@ -6,6 +6,7 @@ import { X } from "@/components/icons";
 import { useCart } from "@/components/shop/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { removeCartItem, updateCartItem } from "@/lib/api";
+import { mediaUrl } from "@/lib/media";
 import { cn, formatToman } from "@/lib/utils";
 
 export function CartDrawer() {
@@ -56,7 +57,7 @@ export function CartDrawer() {
                     {line.preview_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={line.preview_url}
+                        src={mediaUrl(line.preview_url)}
                         alt=""
                         className="h-14 w-14 shrink-0 rounded-lg border border-theme object-cover"
                       />

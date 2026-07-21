@@ -134,6 +134,7 @@ export type BrowseResponse = {
   }[];
   products: ProductSummary[];
   error?: string;
+  canonical_path?: string;
 };
 
 export type ProductAdmin = {

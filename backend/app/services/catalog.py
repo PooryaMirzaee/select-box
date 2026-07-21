@@ -102,14 +102,21 @@ def category_navigation_tree(db: Session) -> list[dict]:
 
 
 def resolve_category_path(db: Session, slugs: list[str]) -> Category | None:
-    """مسیر اسلاگ‌ها را به یک دستهٔ برگ تبدیل می‌کند؛ مثلاً cinema/film-series/breaking-bad"""
+    """مسیر اسلاگ‌ها را به یک دسته تبدیل می‌کند؛ مثلاً kitchen/refrigerator"""
     if not slugs:
         return None
     parent_id: int | None = None
     cat: Category | None = None
     for slug in slugs:
+        normalized = normalize_slug_param(slug).strip().lower()
+        if not normalized:
+            return None
         cat = db.scalar(
-            select(Category).where(Category.slug == slug, Category.parent_id == parent_id)
+            select(Category).where(
+                Category.slug == normalized,
+                Category.parent_id == parent_id,
+                Category.is_active.is_(True),
+            )
         )
         if cat is None:
             return None
@@ -117,11 +124,40 @@ def resolve_category_path(db: Session, slugs: list[str]) -> Category | None:
     return cat
 
 
+def resolve_category_by_unique_slug(db: Session, slug: str) -> Category | None:
+    """اگر فقط یک دستهٔ فعال با این اسلاگ وجود داشته باشد، همان را برمی‌گرداند."""
+    normalized = normalize_slug_param(slug).strip().lower()
+    if not normalized:
+        return None
+    rows = list(
+        db.scalars(
+            select(Category).where(Category.slug == normalized, Category.is_active.is_(True))
+        ).all()
+    )
+    if len(rows) == 1:
+        return rows[0]
+    return None
+
+
+def category_full_path(db: Session, cat: Category) -> str:
+    """مسیر کامل والد→فرزند برای canonical."""
+    parts: list[str] = []
+    current: Category | None = cat
+    guard = 0
+    while current is not None and guard < 32:
+        parts.append(current.slug)
+        if current.parent_id is None:
+            break
+        current = db.get(Category, current.parent_id)
+        guard += 1
+    return "/".join(reversed(parts))
+
+
 def thematic_root_categories(db: Session) -> list[Category]:
-    """ریشه‌های موضوعی (بدون نوع محصول مثل تیشرت)."""
+    """ریشه‌های موضوعی فعال (بدون نوع محصول مثل تیشرت)."""
     rows = db.scalars(
         select(Category)
-        .where(Category.parent_id.is_(None))
+        .where(Category.parent_id.is_(None), Category.is_active.is_(True))
         .order_by(Category.sort_order, Category.id)
     ).all()
     return [c for c in rows if c.slug not in PRODUCT_TYPE_SLUGS]
@@ -130,7 +166,9 @@ def thematic_root_categories(db: Session) -> list[Category]:
 def children_of(db: Session, parent_id: int) -> list[Category]:
     return list(
         db.scalars(
-            select(Category).where(Category.parent_id == parent_id).order_by(Category.sort_order, Category.id)
+            select(Category)
+            .where(Category.parent_id == parent_id, Category.is_active.is_(True))
+            .order_by(Category.sort_order, Category.id)
         ).all()
     )
 
@@ -148,22 +186,24 @@ def category_current_dict(cat: Category) -> dict:
 
 
 def all_category_browse_paths(db: Session) -> list[str]:
-    """همهٔ مسیرهای فعال دسته برای sitemap."""
-    rows = list(
+    """همهٔ مسیرهای فعال دسته برای sitemap — اجداد حتی اگر غیرفعال باشند لحاظ می‌شوند."""
+    active_rows = list(
         db.scalars(
             select(Category)
             .where(Category.is_active.is_(True))
             .order_by(Category.sort_order, Category.id)
         ).all()
     )
-    by_id = {c.id: c for c in rows}
+    all_by_id = {c.id: c for c in db.scalars(select(Category)).all()}
     paths: list[str] = []
-    for cat in rows:
+    for cat in active_rows:
         parts: list[str] = []
         cur: Category | None = cat
-        while cur is not None:
+        seen: set[int] = set()
+        while cur is not None and cur.id not in seen:
+            seen.add(cur.id)
             parts.append(cur.slug)
-            cur = by_id.get(cur.parent_id) if cur.parent_id else None
+            cur = all_by_id.get(cur.parent_id) if cur.parent_id else None
         paths.append("/".join(reversed(parts)))
     return sorted(set(paths))
 
@@ -206,14 +246,17 @@ def browse_context(db: Session, path_slugs: list[str], product_type: str | None)
         }
 
     cat = resolve_category_path(db, path_slugs)
+    if cat is None and len(path_slugs) == 1:
+        cat = resolve_category_by_unique_slug(db, path_slugs[0])
     if cat is None:
         return {"breadcrumbs": [], "current": None, "children": [], "products": [], "error": "not_found"}
 
     crumbs = category_breadcrumbs(db, cat)
     kids = children_of(db, cat.id)
+    canonical_path = category_full_path(db, cat)
 
     if kids:
-        base = "/".join(path_slugs)
+        base = canonical_path
         return {
             "breadcrumbs": crumbs,
             "current": category_current_dict(cat),
@@ -224,6 +267,7 @@ def browse_context(db: Session, path_slugs: list[str], product_type: str | None)
                 for ch in kids
             ],
             "products": [],
+            "canonical_path": canonical_path,
         }
 
     products = list_products(
@@ -238,6 +282,7 @@ def browse_context(db: Session, path_slugs: list[str], product_type: str | None)
         "current": category_current_dict(cat),
         "children": [],
         "products": [_product_summary_dict(p) for p in products],
+        "canonical_path": canonical_path,
     }
 
 
@@ -418,11 +463,19 @@ def get_or_create_session_cart(db: Session, session_id: str) -> Cart:
 
 
 def cart_with_items(db: Session, cart_id: int) -> Cart | None:
-    """سبد با پیش‌بارگذاری آیتم‌ها، variation و product برای محاسبه قیمت."""
+    """سبد با پیش‌بارگذاری آیتم‌ها، variation و product برای محاسبه قیمت و تصویر."""
     return db.scalar(
         select(Cart)
         .options(
-            joinedload(Cart.items).joinedload(CartItem.variation).joinedload(ProductVariation.product)
+            joinedload(Cart.items)
+            .joinedload(CartItem.variation)
+            .joinedload(ProductVariation.product)
+            .joinedload(Product.images),
+            joinedload(Cart.items)
+            .joinedload(CartItem.variation)
+            .joinedload(ProductVariation.product)
+            .joinedload(Product.design)
+            .joinedload(Design.assets),
         )
         .where(Cart.id == cart_id)
     )

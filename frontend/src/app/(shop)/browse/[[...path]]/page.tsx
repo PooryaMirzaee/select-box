@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { Breadcrumbs, type Crumb } from "@/components/shop/Breadcrumbs";
@@ -20,13 +21,19 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const sp = await searchParams;
   const pathStr = segments?.join("/") ?? "";
 
-  const [data, settings] = await Promise.all([
-    fetchBrowse(pathStr, sp.type).catch(() => null),
-    fetchShopSettings().catch(() => null),
-  ]);
-
+  let data = null;
+  let fetchFailed = false;
+  try {
+    data = await fetchBrowse(pathStr, sp.type);
+  } catch {
+    fetchFailed = true;
+  }
+  const settings = await fetchShopSettings().catch(() => null);
   const siteUrl = getSiteUrl(settings);
 
+  if (fetchFailed) {
+    return { title: "خطا در بارگذاری", robots: { index: false, follow: false } };
+  }
   if (!data || data.error) {
     return { title: "دسته یافت نشد", robots: { index: false, follow: false } };
   }
@@ -53,11 +60,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   const ogImage = data.current?.image_url;
   const hasTypeFilter = Boolean(sp.type);
+  const canonicalPath = data.canonical_path || pathStr;
 
   return buildPageMetadata({
     title,
     description,
-    canonical: browseCanonical(siteUrl, pathStr),
+    canonical: browseCanonical(siteUrl, canonicalPath),
     shopName,
     ogImage,
     noindex: hasTypeFilter,
@@ -68,14 +76,33 @@ export default async function BrowsePage({ params, searchParams }: Props) {
   const { path: segments } = await params;
   const sp = await searchParams;
   const pathStr = segments?.join("/") ?? "";
-  const data = await fetchBrowse(pathStr, sp.type).catch(() => null);
+
+  let data = null;
+  let fetchFailed = false;
+  try {
+    data = await fetchBrowse(pathStr, sp.type);
+  } catch {
+    fetchFailed = true;
+  }
   const settings = await fetchShopSettings().catch(() => null);
   const siteUrl = getSiteUrl(settings);
+
+  if (fetchFailed) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center">
+        <p className="text-muted">ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.</p>
+      </div>
+    );
+  }
 
   if (!data || data.error) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-16 text-center text-muted">دسته یافت نشد.</div>
     );
+  }
+
+  if (data.canonical_path && pathStr && data.canonical_path !== pathStr && !sp.type) {
+    redirect(`/browse/${data.canonical_path}`);
   }
 
   const crumbs: Crumb[] = data.breadcrumbs.map((b) => ({

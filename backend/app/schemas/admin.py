@@ -205,6 +205,8 @@ class VariationOut(BaseModel):
 
 class StatusPatch(BaseModel):
     status: str
+    """موجودی محصول ساده — فقط وقتی تنوع دستی ساخته نشده."""
+    stock_quantity: int | None = Field(default=None, ge=0, le=1_000_000)
 
 
 ORDER_STATUSES = (

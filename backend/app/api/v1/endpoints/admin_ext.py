@@ -56,10 +56,17 @@ router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(requir
 # --- Categories ---
 @router.patch("/categories/{category_id}", response_model=CategoryOut)
 def update_category(category_id: int, body: CategoryIn, db: Session = Depends(get_db)):
+    from app.services.category_helpers import normalize_category_slug
+
     c = db.get(Category, category_id)
     if c is None:
         raise HTTPException(status_code=404, detail="Category not found")
-    for k, v in body.model_dump().items():
+    data = body.model_dump()
+    try:
+        data["slug"] = normalize_category_slug(data["slug"])
+    except ValueError:
+        raise HTTPException(status_code=400, detail="اسلاگ دسته نامعتبر است — از / ٪ # استفاده نکنید") from None
+    for k, v in data.items():
         setattr(c, k, v)
     db.commit()
     db.refresh(c)
