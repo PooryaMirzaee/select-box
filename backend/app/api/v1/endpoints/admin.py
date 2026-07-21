@@ -272,31 +272,41 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
         if new_status not in ("draft", "published"):
             raise HTTPException(status_code=400, detail="Invalid status")
         if new_status == "published":
-            if not p.variations:
-                raise HTTPException(status_code=400, detail="محصول باید حداقل یک تنوع داشته باشد")
-            if not p.images:
-                raise HTTPException(status_code=400, detail="محصول باید حداقل یک تصویر داشته باشد")
+            _require_publishable(p)
         _set_product_published(p, new_status)
     db.commit()
-    p = db.scalar(_product_query().where(Product.id == product_id))
+    p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     return _product_admin_out(p)
+
+
+def _require_publishable(p: Product) -> None:
+    """قبل از انتشار — تنوع و تصویر اجباری است."""
+    var_count = len(p.variations or [])
+    img_count = len(p.images or [])
+    if var_count < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="محصول باید حداقل یک تنوع داشته باشد — از صفحهٔ ویرایش تنوع اضافه کنید",
+        )
+    if img_count < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="محصول باید حداقل یک تصویر داشته باشد — از صفحهٔ ویرایش تصویر آپلود کنید",
+        )
 
 
 @router.patch("/products/{product_id}/status", response_model=ProductAdminOut)
 def patch_product_status(product_id: int, body: StatusPatch, db: Session = Depends(get_db)):
-    p = db.scalar(_product_query().where(Product.id == product_id))
+    p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     if p is None:
         raise HTTPException(status_code=404, detail="Product not found")
     if body.status not in ("draft", "published"):
         raise HTTPException(status_code=400, detail="Invalid status")
     if body.status == "published":
-        if not p.variations:
-            raise HTTPException(status_code=400, detail="محصول باید حداقل یک تنوع داشته باشد")
-        if not p.images:
-            raise HTTPException(status_code=400, detail="محصول باید حداقل یک تصویر داشته باشد")
+        _require_publishable(p)
     _set_product_published(p, body.status)
     db.commit()
-    db.refresh(p)
+    p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     return _product_admin_out(p)
 
 

@@ -11,6 +11,33 @@ import { apiBase } from "@/lib/api-base";
 
 const API_URL = apiBase();
 
+/** CDN گاهی به‌جای JSON، صفحهٔ HTML خطا برمی‌گرداند. */
+async function errorMessageFromResponse(res: Response): Promise<string> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text) as { detail?: string | { msg?: string }[] };
+    if (typeof j.detail === "string") return j.detail;
+    if (Array.isArray(j.detail)) {
+      const msgs = j.detail.map((d) => (typeof d === "object" && d?.msg ? d.msg : "")).filter(Boolean);
+      if (msgs.length) return msgs.join("؛ ");
+    }
+  } catch {
+    /* HTML/plain from CDN or proxy */
+  }
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith("<!") || trimmed.includes("<html")) {
+    if (res.status === 400) return "درخواست نامعتبر است — پیش‌نیازها را بررسی کنید (تنوع و تصویر)";
+    if (res.status === 401) return "نشست منقضی شده — دوباره وارد شوید";
+    if (res.status === 403) return "دسترسی مجاز نیست";
+    if (res.status === 404) return "مورد یافت نشد";
+    if (res.status === 409) return "تداخل داده — ممکن است وابستگی مانع عملیات شده باشد";
+    if (res.status >= 500) return `خطای سرور (${res.status}) — لطفاً دوباره تلاش کنید`;
+    return `خطا از سمت سرور (${res.status || "؟"})`;
+  }
+  if (text.length > 280) return `${text.slice(0, 280)}…`;
+  return text || res.statusText || "خطای ناشناخته";
+}
+
 export type ProductSummary = {
   id: number;
   slug: string;
@@ -258,15 +285,7 @@ export async function apiFetch<T>(path: string, init?: ApiFetchInit, token?: str
     throw new Error("اتصال به سرور برقرار نشد — بک‌اند را روی پورت ۸۰۰۰ اجرا کنید");
   }
   if (!res.ok) {
-    const text = await res.text();
-    let detail = text || res.statusText;
-    try {
-      const j = JSON.parse(text) as { detail?: string };
-      if (typeof j.detail === "string") detail = j.detail;
-    } catch {
-      /* plain text */
-    }
-    throw new Error(detail);
+    throw new Error(await errorMessageFromResponse(res));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -642,15 +661,7 @@ export async function uploadPaymentReceipt(paymentId: number, file: File, custom
     throw new Error("اتصال به سرور برقرار نشد");
   }
   if (!res.ok) {
-    const text = await res.text();
-    let detail = text || res.statusText;
-    try {
-      const j = JSON.parse(text) as { detail?: string };
-      if (typeof j.detail === "string") detail = j.detail;
-    } catch {
-      /* plain text */
-    }
-    throw new Error(detail);
+    throw new Error(await errorMessageFromResponse(res));
   }
   return res.json() as Promise<{ ok: boolean; receipt_url: string; message: string }>;
 }

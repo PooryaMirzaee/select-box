@@ -129,6 +129,16 @@ export default function AdminProductsPage() {
 
   async function toggleStatus(p: ProductAdmin) {
     const next = p.status === "published" ? "draft" : "published";
+    if (next === "published") {
+      if (!(p.variation_count > 0)) {
+        alert("برای انتشار، ابتدا از ویرایش محصول حداقل یک تنوع بسازید.");
+        return;
+      }
+      if (!(p.image_count > 0)) {
+        alert("برای انتشار، ابتدا از ویرایش محصول حداقل یک تصویر آپلود کنید.");
+        return;
+      }
+    }
     try {
       await adminFetch(`/api/v1/admin/products/${p.id}/status`, token(), {
         method: "PATCH",
@@ -270,7 +280,21 @@ export default function AdminProductsPage() {
                         </Button>
                       </Link>
                     ) : null}
-                    <Button size="sm" variant="outline" onClick={() => toggleStatus(p)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={
+                        p.status !== "published" &&
+                        (!(p.variation_count > 0) || !(p.image_count > 0))
+                      }
+                      title={
+                        p.status !== "published" &&
+                        (!(p.variation_count > 0) || !(p.image_count > 0))
+                          ? "ابتدا تنوع و تصویر اضافه کنید"
+                          : undefined
+                      }
+                      onClick={() => toggleStatus(p)}
+                    >
                       {p.status === "published" ? "پیش‌نویس" : "انتشار"}
                     </Button>
                     <Button size="sm" variant="outline" disabled={busy} onClick={() => remove(p.id)}>
