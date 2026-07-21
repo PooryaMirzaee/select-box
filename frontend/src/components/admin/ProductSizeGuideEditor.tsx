@@ -106,7 +106,7 @@ export function ProductSizeGuideEditor({ productId, value, onChange }: Props) {
   return (
     <section className="mt-10 rounded-2xl border border-theme p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium">راهنمای سایز</h2>
+        <h2 className="text-lg font-medium">مشخصات فنی</h2>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -151,7 +151,7 @@ export function ProductSizeGuideEditor({ productId, value, onChange }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
-                alt="راهنمای سایز"
+                alt="مشخصات فنی"
                 className="max-h-64 rounded-xl border border-theme object-contain"
               />
               <div className="flex gap-2">

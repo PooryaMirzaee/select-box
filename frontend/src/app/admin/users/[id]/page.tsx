@@ -70,9 +70,6 @@ export default function AdminUserDetailPage() {
       </Link>
       <h1 className="mt-4 text-2xl font-semibold">
         {user.full_name || user.phone}
-        {user.is_creator ? (
-          <span className="ms-2 text-sm font-normal text-[var(--accent)]">خالق</span>
-        ) : null}
       </h1>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

@@ -371,14 +371,6 @@ export default function AdminOrderDetailPage() {
                       {item.is_custom ? (
                         <span className="text-[10px] text-[var(--accent)]">سفارشی</span>
                       ) : null}
-                      {item.design_id ? (
-                        <Link
-                          href={`/admin/designs?design=${item.design_id}`}
-                          className="mt-1 block text-[10px] text-muted hover:text-[var(--accent)]"
-                        >
-                          طرح خام #{item.design_id} ←
-                        </Link>
-                      ) : null}
                     </div>
                   </div>
                 </td>

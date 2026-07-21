@@ -9,8 +9,6 @@ import { ProductSizeGuideEditor } from "@/components/admin/ProductSizeGuideEdito
 import { Button } from "@/components/ui/Button";
 import {
   adminFetch,
-  type CategoryAdmin,
-  type DesignAdmin,
   type ProductAdmin,
   type VariationAdmin,
 } from "@/lib/api";
@@ -22,12 +20,8 @@ import { cn } from "@/lib/utils";
 
 type Props = { productId?: number };
 
-const PRODUCT_TYPE_SLUGS = new Set<string>();
-
 export function ProductForm({ productId }: Props) {
   const router = useRouter();
-  const [designs, setDesigns] = useState<DesignAdmin[]>([]);
-  const [categories, setCategories] = useState<CategoryAdmin[]>([]);
   const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([]);
   const [variations, setVariations] = useState<VariationAdmin[]>([]);
   const [loading, setLoading] = useState(!!productId);
@@ -36,8 +30,6 @@ export function ProductForm({ productId }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    design_id: "",
-    thematic_category_id: "",
     parent_category_id: "",
     slug: "",
     title: "",
@@ -65,11 +57,6 @@ export function ProductForm({ productId }: Props) {
   const [imageCount, setImageCount] = useState(0);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
-  const [linkedDesignMeta, setLinkedDesignMeta] = useState<{
-    title: string;
-    code: string;
-    source: string | null;
-  } | null>(null);
   const [editingVarId, setEditingVarId] = useState<number | null>(null);
   const [editVar, setEditVar] = useState({
     stock_quantity: "",
@@ -82,13 +69,9 @@ export function ProductForm({ productId }: Props) {
 
   useEffect(() => {
     Promise.all([
-      adminFetch<DesignAdmin[]>("/api/v1/admin/designs", token()),
-      adminFetch<CategoryAdmin[]>("/api/v1/admin/categories", token()),
       adminFetch<CategoryTreeNode[]>("/api/v1/admin/categories/tree", token()),
     ])
-      .then(([d, c, tree]) => {
-        setDesigns(d);
-        setCategories(c);
+      .then(([tree]) => {
         setCategoryTree(tree);
       })
       .catch(() => setError("خطا در بارگذاری داده‌ها"));
@@ -103,8 +86,6 @@ export function ProductForm({ productId }: Props) {
     ])
       .then(([p, vars]) => {
         setForm({
-          design_id: String(p.design_id),
-          thematic_category_id: p.thematic_category_id ? String(p.thematic_category_id) : "",
           parent_category_id: String(p.parent_category_id),
           slug: p.slug,
           title: p.title,
@@ -119,77 +100,19 @@ export function ProductForm({ productId }: Props) {
         setImageCount(p.image_count);
         setPublishedAt(p.published_at ?? null);
         setSizeGuide(normalizeSizeGuide(p.size_guide_json));
-        if (p.design_id && p.design_title) {
-          setLinkedDesignMeta({
-            title: p.design_title,
-            code: p.design_code ?? "",
-            source: p.design_source_type ?? null,
-          });
-        } else {
-          setLinkedDesignMeta(null);
-        }
       })
       .catch(() => setError("محصول یافت نشد"))
       .finally(() => setLoading(false));
   }, [productId]);
 
-  const thematicOptions = useMemo(() => {
-    const exclude = new Set(
-      categories.filter((c) => PRODUCT_TYPE_SLUGS.has(c.slug)).map((c) => c.id),
-    );
-    return parentSelectOptions(categoryTree, exclude);
-  }, [categoryTree, categories]);
-
-  const typeCategories = useMemo(
-    () => categories.filter((c) => c.parent_id == null),
-    [categories],
-  );
+  const categoryOptions = useMemo(() => parentSelectOptions(categoryTree, new Set()), [categoryTree]);
 
   const colorOptions = useMemo((): PresetColor[] => [...PRESET_COLORS], []);
   const sizeOptions: string[] = [];
   const usesSizes = false;
 
-  const linkedDesign = useMemo(
-    () => designs.find((d) => d.id === Number(form.design_id)),
-    [designs, form.design_id],
-  );
-
-  const filteredDesigns = useMemo(() => {
-    const pool = form.thematic_category_id
-      ? designs.filter((d) => String(d.thematic_category_id) === form.thematic_category_id)
-      : designs;
-    if (linkedDesign && !pool.some((d) => d.id === linkedDesign.id)) {
-      return [linkedDesign, ...pool];
-    }
-    return pool;
-  }, [designs, form.thematic_category_id, linkedDesign]);
-
-  const isAutoLinkedDesign = Boolean(
-    productId &&
-      form.design_id &&
-      (linkedDesignMeta?.source === "user" ||
-        linkedDesign?.code?.startsWith("USR-") ||
-        linkedDesignMeta?.code?.startsWith("USR-")),
-  );
-
   function setField<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  async function syncDesignCategory() {
-    const d = designs.find((x) => x.id === Number(form.design_id));
-    if (!d || !form.thematic_category_id) return;
-    await adminFetch(`/api/v1/admin/designs/${d.id}`, token(), {
-      method: "PATCH",
-      body: JSON.stringify({
-        code: d.code,
-        title: d.title,
-        slug: d.slug,
-        thematic_category_id: Number(form.thematic_category_id),
-        description: null,
-        status: "published",
-      }),
-    });
   }
 
   async function saveProduct(e: React.FormEvent) {
@@ -197,8 +120,7 @@ export function ProductForm({ productId }: Props) {
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const body = {
-      design_id: Number(form.design_id),
+    const body: Record<string, unknown> = {
       parent_category_id: Number(form.parent_category_id),
       slug: form.slug,
       title: form.title,
@@ -224,29 +146,12 @@ export function ProductForm({ productId }: Props) {
           method: "PATCH",
           body: JSON.stringify(body),
         });
-        await syncDesignCategory();
         setSuccess("ذخیره شد");
       } else {
         const created = await adminFetch<ProductAdmin>("/api/v1/admin/products", token(), {
           method: "POST",
           body: JSON.stringify(body),
         });
-        if (form.thematic_category_id) {
-          const d = designs.find((x) => x.id === created.design_id);
-          if (d) {
-            await adminFetch(`/api/v1/admin/designs/${d.id}`, token(), {
-              method: "PATCH",
-              body: JSON.stringify({
-                code: d.code,
-                title: d.title,
-                slug: d.slug,
-                thematic_category_id: Number(form.thematic_category_id),
-                description: null,
-                status: "published",
-              }),
-            });
-          }
-        }
         router.push(`/admin/products/${created.id}/edit`);
       }
     } catch (err) {
@@ -497,82 +402,27 @@ export function ProductForm({ productId }: Props) {
 
       <form onSubmit={saveProduct} className="space-y-5 rounded-2xl border border-theme p-6">
         <label className="block text-sm">
-          <span className="text-muted">دسته موضوعی (برای browse)</span>
-          <select
-            required
-            className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
-            value={form.thematic_category_id}
-            onChange={(e) => {
-              setField("thematic_category_id", e.target.value);
-              if (!productId) setField("design_id", "");
-            }}
-          >
-            <option value="">انتخاب دسته</option>
-            {thematicOptions.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-muted">
-            مثلاً لوازم آشپزخانه › یخچال — از{" "}
-            <Link href="/admin/categories" className="underline">
-              مدیریت دسته‌ها
-            </Link>
-          </p>
-        </label>
-
-        <label className="block text-sm">
-          <span className="text-muted">شناسه محصول (داخلی)</span>
-          {isAutoLinkedDesign ? (
-            <div className="mt-1 rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-3">
-              <p className="font-medium">
-                {linkedDesignMeta?.title ?? linkedDesign?.title ?? "محصول متصل"}
-              </p>
-              <p className="mt-0.5 font-mono text-xs text-muted">
-                {linkedDesignMeta?.code ?? linkedDesign?.code}
-              </p>
-            </div>
-          ) : (
-            <select
-              required
-              className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
-              value={form.design_id}
-              onChange={(e) => setField("design_id", e.target.value)}
-            >
-              <option value="">انتخاب شناسه</option>
-              {filteredDesigns.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.title} ({d.code})
-                </option>
-              ))}
-            </select>
-          )}
-          <p className="mt-1 text-xs text-muted">
-            هر محصول به یک شناسه داخلی لینک می‌شود — معمولاً هنگام seed خودکار ساخته می‌شود.
-          </p>
-          {!isAutoLinkedDesign && form.thematic_category_id && filteredDesigns.length === 0 ? (
-            <p className="mt-1 text-xs text-amber-500">
-              شناسه‌ای برای این دسته نیست — ابتدا محصول را با seed یا API ایجاد کنید.
-            </p>
-          ) : null}
-        </label>
-
-        <label className="block text-sm">
-          <span className="text-muted">دسته اصلی</span>
+          <span className="text-muted">دسته‌بندی</span>
           <select
             required
             className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2"
             value={form.parent_category_id}
             onChange={(e) => setField("parent_category_id", e.target.value)}
           >
-            <option value="">انتخاب دسته اصلی</option>
-            {typeCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name_fa}
+            <option value="">انتخاب دسته</option>
+            {categoryOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-muted">
+            از{" "}
+            <Link href="/admin/categories" className="underline">
+              مدیریت دسته‌ها
+            </Link>{" "}
+            ساختار فروشگاه را بسازید.
+          </p>
         </label>
 
         <label className="block text-sm">

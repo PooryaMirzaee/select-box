@@ -2,27 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "@fontsource-variable/vazirmatn";
+/* فونت از /public/fonts — در Docker standalone قابل اعتماد است */
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/fonts/vazirmatn-arabic-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF,
+    U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
 
-/* پالت آبی — light / dark یکپارچه در فروشگاه و ادمین */
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/fonts/vazirmatn-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/fonts/vazirmatn-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* پالت فروشگاهی — زغال‌سنگ و سنگ؛ بدون آبی */
 :root {
   color-scheme: light;
-  --font-sans: "Vazirmatn Variable", Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Vazirmatn", Tahoma, "Segoe UI", system-ui, sans-serif;
 
-  --bg: #fff;
-  --bg-elevated: #f0f4f8;
-  --fg: #1a1f2e;
-  --fg-muted: #5a6478;
-  --border: #d4dce8;
-  --accent: #1d6fd8;
-  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-fg: #ffffff;
-  --card: #f0f4f8;
-  --header-bg: rgba(240, 244, 248, 0.92);
-  --sidebar-bg: #e4eaf2;
-  --sidebar-fg: #4a453e;
-  --sidebar-hover: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
+  --bg: #faf9f7;
+  --bg-elevated: #f3f1ee;
+  --fg: #1c1917;
+  --fg-muted: #78716c;
+  --border: #e7e5e4;
+  --accent: #1c1917;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-fg: #fafaf9;
+  --card: #ffffff;
+  --header-bg: rgba(250, 249, 247, 0.92);
+  --sidebar-bg: #f3f1ee;
+  --sidebar-fg: #57534e;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 6%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
   --sidebar-active-fg: var(--accent);
   --shadow-soft: 0 8px 32px color-mix(in srgb, var(--fg) 8%, transparent);
   --input-bg: #ffffff;
@@ -30,23 +60,23 @@
 
 .dark {
   color-scheme: dark;
-  --bg: #0f1419;
-  --bg-elevated: #1a2332;
-  --fg: #e8ecf2;
-  --fg-muted: #8b95a8;
-  --border: #2a3548;
-  --accent: #4d9aff;
-  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
-  --accent-fg: #121118;
-  --card: #1a1922;
-  --header-bg: rgba(18, 17, 24, 0.9);
-  --sidebar-bg: #16151d;
-  --sidebar-fg: #a8a29a;
+  --bg: #141210;
+  --bg-elevated: #1c1917;
+  --fg: #f5f5f4;
+  --fg-muted: #a8a29e;
+  --border: #292524;
+  --accent: #e7e5e4;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-fg: #1c1917;
+  --card: #1c1917;
+  --header-bg: rgba(20, 18, 16, 0.92);
+  --sidebar-bg: #0c0a09;
+  --sidebar-fg: #a8a29e;
   --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 20%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
   --sidebar-active-fg: var(--accent);
-  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.35);
-  --input-bg: #1f1e28;
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --input-bg: #1c1917;
 }
 
 html {

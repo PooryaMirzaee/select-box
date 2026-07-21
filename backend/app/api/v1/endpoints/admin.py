@@ -3,6 +3,8 @@
 """
 
 from decimal import Decimal
+import re
+import secrets
 
 from datetime import datetime, timezone
 
@@ -219,12 +221,38 @@ def get_product_admin(product_id: int, db: Session = Depends(get_db)):
 def create_product(body: ProductIn, db: Session = Depends(get_db)):
     data = body.model_dump()
     status = data.pop("status", "draft")
-    p = Product(**data, status=status)
+    design_id = data.pop("design_id", None)
+
     if status == "published":
         raise HTTPException(
             status_code=400,
             detail="محصول جدید را ابتدا به‌صورت پیش‌نویس بسازید، تنوع و تصویر اضافه کنید سپس منتشر کنید",
         )
+
+    if design_id is not None:
+        if db.get(Design, design_id) is None:
+            raise HTTPException(status_code=400, detail="شناسه داخلی نامعتبر است")
+    else:
+        # فروش ساده کالا — طرح داخلی خودکار ساخته می‌شود (سازگاری با مدل قدیمی)
+        parent_id = data["parent_category_id"]
+        if db.get(Category, parent_id) is None:
+            raise HTTPException(status_code=400, detail="دسته نامعتبر است")
+        slug_base = re.sub(r"[^a-z0-9-]+", "-", str(data["slug"]).lower()).strip("-") or "product"
+        code = f"PRD-{secrets.token_hex(4).upper()}"
+        design_slug = f"{slug_base}-{secrets.token_hex(3)}"
+        stub = Design(
+            code=code,
+            title=str(data["title"])[:255],
+            slug=design_slug[:200],
+            thematic_category_id=parent_id,
+            status="published",
+            source_type="admin",
+        )
+        db.add(stub)
+        db.flush()
+        design_id = stub.id
+
+    p = Product(**data, design_id=design_id, status=status)
     db.add(p)
     db.commit()
     p = db.scalar(_product_query().where(Product.id == p.id))

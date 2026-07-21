@@ -88,16 +88,16 @@ class ProductImageOut(BaseModel):
 
 class SizeGuideIn(BaseModel):
     enabled: bool = False
-    title: str = "راهنمای سایز"
+    title: str = "مشخصات فنی"
     intro: str = ""
     image_key: str | None = None
-    columns: list[str] = Field(default_factory=lambda: ["سایز", "عرض سینه (cm)", "قد (cm)"])
+    columns: list[str] = Field(default_factory=lambda: ["ویژگی", "مقدار"])
     rows: list[list[str]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
 
 class ProductIn(BaseModel):
-    design_id: int
+    design_id: int | None = None
     parent_category_id: int
     slug: str
     title: str

@@ -24,7 +24,6 @@ export default function AdminUsersPage() {
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
-  const [creatorsOnly, setCreatorsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStaff, setShowStaff] = useState(false);
@@ -42,7 +41,6 @@ export default function AdminUsersPage() {
     fetchAdminUsers(token(), {
       q: q || undefined,
       role: role || undefined,
-      creators_only: creatorsOnly,
     })
       .then((res) => {
         setItems(res.items);
@@ -50,7 +48,7 @@ export default function AdminUsersPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "خطا"))
       .finally(() => setLoading(false));
-  }, [q, role, creatorsOnly]);
+  }, [q, role]);
 
   useEffect(() => {
     load();
@@ -78,7 +76,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">کاربران</h1>
-          <p className="mt-1 text-sm text-muted">خریداران، خالقین و پرسنل — {total} نفر</p>
+          <p className="mt-1 text-sm text-muted">مشتریان و پرسنل — {total} نفر</p>
         </div>
         <Button size="sm" onClick={() => setShowStaff((s) => !s)}>
           <User className="ms-1 inline h-4 w-4" />
@@ -140,10 +138,6 @@ export default function AdminUsersPage() {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={creatorsOnly} onChange={(e) => setCreatorsOnly(e.target.checked)} />
-          فقط خالقین
-        </label>
         <Button variant="outline" size="sm" onClick={load}>
           جستجو
         </Button>
@@ -159,20 +153,19 @@ export default function AdminUsersPage() {
               <th className="py-2 text-start">نام / شماره</th>
               <th className="py-2 text-start">نقش</th>
               <th className="py-2 text-start">وضعیت</th>
-              <th className="py-2 text-start">خالق</th>
               <th className="py-2" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-muted">
+                <td colSpan={5} className="py-8 text-center text-muted">
                   ...
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-muted">
+                <td colSpan={5} className="py-8 text-center text-muted">
                   کاربری نیست
                 </td>
               </tr>
@@ -190,7 +183,6 @@ export default function AdminUsersPage() {
                       {u.is_active ? "فعال" : "غیرفعال"}
                     </span>
                   </td>
-                  <td>{u.is_creator ? "بله" : "—"}</td>
                   <td className="text-end">
                     <Link href={`/admin/users/${u.id}`} className="inline-flex items-center gap-1 text-[var(--accent)]">
                       <Eye className="h-4 w-4" />

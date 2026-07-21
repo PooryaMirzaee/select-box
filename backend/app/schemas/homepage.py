@@ -9,11 +9,11 @@ class HomepageCta(BaseModel):
 
 
 class HomepageHeroConfig(BaseModel):
-    badge: str = "فروشگاه طرح‌محور"
-    title: str = "دنیای خودت رو انتخاب کن"
-    subtitle: str = "تیشرت و هودی با موضوع دلخواه — یا با Design Lab اثر خودت را بساز و سفارش بده."
-    primary_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="شروع Design Lab", href="/customize"))
-    secondary_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="ویترین خالقین", href="/studios"))
+    badge: str = "SelectBox"
+    title: str = "لوازم خانگی و سبک زندگی"
+    subtitle: str = "خرید آنلاین با گارانتی اصلی، قیمت رقابتی و ارسال سریع."
+    primary_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="مشاهده کاتالوگ", href="/catalog"))
+    secondary_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="سفارش سازمانی", href="/business"))
     mobile_categories_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="مرور دسته‌ها", href="/browse"))
     categories_link_label: str = "همه دسته‌ها"
     categories_link_href: str = "/browse"
@@ -23,7 +23,7 @@ class HomepageHeroConfig(BaseModel):
 
 class HomepageFeaturedConfig(BaseModel):
     title: str = "منتخب"
-    subtitle: str = "طرح‌های تازه"
+    subtitle: str = "پیشنهادهای هفته"
     catalog_label: str = "کاتالوگ ←"
     catalog_href: str = "/catalog"
     product_count: int = Field(default=6, ge=2, le=24)

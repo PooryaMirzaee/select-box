@@ -26,7 +26,6 @@ export default function AdminDashboard() {
     ? [
         { label: "محصول منتشر", value: data.products_published },
         { label: "پیش‌نویس", value: data.products_draft },
-        { label: "طرح‌ها", value: data.designs },
         { label: "سفارش‌ها", value: data.orders },
         { label: "درآمد پرداخت‌شده", value: `${formatToman(data.revenue_paid)}` },
       ]

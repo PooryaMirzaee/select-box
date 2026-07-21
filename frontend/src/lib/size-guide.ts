@@ -11,10 +11,10 @@ export type SizeGuideData = {
 
 export const EMPTY_SIZE_GUIDE: SizeGuideData = {
   enabled: false,
-  title: "راهنمای سایز",
+  title: "مشخصات فنی",
   intro: "",
   image_key: null,
-  columns: ["سایز", "عرض سینه (cm)", "قد (cm)"],
+  columns: ["ویژگی", "مقدار"],
   rows: [],
   notes: [],
 };
