@@ -122,7 +122,7 @@ def _ensure_business_landings() -> None:
 
 
 def _ensure_blog_seed() -> None:
-    """دسته‌ها و مقالات نمونه وبلاگ."""
+    """دسته‌ها و مقالات نمونه وبلاگ — فقط اگر هنوز پستی نیست؛ دسته‌های تکراری ساخته نمی‌شوند."""
     from datetime import datetime, timezone
 
     from sqlalchemy import select
@@ -132,27 +132,46 @@ def _ensure_blog_seed() -> None:
 
     db = SessionLocal()
     try:
-        if db.scalar(select(BlogPost).limit(1)):
+        if db.scalar(select(BlogPost.id).limit(1)):
             return
 
-        categories = [
-            BlogCategory(slug="home-tips", name_fa="نکات خانه‌داری", description="راهنمای نگهداری و استفاده از لوازم خانگی", sort_order=1),
-            BlogCategory(slug="buying-guide", name_fa="راهنمای خرید", description="چطور بهترین لوازم خانگی را انتخاب کنیم", sort_order=2),
-            BlogCategory(slug="lifestyle", name_fa="سبک زندگی", description="لوازم روزمره و بهبود کیفیت زندگی", sort_order=3),
+        cat_specs = [
+            ("home-tips", "نکات خانه‌داری", "راهنمای نگهداری و استفاده از لوازم خانگی", 1),
+            ("buying-guide", "راهنمای خرید", "چطور بهترین لوازم خانگی را انتخاب کنیم", 2),
+            ("lifestyle", "سبک زندگی", "لوازم روزمره و بهبود کیفیت زندگی", 3),
         ]
-        for c in categories:
-            db.add(c)
-        db.flush()
+        categories: list[BlogCategory] = []
+        for slug, name_fa, description, sort_order in cat_specs:
+            existing = db.scalar(select(BlogCategory).where(BlogCategory.slug == slug))
+            if existing:
+                categories.append(existing)
+            else:
+                c = BlogCategory(
+                    slug=slug,
+                    name_fa=name_fa,
+                    description=description,
+                    sort_order=sort_order,
+                )
+                db.add(c)
+                db.flush()
+                categories.append(c)
 
-        tags = [
-            BlogTag(slug="refrigerator", name_fa="یخچال"),
-            BlogTag(slug="energy-saving", name_fa="صرفه‌جویی انرژی"),
-            BlogTag(slug="lifestyle", name_fa="سبک زندگی"),
-            BlogTag(slug="b2b", name_fa="سفارش عمده"),
+        tag_specs = [
+            ("refrigerator", "یخچال"),
+            ("energy-saving", "صرفه‌جویی انرژی"),
+            ("lifestyle", "سبک زندگی"),
+            ("b2b", "سفارش عمده"),
         ]
-        for t in tags:
-            db.add(t)
-        db.flush()
+        tags: list[BlogTag] = []
+        for slug, name_fa in tag_specs:
+            existing = db.scalar(select(BlogTag).where(BlogTag.slug == slug))
+            if existing:
+                tags.append(existing)
+            else:
+                t = BlogTag(slug=slug, name_fa=name_fa)
+                db.add(t)
+                db.flush()
+                tags.append(t)
 
         now = datetime.now(timezone.utc)
         posts = [
@@ -211,6 +230,8 @@ def _ensure_blog_seed() -> None:
         posts[2].tags = [tags[2], tags[3]]
 
         for p in posts:
+            if db.scalar(select(BlogPost.id).where(BlogPost.slug == p.slug)):
+                continue
             db.add(p)
         db.commit()
     finally:
