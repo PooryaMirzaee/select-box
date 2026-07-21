@@ -47,5 +47,19 @@ echo ""
 
 echo ""
 echo "=== upstream از داخل nginx ==="
-dc exec -T nginx wget -qO- http://api:8000/health 2>/dev/null && echo " ✅ api:8000" || echo "❌ api:8000 unreachable"
-dc exec -T nginx wget -q -S -O /dev/null http://web:3000/ 2>&1 | head -1 || echo "❌ web:3000 unreachable"
+if dc exec -T nginx wget -qO- http://api:8000/health >/dev/null 2>&1; then
+  echo "✅ api:8000"
+else
+  echo "❌ api:8000 unreachable"
+fi
+# از head استفاده نکنید — بستن زودهنگام pipe باعث SIGPIPE و false-negative می‌شود
+if dc exec -T nginx wget -q -O /dev/null http://web:3000/ >/dev/null 2>&1; then
+  echo "✅ web:3000"
+else
+  # بعضی پاسخ‌های Next (redirect/SSR) کد غیر ۲xx می‌دهند؛ اتصال TCP را جدا چک کن
+  if dc exec -T nginx wget -q -S -O /dev/null http://web:3000/ 2>&1 | grep -qE 'HTTP/[0-9.]+ [123]'; then
+    echo "✅ web:3000 (پاسخ HTTP دریافت شد)"
+  else
+    echo "❌ web:3000 unreachable"
+  fi
+fi
