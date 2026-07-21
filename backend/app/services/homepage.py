@@ -83,16 +83,20 @@ def get_public(db: Session) -> HomepagePublic:
 def patch_config(db: Session, body: HomepageConfigPatch) -> HomepageConfig:
     current = get_config(db)
     data = current.model_dump()
+    # model_dump → nested dicts (نه مدل Pydantic)
     patch = body.model_dump(exclude_unset=True)
-    if "sections" in patch and patch["sections"] is not None:
-        data["sections"] = _normalize_sections([s.model_dump() for s in patch["sections"]])
-    if "hero" in patch and patch["hero"] is not None:
-        data["hero"] = {**data["hero"], **patch["hero"].model_dump()}
-    if "featured" in patch and patch["featured"] is not None:
-        data["featured"] = {**data["featured"], **patch["featured"].model_dump()}
+
+    if patch.get("sections") is not None:
+        data["sections"] = _normalize_sections(list(patch["sections"]))
+    if patch.get("hero") is not None:
+        data["hero"] = {**data["hero"], **patch["hero"]}
+    if patch.get("featured") is not None:
+        data["featured"] = {**data["featured"], **patch["featured"]}
     if "show_promo_fallback" in patch:
         data["show_promo_fallback"] = patch["show_promo_fallback"]
-    shop_settings.set_setting(db, SETTING_KEY, data)
+
+    validated = HomepageConfig.model_validate(data)
+    shop_settings.set_setting(db, SETTING_KEY, validated.model_dump())
     return get_config(db)
 
 
