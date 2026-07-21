@@ -7,7 +7,7 @@ import {
   defaultExpandedIds,
 } from "@/components/admin/AdminCategoryTree";
 import { Button } from "@/components/ui/Button";
-import { adminFetch, type CategoryAdmin } from "@/lib/api";
+import { adminFetch, errorMessageFromResponse, type CategoryAdmin } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 import {
   collectDescendantIds,
@@ -113,30 +113,47 @@ export default function AdminCategoriesPage() {
       meta_description: form.meta_description || null,
     };
     let categoryId = editId;
-    if (editId) {
-      await adminFetch(`/api/v1/admin/categories/${editId}`, token(), {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-    } else {
-      const created = await adminFetch<CategoryAdmin>("/api/v1/admin/categories", token(), {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      categoryId = created.id;
+    try {
+      if (editId) {
+        await adminFetch(`/api/v1/admin/categories/${editId}`, token(), {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+      } else {
+        const created = await adminFetch<CategoryAdmin>("/api/v1/admin/categories", token(), {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        categoryId = created.id;
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "ذخیرهٔ دسته ناموفق بود");
+      return;
     }
 
     if (iconFile && categoryId) {
       setUploading(true);
-      const fd = new FormData();
-      fd.append("file", iconFile);
-      const res = await fetch(apiUrl(`/api/v1/admin/categories/${categoryId}/icon`), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: fd,
-      });
+      try {
+        const fd = new FormData();
+        fd.append("file", iconFile);
+        const res = await fetch(apiUrl(`/api/v1/admin/categories/${categoryId}/icon`), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token()}` },
+          body: fd,
+        });
+        if (!res.ok) {
+          alert(`آپلود تصویر دسته ناموفق بود: ${await errorMessageFromResponse(res)}`);
+          setUploading(false);
+          load();
+          return;
+        }
+      } catch {
+        alert("اتصال به سرور هنگام آپلود تصویر قطع شد — دوباره تلاش کنید");
+        setUploading(false);
+        load();
+        return;
+      }
       setUploading(false);
-      if (!res.ok) alert(await res.text());
     }
 
     resetForm();

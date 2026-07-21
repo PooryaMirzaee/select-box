@@ -80,7 +80,7 @@ async def upload_category_icon(
     key, mime = await secure_image_upload(
         file,
         f"categories/{category_id}",
-        max_bytes=2 * 1024 * 1024,
+        max_bytes=8 * 1024 * 1024,
     )
     c.icon_storage_key = key
     db.commit()
