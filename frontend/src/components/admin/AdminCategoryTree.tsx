@@ -13,20 +13,24 @@ type Props = {
   tree: CategoryTreeNode[];
   selectedId: number | null;
   expandedIds: Set<number>;
+  checkedIds?: Set<number>;
   onToggle: (id: number) => void;
   onEdit: (node: CategoryTreeNode) => void;
   onDelete: (id: number) => void;
   onAddChild: (parentId: number) => void;
+  onCheckToggle?: (id: number) => void;
 };
 
 export function AdminCategoryTree({
   tree,
   selectedId,
   expandedIds,
+  checkedIds,
   onToggle,
   onEdit,
   onDelete,
   onAddChild,
+  onCheckToggle,
 }: Props) {
   if (!tree.length) {
     return (
@@ -45,10 +49,12 @@ export function AdminCategoryTree({
           depth={0}
           selectedId={selectedId}
           expandedIds={expandedIds}
+          checkedIds={checkedIds}
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
           onAddChild={onAddChild}
+          onCheckToggle={onCheckToggle}
         />
       ))}
     </ul>
@@ -60,23 +66,28 @@ function TreeNode({
   depth,
   selectedId,
   expandedIds,
+  checkedIds,
   onToggle,
   onEdit,
   onDelete,
   onAddChild,
+  onCheckToggle,
 }: {
   node: CategoryTreeNode;
   depth: number;
   selectedId: number | null;
   expandedIds: Set<number>;
+  checkedIds?: Set<number>;
   onToggle: (id: number) => void;
   onEdit: (node: CategoryTreeNode) => void;
   onDelete: (id: number) => void;
   onAddChild: (parentId: number) => void;
+  onCheckToggle?: (id: number) => void;
 }) {
   const hasKids = node.children.length > 0;
   const open = expandedIds.has(node.id);
   const selected = selectedId === node.id;
+  const checked = checkedIds?.has(node.id) ?? false;
 
   return (
     <li role="treeitem" aria-selected={selected} aria-expanded={hasKids ? open : undefined}>
@@ -89,6 +100,15 @@ function TreeNode({
         )}
         style={{ marginInlineStart: depth * 16 }}
       >
+        {onCheckToggle ? (
+          <input
+            type="checkbox"
+            className="shrink-0"
+            checked={checked}
+            onChange={() => onCheckToggle(node.id)}
+            aria-label={`انتخاب ${node.name_fa}`}
+          />
+        ) : null}
         <button
           type="button"
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-[var(--fg)]"
@@ -146,10 +166,12 @@ function TreeNode({
               depth={depth + 1}
               selectedId={selectedId}
               expandedIds={expandedIds}
+              checkedIds={checkedIds}
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
               onAddChild={onAddChild}
+              onCheckToggle={onCheckToggle}
             />
           ))}
         </ul>

@@ -33,6 +33,8 @@ export default function AdminCategoriesPage() {
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
@@ -40,6 +42,7 @@ export default function AdminCategoriesPage() {
     adminFetch<CategoryTreeNode[]>("/api/v1/admin/categories/tree", token())
       .then((data) => {
         setTree(data);
+        setCheckedIds(new Set());
         setExpandedIds((prev) => {
           const next = defaultExpandedIds(data);
           prev.forEach((id) => next.add(id));
@@ -140,6 +143,15 @@ export default function AdminCategoriesPage() {
     load();
   }
 
+  function toggleCheck(id: number) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function remove(id: number) {
     const node = findNode(tree, id);
     const childCount = node ? collectDescendantIds(node).size - 1 : 0;
@@ -149,17 +161,60 @@ export default function AdminCategoriesPage() {
         : "";
     if (
       !confirm(
-        `حذف این دسته؟${hint} اگر محصول یا طرح به آن وابسته باشد، حذف انجام نمی‌شود.`,
+        `حذف این دسته؟${hint} اگر محصول وابسته باشد، حذف انجام نمی‌شود.`,
       )
     ) {
       return;
     }
+    setBusy(true);
     try {
       await adminFetch(`/api/v1/admin/categories/${id}`, token(), { method: "DELETE" });
       if (editId === id) resetForm();
       load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "حذف دسته ناموفق بود");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeSelected() {
+    const ids = [...checkedIds];
+    if (!ids.length) return;
+    if (
+      !confirm(
+        `حذف ${ids.length} دسته انتخاب‌شده؟ زیردسته‌ها همراه والد حذف می‌شوند. دسته‌های دارای محصول حذف نمی‌شوند.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await adminFetch<{
+        deleted: number[];
+        failed: { id: number; reason: string }[];
+        deleted_count: number;
+      }>("/api/v1/admin/categories/bulk-delete", token(), {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      });
+      if (res.failed.length) {
+        const lines = res.failed
+          .slice(0, 8)
+          .map((f) => `#${f.id}: ${f.reason}`)
+          .join("\n");
+        alert(
+          `${res.deleted_count} حذف شد، ${res.failed.length} ناموفق:\n${lines}${
+            res.failed.length > 8 ? "\n…" : ""
+          }`,
+        );
+      }
+      if (editId && res.deleted.includes(editId)) resetForm();
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "حذف گروهی ناموفق بود");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -172,11 +227,20 @@ export default function AdminCategoriesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">دسته‌بندی‌ها</h1>
-      <p className="mt-1 text-sm text-muted">
-        ساختار تو در تو — از درخت زیردسته اضافه کنید یا والد را در فرم انتخاب کنید. دسته‌های فعال
-        با آیکون در مگامenu هدر فروشگاه نمایش داده می‌شوند.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">دسته‌بندی‌ها</h1>
+          <p className="mt-1 text-sm text-muted">
+            ساختار تو در تو — از درخت زیردسته اضافه کنید یا والد را در فرم انتخاب کنید. دسته‌های فعال
+            با آیکون در مگامenu هدر فروشگاه نمایش داده می‌شوند.
+          </p>
+        </div>
+        {checkedIds.size > 0 ? (
+          <Button variant="outline" disabled={busy} onClick={removeSelected}>
+            حذف انتخاب‌شده ({checkedIds.size})
+          </Button>
+        ) : null}
+      </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start">
         <section>
@@ -185,10 +249,12 @@ export default function AdminCategoriesPage() {
             tree={tree}
             selectedId={editId}
             expandedIds={expandedIds}
+            checkedIds={checkedIds}
             onToggle={toggleExpand}
             onEdit={startEdit}
             onDelete={remove}
             onAddChild={startAddChild}
+            onCheckToggle={toggleCheck}
           />
         </section>
 

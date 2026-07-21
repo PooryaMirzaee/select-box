@@ -134,6 +134,21 @@ class VariationBulkIn(BaseModel):
     price_delta: float = 0
 
 
+class BulkIdsIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=500)
+
+
+class BulkDeleteFailedItem(BaseModel):
+    id: int
+    reason: str
+
+
+class BulkDeleteOut(BaseModel):
+    deleted: list[int]
+    failed: list[BulkDeleteFailedItem]
+    deleted_count: int
+
+
 class ProductAdminOut(BaseModel):
     id: int
     design_id: int

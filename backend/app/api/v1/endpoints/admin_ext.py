@@ -20,6 +20,8 @@ from app.models import (
     ProductVariation,
 )
 from app.schemas.admin import (
+    BulkDeleteOut,
+    BulkIdsIn,
     CategoryIn,
     CategoryOut,
     CouponIn,
@@ -39,7 +41,12 @@ from app.schemas.settings import ShopSettingsAdmin, ShopSettingsPatch
 from app.schemas.sms import SmsTestIn, SmsTestOut
 from app.services import settings as shop_settings
 from app.services.sms import send_test_sms
-from app.services.category_helpers import category_admin_out, delete_category_subtree
+from app.services.category_helpers import (
+    category_admin_out,
+    delete_categories_bulk,
+    delete_category_subtree,
+)
+from app.services.product_admin import delete_product_safe, delete_products_bulk
 from app.services.storage import delete_upload, public_url, resolve_local_path
 from app.services.upload_security import secure_image_upload
 
@@ -118,6 +125,12 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
             ) from e
         raise
     return {"ok": True}
+
+
+@router.post("/categories/bulk-delete", response_model=BulkDeleteOut)
+def bulk_delete_categories(body: BulkIdsIn, db: Session = Depends(get_db)):
+    result = delete_categories_bulk(db, body.ids)
+    return BulkDeleteOut(**result)
 
 
 # --- Designs ---
@@ -311,16 +324,27 @@ async def upload_size_guide_image(
 
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
-    p = db.scalar(
-        select(Product).where(Product.id == product_id).options(joinedload(Product.images))
-    )
-    if p is None:
-        raise HTTPException(status_code=404, detail="Product not found")
-    for img in list(p.images):
-        delete_upload(img.storage_key)
-    db.delete(p)
-    db.commit()
+    try:
+        delete_product_safe(db, product_id)
+        db.commit()
+    except ValueError as e:
+        db.rollback()
+        code = str(e)
+        if code == "not_found":
+            raise HTTPException(status_code=404, detail="محصول یافت نشد") from e
+        if code == "has_orders":
+            raise HTTPException(
+                status_code=409,
+                detail="این محصول در سفارش ثبت شده و قابل حذف نیست. می‌توانید آن را پیش‌نویس کنید.",
+            ) from e
+        raise HTTPException(status_code=400, detail=code) from e
     return {"ok": True}
+
+
+@router.post("/products/bulk-delete", response_model=BulkDeleteOut)
+def bulk_delete_products(body: BulkIdsIn, db: Session = Depends(get_db)):
+    result = delete_products_bulk(db, body.ids)
+    return BulkDeleteOut(**result)
 
 
 # --- Variations ---

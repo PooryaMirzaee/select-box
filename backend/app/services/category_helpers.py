@@ -104,3 +104,38 @@ def delete_category_subtree(db: Session, category_id: int) -> None:
             delete_upload(node.icon_storage_key)
         db.delete(node)
     db.commit()
+
+
+def delete_categories_bulk(db: Session, ids: list[int]) -> dict:
+    """حذف گروهی دسته‌ها — زیردسته‌ها همراه والد حذف می‌شوند."""
+    unique_ids = list(dict.fromkeys(ids))
+    deleted: list[int] = []
+    failed: list[dict] = []
+    already_gone: set[int] = set()
+
+    reasons = {
+        "not_found": "دسته یافت نشد",
+        "has_products": "این دسته یا زیردسته‌اش محصول دارد",
+        "has_designs": "این دسته یا زیردسته‌اش طرح دارد",
+        "has_templates": "این دسته در قالب استفاده شده",
+    }
+
+    for cid in unique_ids:
+        if cid in already_gone:
+            deleted.append(cid)
+            continue
+        if db.get(Category, cid) is None:
+            failed.append({"id": cid, "reason": reasons["not_found"]})
+            continue
+        try:
+            subtree = collect_category_subtree_ids(db, cid)
+            delete_category_subtree(db, cid)
+            deleted.append(cid)
+            already_gone.update(subtree)
+        except ValueError as e:
+            failed.append({"id": cid, "reason": reasons.get(str(e), str(e))})
+        except Exception as e:  # noqa: BLE001
+            db.rollback()
+            failed.append({"id": cid, "reason": str(e) or "خطای ناشناخته"})
+
+    return {"deleted": deleted, "failed": failed, "deleted_count": len(deleted)}
