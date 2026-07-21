@@ -162,8 +162,12 @@ curl http://127.0.0.1:8092/health
 ```bash
 cd /opt/1panel/docker/compose/selectbox
 docker compose cp backend/scripts/seed.py api:/app/seed.py
-docker compose exec -T api python seed.py          # داده نمونه (اختیاری)
+docker compose exec -T api python seed.py          # داده نمونه (اختیاری — فقط اگر DB خالی)
 docker compose exec -T api python seed.py reset-admin
+
+# محصولات نمونهٔ اضافه (غیرمخرب — دادهٔ فعلی را پاک نمی‌کند)
+docker compose cp backend/scripts/seed_demo_products.py api:/app/seed_demo_products.py
+docker compose exec -T api python seed_demo_products.py
 ```
 
 ورود: `https://selectbox.ir/admin/login` — `09120000000` / `admin123`
