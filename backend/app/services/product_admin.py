@@ -1,9 +1,9 @@
-"""حذف امن محصول — سبدها، سفارش‌ها، تصاویر."""
+"""حذف امن محصول — سبدها، سفارش‌ها، تصاویر، طرح یتیم."""
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import CartItem, OrderItem, Product
+from app.models import CartItem, Design, OrderItem, Product
 from app.services.storage import delete_upload
 
 
@@ -11,6 +11,7 @@ def delete_product_safe(db: Session, product_id: int) -> None:
     """
     حذف محصول و وابستگی‌ها.
     اگر تنوع در سفارش باشد ValueError('has_orders') می‌دهد.
+    طرح داخلی بدون محصول دیگر هم پاک می‌شود.
     """
     p = db.scalar(
         select(Product)
@@ -19,6 +20,8 @@ def delete_product_safe(db: Session, product_id: int) -> None:
     )
     if p is None:
         raise ValueError("not_found")
+
+    design_id = p.design_id
 
     variation_ids = [v.id for v in (p.variations or []) if v.id]
     if variation_ids:
@@ -45,6 +48,28 @@ def delete_product_safe(db: Session, product_id: int) -> None:
         delete_upload(str(size_key))
 
     db.delete(p)
+    db.flush()
+
+    # پاک کردن طرح یتیم (stub داخلی فروش کالا)
+    if design_id:
+        sibling_count = (
+            db.scalar(
+                select(func.count()).select_from(Product).where(Product.design_id == design_id)
+            )
+            or 0
+        )
+        if sibling_count == 0:
+            design = db.scalar(
+                select(Design)
+                .where(Design.id == design_id)
+                .options(joinedload(Design.assets))
+            )
+            if design is not None:
+                for asset in list(design.assets or []):
+                    if asset.storage_key:
+                        delete_upload(asset.storage_key)
+                    db.delete(asset)
+                db.delete(design)
 
 
 def delete_products_bulk(db: Session, ids: list[int]) -> dict:

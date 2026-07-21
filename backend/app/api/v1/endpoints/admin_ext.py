@@ -116,12 +116,12 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
         if code == "has_designs":
             raise HTTPException(
                 status_code=400,
-                detail="این دسته یا زیردسته‌هایش طرح دارد — ابتدا طرح‌ها را حذف یا منتقل کنید",
+                detail="این دسته یا زیردسته‌هایش هنوز به محصول داخلی وصل است",
             ) from e
         if code == "has_templates":
             raise HTTPException(
                 status_code=400,
-                detail="این دسته در قالب Design Lab استفاده شده — ابتدا قالب را تغییر دهید",
+                detail="این دسته در قالب قدیمی استفاده شده",
             ) from e
         raise
     return {"ok": True}

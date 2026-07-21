@@ -1,7 +1,7 @@
 """خروجی دسته برای API فروشگاه و ادمین."""
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models import Category, Design, Product
 from app.models.customizer import ProductTemplate
@@ -67,7 +67,11 @@ def collect_category_subtree_ids(db: Session, root_id: int) -> list[int]:
 
 
 def delete_category_subtree(db: Session, category_id: int) -> None:
-    """حذف دسته به‌همراه زیردسته‌ها — فقط اگر محصول/طرح/قالب به آن‌ها وابسته نباشد."""
+    """حذف دسته به‌همراه زیردسته‌ها.
+
+    طرح‌های یتیم (بدون محصول) و قالب‌های بلااستفاده پاک می‌شوند.
+    اگر هنوز محصولی به دسته وصل باشد، حذف متوقف می‌شود.
+    """
     c = db.get(Category, category_id)
     if c is None:
         raise ValueError("not_found")
@@ -80,19 +84,33 @@ def delete_category_subtree(db: Session, category_id: int) -> None:
     if product_count:
         raise ValueError("has_products")
 
-    design_count = db.scalar(
-        select(func.count()).select_from(Design).where(Design.thematic_category_id.in_(subtree_ids))
-    ) or 0
-    if design_count:
-        raise ValueError("has_designs")
+    # طرح‌های یتیم (محصول قبلاً حذف شده ولی Design مانده) — حذف شوند
+    orphan_designs = list(
+        db.scalars(
+            select(Design)
+            .where(Design.thematic_category_id.in_(subtree_ids))
+            .options(joinedload(Design.products), joinedload(Design.assets))
+        ).unique().all()
+    )
+    for d in orphan_designs:
+        if d.products:
+            raise ValueError("has_designs")
+        for asset in list(d.assets or []):
+            if asset.storage_key:
+                delete_upload(asset.storage_key)
+            db.delete(asset)
+        db.delete(d)
+    db.flush()
 
-    template_count = db.scalar(
-        select(func.count())
-        .select_from(ProductTemplate)
-        .where(ProductTemplate.category_id.in_(subtree_ids))
-    ) or 0
-    if template_count:
-        raise ValueError("has_templates")
+    # قالب‌های Design Lab بدون وابستگی واقعی — حذف شوند
+    templates = list(
+        db.scalars(
+            select(ProductTemplate).where(ProductTemplate.category_id.in_(subtree_ids))
+        ).all()
+    )
+    for t in templates:
+        db.delete(t)
+    db.flush()
 
     # حذف از برگ‌ها به ریشه تا parent_id محدودیت FK را نقض نکند
     delete_order = list(reversed(subtree_ids))
@@ -116,7 +134,7 @@ def delete_categories_bulk(db: Session, ids: list[int]) -> dict:
     reasons = {
         "not_found": "دسته یافت نشد",
         "has_products": "این دسته یا زیردسته‌اش محصول دارد",
-        "has_designs": "این دسته یا زیردسته‌اش طرح دارد",
+        "has_designs": "این دسته هنوز به محصولی از طریق رکورد داخلی وصل است",
         "has_templates": "این دسته در قالب استفاده شده",
     }
 
