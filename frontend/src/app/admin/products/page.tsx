@@ -127,6 +127,35 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function enrichSelected() {
+    const ids = [...selected];
+    if (!ids.length) return;
+    if (
+      !confirm(
+        `برای ${ids.length} محصول انتخاب‌شده، جستجوی عکس و توضیح از وب در صف سرور قرار بگیرد؟\nپنل گیر نمی‌کند؛ نتیجه در «غنی‌سازی» و روی خود محصول می‌آید.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await adminFetch<{ queued: number; skipped: number }>(
+        "/api/v1/admin/enrichment/enqueue",
+        token(),
+        {
+          method: "POST",
+          body: JSON.stringify({ product_ids: ids, auto_apply: true }),
+        },
+      );
+      alert(`${res.queued} در صف · ${res.skipped} رد شد (قبلاً در صف بود یا نامعتبر)`);
+      window.location.href = "/admin/enrichment";
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "صف‌کردن ناموفق بود");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggleStatus(p: ProductAdmin) {
     const next = p.status === "published" ? "draft" : "published";
     if (next === "published") {
@@ -169,10 +198,18 @@ export default function AdminProductsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {selected.size > 0 ? (
-            <Button variant="outline" disabled={busy} onClick={removeSelected}>
-              حذف انتخاب‌شده ({selected.size})
-            </Button>
+            <>
+              <Button variant="outline" disabled={busy} onClick={enrichSelected}>
+                دریافت عکس از وب ({selected.size})
+              </Button>
+              <Button variant="outline" disabled={busy} onClick={removeSelected}>
+                حذف انتخاب‌شده ({selected.size})
+              </Button>
+            </>
           ) : null}
+          <Link href="/admin/enrichment">
+            <Button variant="ghost">صف غنی‌سازی</Button>
+          </Link>
           <Link href="/admin/products/new">
             <Button>محصول جدید</Button>
           </Link>

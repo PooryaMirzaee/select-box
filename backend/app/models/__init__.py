@@ -466,4 +466,5 @@ from app.models.customizer import CreatorEarning, DesignArtClip, ProductTemplate
 from app.models.header_nav import HeaderNavLink  # noqa: E402, F401
 from app.models.home_banner import HomeBanner  # noqa: E402, F401
 from app.models.ai import AiGenerationLog, AiSuggestedPrompt, AiTool  # noqa: E402, F401
+from app.models.enrichment import ProductEnrichmentCandidate, ProductEnrichmentJob  # noqa: E402, F401
 from app.models.site_setting import SiteSetting  # noqa: E402, F401

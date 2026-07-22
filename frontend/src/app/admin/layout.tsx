@@ -32,6 +32,7 @@ const links = [
   { href: "/admin/header", label: "هدر", icon: Menu },
   { href: "/admin/homepage", label: "صفحه اصلی", icon: ImagePlus },
   { href: "/admin/products", label: "محصولات", icon: Package },
+  { href: "/admin/enrichment", label: "غنی‌سازی", icon: ImagePlus },
   { href: "/admin/business", label: "سفارش عمده", icon: ShoppingCart },
   { href: "/admin/coupons", label: "کوپن‌ها", icon: Tag },
   { href: "/admin/orders", label: "سفارش‌ها", icon: ShoppingCart },

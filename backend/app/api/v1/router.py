@@ -10,6 +10,7 @@ from app.api.v1.endpoints import (
     admin,
     admin_blog,
     admin_business,
+    admin_enrichment,
     admin_ext,
     admin_banners,
     admin_header,
@@ -40,6 +41,7 @@ api_router.include_router(payments.router)
 api_router.include_router(admin.router)
 api_router.include_router(admin_users.router)
 api_router.include_router(admin_ext.router)
+api_router.include_router(admin_enrichment.router)
 api_router.include_router(admin_header.router)
 api_router.include_router(admin_homepage.router)
 api_router.include_router(admin_banners.router)

@@ -264,17 +264,21 @@ def upsert_row(db: Session, row: dict, cats: dict[str, Category]) -> str:
     if product is None:
         return "skipped"
 
-    product.title = row["name"]
-    product.description = row["name"]
+    # اگر توضیح قبلاً غنی شده (≠ نام خام)، overwrite نکن
+    if not product.description or product.description.strip() == row["name"]:
+        product.description = row["name"]
     product.base_price = row["price"]
     product.status = "published"
     product.parent_category_id = root.id
     product.sku_prefix = code[:60]
-    product.meta_title = f"{row['name']} | SelectBox"
-    product.meta_description = row["name"][:500]
+    if not product.meta_title:
+        product.meta_title = f"{row['name']} | SelectBox"
+    if not product.meta_description or product.meta_description.strip() == row["name"]:
+        product.meta_description = row["name"][:500]
     design.title = row["name"]
     design.thematic_category_id = cat.id
     design.status = "published"
+    product.title = row["name"]
 
     if product.variations:
         v = product.variations[0]

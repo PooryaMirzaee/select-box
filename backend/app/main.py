@@ -54,6 +54,12 @@ async def lifespan(app: FastAPI):
     _ensure_ai_suggested_seed()
     _ensure_ai_tools_seed()
     _warmup_bg_remove()
+    try:
+        from app.services.enrichment.runner import kick_enrichment_worker
+
+        kick_enrichment_worker()
+    except Exception:
+        pass
     yield
 
 
