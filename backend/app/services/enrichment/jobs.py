@@ -88,18 +88,26 @@ def _apply_to_product(
     if not candidate.local_storage_key:
         raise ValueError("candidate has no local file")
 
-    max_order = db.scalar(
-        select(func.max(ProductImage.sort_order)).where(ProductImage.product_id == product.id)
-    )
-    db.add(
-        ProductImage(
-            product_id=product.id,
-            storage_key=candidate.local_storage_key,
-            mime_type=candidate.mime_type or "image/jpeg",
-            alt_text=product.title[:255],
-            sort_order=int(max_order or 0) + 1,
+    existing = db.scalars(
+        select(ProductImage)
+        .where(ProductImage.product_id == product.id)
+        .order_by(ProductImage.sort_order, ProductImage.id)
+    ).all()
+    if existing:
+        img = existing[0]
+        img.storage_key = candidate.local_storage_key
+        img.mime_type = candidate.mime_type or img.mime_type or "image/jpeg"
+        img.alt_text = product.title[:255]
+    else:
+        db.add(
+            ProductImage(
+                product_id=product.id,
+                storage_key=candidate.local_storage_key,
+                mime_type=candidate.mime_type or "image/jpeg",
+                alt_text=product.title[:255],
+                sort_order=1,
+            )
         )
-    )
     for c in job.candidates:
         c.is_selected = c.id == candidate.id
     if apply_description:

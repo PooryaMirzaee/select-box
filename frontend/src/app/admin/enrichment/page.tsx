@@ -49,18 +49,25 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "ناموفق",
 };
 
+function canApplyCandidate(job: Job) {
+  return (
+    job.candidates.length > 0 &&
+    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+  );
+}
+
 export default function AdminEnrichmentPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
   const load = useCallback(() => {
-    setLoading(true);
     setError(null);
     const q = filter ? `?status=${encodeURIComponent(filter)}&limit=80` : "?limit=80";
     Promise.all([
@@ -70,19 +77,26 @@ export default function AdminEnrichmentPage() {
       .then(([s, rows]) => {
         setStats(s);
         setJobs(rows);
+        setLoading(false);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "خطا"))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "خطا");
+        setLoading(false);
+      });
   }, [filter]);
 
   useEffect(() => {
+    setLoading(true);
     load();
-    const t = setInterval(load, 4000);
+    const t = setInterval(() => {
+      if (busyId == null) load();
+    }, 5000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [load, busyId]);
 
   async function approve(job: Job, candidateId?: number) {
-    setBusy(true);
+    setBusyId(job.id);
+    setNotice(null);
     try {
       await adminFetch(`/api/v1/admin/enrichment/jobs/${job.id}/approve`, token(), {
         method: "POST",
@@ -91,16 +105,17 @@ export default function AdminEnrichmentPage() {
           apply_description: true,
         }),
       });
+      setNotice(`عکس برای «${job.product_title}» اعمال شد`);
       load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "تأیید ناموفق");
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
   async function reject(jobId: number) {
-    setBusy(true);
+    setBusyId(jobId);
     try {
       await adminFetch(`/api/v1/admin/enrichment/jobs/${jobId}/reject`, token(), {
         method: "POST",
@@ -110,12 +125,12 @@ export default function AdminEnrichmentPage() {
     } catch (e) {
       alert(e instanceof Error ? e.message : "رد ناموفق");
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
   async function retry(jobId: number) {
-    setBusy(true);
+    setBusyId(jobId);
     try {
       await adminFetch(`/api/v1/admin/enrichment/jobs/${jobId}/retry`, token(), {
         method: "POST",
@@ -125,7 +140,7 @@ export default function AdminEnrichmentPage() {
     } catch (e) {
       alert(e instanceof Error ? e.message : "تلاش مجدد ناموفق");
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
@@ -135,7 +150,7 @@ export default function AdminEnrichmentPage() {
         <div>
           <h1 className="text-3xl font-semibold">غنی‌سازی محصولات</h1>
           <p className="mt-2 text-sm text-muted">
-            عکس و توضیح از وب — اجرا روی سرور، پنل گیر نمی‌کند. از صفحه محصولات چند کالا را انتخاب و صف کنید.
+            روی هر تصویر کلیک کنید تا همان عکس روی محصول اعمال شود.
           </p>
         </div>
         <Link href="/admin/products">
@@ -167,78 +182,85 @@ export default function AdminEnrichmentPage() {
         </div>
       ) : null}
 
+      {notice ? <p className="mt-4 text-sm text-emerald-600">{notice}</p> : null}
       {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
       {loading && !jobs.length ? <p className="mt-8 text-muted">بارگذاری…</p> : null}
 
       <div className="mt-6 space-y-4">
-        {jobs.map((job) => (
-          <div key={job.id} className="card-theme p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-medium">
-                  #{job.id} — {job.product_title}
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  {STATUS_LABEL[job.status] || job.status}
-                  {job.design_code ? ` · ${job.design_code}` : ""}
-                  {job.query_used ? ` · «${job.query_used}»` : ""}
-                </p>
-                {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
-                {job.description_draft ? (
-                  <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {job.status === "needs_review" ? (
-                  <>
+        {jobs.map((job) => {
+          const busy = busyId === job.id;
+          const applyable = canApplyCandidate(job);
+          return (
+            <div key={job.id} className="card-theme p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">
+                    #{job.id} — {job.product_title}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {STATUS_LABEL[job.status] || job.status}
+                    {job.design_code ? ` · ${job.design_code}` : ""}
+                    {job.query_used ? ` · «${job.query_used}»` : ""}
+                  </p>
+                  {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
+                  {job.description_draft ? (
+                    <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {applyable ? (
                     <Button size="sm" disabled={busy} onClick={() => approve(job)}>
-                      تأیید بهترین
+                      {busy ? "…" : "اعمال بهترین عکس"}
                     </Button>
+                  ) : null}
+                  {job.status === "needs_review" ? (
                     <Button size="sm" variant="outline" disabled={busy} onClick={() => reject(job.id)}>
                       رد
                     </Button>
-                  </>
-                ) : null}
-                {job.status === "failed" || job.status === "rejected" ? (
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => retry(job.id)}>
-                    تلاش مجدد
-                  </Button>
-                ) : null}
-                <Link href={`/admin/products/${job.product_id}/edit`}>
-                  <Button size="sm" variant="ghost">
-                    ویرایش محصول
-                  </Button>
-                </Link>
+                  ) : null}
+                  {job.status === "failed" || job.status === "rejected" ? (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => retry(job.id)}>
+                      تلاش مجدد
+                    </Button>
+                  ) : null}
+                  <Link href={`/admin/products/${job.product_id}/edit`}>
+                    <Button size="sm" variant="ghost">
+                      ویرایش محصول
+                    </Button>
+                  </Link>
+                </div>
               </div>
+              {job.candidates.length ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {job.candidates.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={busy || !applyable}
+                      className={cn(
+                        "group relative overflow-hidden rounded border border-theme transition hover:ring-2 hover:ring-emerald-500",
+                        c.is_selected && "ring-2 ring-emerald-500",
+                        (!applyable || busy) && "opacity-60",
+                      )}
+                      onClick={() => approve(job, c.id)}
+                      title="اعمال این عکس روی محصول"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={c.local_url || c.image_url}
+                        alt=""
+                        className="h-24 w-24 object-cover"
+                      />
+                      <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[10px] text-white opacity-0 group-hover:opacity-100">
+                        اعمال
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
-            {job.candidates.length ? (
-              <div className="mt-4 flex flex-wrap gap-3">
-                {job.candidates.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    disabled={busy || job.status === "approved"}
-                    className={cn(
-                      "overflow-hidden rounded border border-theme",
-                      c.is_selected && "ring-2 ring-emerald-500",
-                    )}
-                    onClick={() => {
-                      if (job.status === "needs_review") approve(job, c.id);
-                    }}
-                    title="انتخاب و اعمال این عکس"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={c.local_url || c.image_url}
-                      alt=""
-                      className="h-24 w-24 object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ))}
+          );
+        })}
         {!loading && jobs.length === 0 ? (
           <p className="p-8 text-center text-muted">
             جابی نیست. از صفحه محصولات چند کالا را انتخاب و «دریافت عکس از وب» را بزنید.
