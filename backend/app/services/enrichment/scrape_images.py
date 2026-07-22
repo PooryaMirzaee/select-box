@@ -9,14 +9,9 @@ import time
 from dataclasses import dataclass
 from urllib.parse import quote_plus, unquote
 
-import httpx
+from app.services.enrichment.http_client import enrichment_client
 
 logger = logging.getLogger(__name__)
-
-_UA = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-)
 
 
 @dataclass
@@ -27,18 +22,7 @@ class ImageHit:
     score: float
 
 
-def _client() -> httpx.Client:
-    return httpx.Client(
-        timeout=20.0,
-        follow_redirects=True,
-        headers={
-            "User-Agent": _UA,
-            "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
-        },
-    )
-
-
-def _ddg_vqd(client: httpx.Client, query: str) -> str | None:
+def _ddg_vqd(client, query: str) -> str | None:
     res = client.get(
         "https://duckduckgo.com/",
         params={"q": query},
@@ -55,7 +39,7 @@ def _ddg_vqd(client: httpx.Client, query: str) -> str | None:
 
 def _search_duckduckgo(query: str, limit: int) -> list[ImageHit]:
     hits: list[ImageHit] = []
-    with _client() as client:
+    with enrichment_client() as client:
         vqd = _ddg_vqd(client, query)
         if not vqd:
             return hits
@@ -100,14 +84,13 @@ def _search_duckduckgo(query: str, limit: int) -> list[ImageHit]:
 
 def _search_bing(query: str, limit: int) -> list[ImageHit]:
     hits: list[ImageHit] = []
-    with _client() as client:
+    with enrichment_client() as client:
         res = client.get(
             "https://www.bing.com/images/search",
             params={"q": query, "form": "HDRSC2", "first": "1"},
         )
         if res.status_code >= 400:
             return hits
-        # murl":"https://...
         for i, m in enumerate(re.finditer(r'murl&quot;:&quot;(https?://[^&]+)&quot;', res.text)):
             url = unquote(m.group(1).replace("\\u0026", "&"))
             if not url.startswith("http"):
@@ -120,7 +103,9 @@ def _search_bing(query: str, limit: int) -> list[ImageHit]:
         if not hits:
             for i, m in enumerate(re.finditer(r'"murl"\s*:\s*"(https?://[^"]+)"', res.text)):
                 url = m.group(1).encode().decode("unicode_escape", errors="ignore")
-                hits.append(ImageHit(url=url, thumb=None, source="bing", score=float(max(0, 90 - i))))
+                hits.append(
+                    ImageHit(url=url, thumb=None, source="bing", score=float(max(0, 90 - i)))
+                )
                 if len(hits) >= limit:
                     break
     return hits
@@ -130,7 +115,6 @@ def search_product_images(query: str, *, limit: int = 5) -> list[ImageHit]:
     q = (query or "").strip()
     if not q:
         return []
-    # فاصله کوتاه برای جلوگیری از burst
     time.sleep(0.4 + random.random() * 0.4)
     hits = _search_duckduckgo(q, limit)
     if len(hits) < max(1, limit // 2):
@@ -140,7 +124,6 @@ def search_product_images(query: str, *, limit: int = 5) -> list[ImageHit]:
                 hits.append(h)
             if len(hits) >= limit:
                 break
-    # dedupe by url
     seen: set[str] = set()
     out: list[ImageHit] = []
     for h in hits:

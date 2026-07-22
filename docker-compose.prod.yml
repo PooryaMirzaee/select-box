@@ -33,6 +33,9 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       DEBUG: "false"
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-selectbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-selectbox}

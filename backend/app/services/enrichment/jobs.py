@@ -12,6 +12,7 @@ from app.models import Design, Product, ProductImage
 from app.models.enrichment import ProductEnrichmentCandidate, ProductEnrichmentJob
 from app.services.enrichment.copywriter import write_product_copy
 from app.services.enrichment.download import download_image_to_storage
+from app.services.enrichment.http_client import friendly_network_error
 from app.services.enrichment.scrape_images import search_product_images
 from app.services.storage import public_url
 
@@ -192,7 +193,7 @@ def process_job(db: Session, job_id: int) -> None:
     except Exception as e:
         logger.exception("enrichment job %s failed", job_id)
         job.status = "failed"
-        job.error = str(e)[:800]
+        job.error = friendly_network_error(e)
         job.finished_at = datetime.now(timezone.utc)
         db.commit()
 

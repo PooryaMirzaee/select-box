@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.services import avalai, settings as shop_settings
+from app.services.enrichment.http_client import enrichment_client
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def write_product_copy(db: Session, *, title: str, query: str | None = None) -> 
         "max_tokens": 350,
     }
     try:
-        with httpx.Client(timeout=45.0) as client:
+        with enrichment_client(timeout=45.0) as client:
             res = client.post(
                 f"{avalai.AVALAI_BASE_URL}/chat/completions",
                 headers=headers,
