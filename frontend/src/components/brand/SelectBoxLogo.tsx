@@ -1,63 +1,52 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
-import { BRAND_LOGO_ASPECT, BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/brand";
+import { BRAND_NAME, BRAND_SHORT } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-const HEIGHTS = {
-  xs: 22,
-  sm: 28,
-  md: 36,
-  lg: 48,
-  xl: 64,
+const SIZES = {
+  xs: "text-sm",
+  sm: "text-base",
+  md: "text-lg sm:text-xl",
+  lg: "text-2xl",
+  xl: "text-3xl",
 } as const;
 
 type Props = {
   href?: string | null;
-  size?: keyof typeof HEIGHTS;
+  size?: keyof typeof SIZES;
   className?: string;
   imageClassName?: string;
   imageStyle?: CSSProperties;
   priority?: boolean;
 };
 
-export function SelectBoxLogo({
-  href = "/",
-  size = "md",
-  className,
-  imageClassName,
-  imageStyle,
-  priority = false,
-}: Props) {
-  const height = HEIGHTS[size];
-  const width = Math.round(height * BRAND_LOGO_ASPECT);
-  const displayHeight = typeof imageStyle?.height === "number" ? imageStyle.height : height;
-  const displayWidth = typeof imageStyle?.width === "number" ? imageStyle.width : width;
-
-  const image = (
-    <Image
-      src={BRAND_LOGO_SRC}
-      alt={BRAND_NAME}
-      width={displayWidth}
-      height={displayHeight}
-      priority={priority}
-      className={cn("h-auto max-w-full object-contain", imageClassName)}
-      style={{ height, width: "auto", maxHeight: height, ...imageStyle }}
-    />
+/** وردمارک متنی برند — تیتر با Capsule، اکسنت طلایی روی نام کوتاه */
+export function SelectBoxLogo({ href = "/", size = "md", className }: Props) {
+  const mark = (
+    <span
+      className={cn(
+        "font-display inline-flex items-baseline gap-1.5 tracking-tight",
+        SIZES[size],
+        className,
+      )}
+    >
+      <span className="font-normal text-[var(--fg)] opacity-80">فروشگاه</span>
+      <span className="font-bold text-[var(--accent)]">{BRAND_SHORT}</span>
+    </span>
   );
 
   if (href) {
     return (
       <Link
         href={href}
-        className={cn("inline-flex shrink-0 items-center transition opacity-90 hover:opacity-100", className)}
+        className="inline-flex shrink-0 items-center transition opacity-95 hover:opacity-100"
         aria-label={BRAND_NAME}
       >
-        {image}
+        {mark}
       </Link>
     );
   }
 
-  return <span className={cn("inline-flex shrink-0 items-center", className)}>{image}</span>;
+  return <span className="inline-flex shrink-0 items-center">{mark}</span>;
 }

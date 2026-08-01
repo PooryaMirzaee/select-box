@@ -80,31 +80,44 @@ def list_products(
     parent_slug: str | None = None,
     thematic_slug: str | None = None,
     q: str | None = None,
-    limit: int = 24,
+    limit: int = 48,
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
+    limit = max(1, min(limit, 100))
+    offset = max(offset, 0)
+    total = catalog_service.count_products(
+        db,
+        parent_slug=parent_slug,
+        thematic_slug=thematic_slug,
+        search=q,
+    )
     items = catalog_service.list_products(
         db,
         parent_slug=parent_slug,
         thematic_slug=thematic_slug,
         search=q,
-        limit=min(limit, 100),
-        offset=max(offset, 0),
+        limit=limit,
+        offset=offset,
     )
-    return [
-        ProductSummary(
-            id=p.id,
-            slug=p.slug,
-            title=p.title,
-            base_price=str(p.base_price),
-            status=p.status,
-            design_id=p.design_id,
-            parent_category_slug=p.parent_category.slug if p.parent_category else None,
-            image_url=catalog_service.primary_product_image_url(p),
-        )
-        for p in items
-    ]
+    return {
+        "items": [
+            ProductSummary(
+                id=p.id,
+                slug=p.slug,
+                title=p.title,
+                base_price=str(p.base_price),
+                status=p.status,
+                design_id=p.design_id,
+                parent_category_slug=p.parent_category.slug if p.parent_category else None,
+                image_url=catalog_service.primary_product_image_url(p),
+            )
+            for p in items
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/product-slugs")

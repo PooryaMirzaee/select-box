@@ -26,7 +26,7 @@ export function BlogListing({
   pageSize,
   activeCategory,
   activeTag,
-  title = "مجله CORALAY",
+  title = "مجله فروشگاه دشتستان",
   subtitle = "راهنمای خرید، نگهداری لوازم خانگی و سبک زندگی",
   basePath = "/blog",
 }: Props) {

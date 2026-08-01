@@ -9,13 +9,20 @@ from app.models.header_nav import HeaderNavLink
 
 DEFAULT_LINKS: list[dict[str, object]] = [
     {"label_fa": "سفارش عمده", "href": "/business", "sort_order": 10},
-    {"label_fa": "کاتالوگ", "href": "/catalog", "sort_order": 20},
-    {"label_fa": "مجله", "href": "/blog", "sort_order": 30},
+    {"label_fa": "همه محصولات", "href": "/catalog", "sort_order": 20},
 ]
 
 
 def ensure_default_links(db: Session) -> None:
     if db.scalar(select(HeaderNavLink).limit(1)):
+        # برچسب قدیمی «کاتالوگ» را به نام فروشگاهی‌تر عوض کن
+        for link in db.scalars(select(HeaderNavLink).where(HeaderNavLink.href == "/catalog")).all():
+            if (link.label_fa or "").strip() == "کاتالوگ":
+                link.label_fa = "همه محصولات"
+        # لینک مجله از هدر حذف شده — رکوردهای قدیمی /blog را پاک کن
+        for link in db.scalars(select(HeaderNavLink).where(HeaderNavLink.href == "/blog")).all():
+            db.delete(link)
+        db.commit()
         return
     for item in DEFAULT_LINKS:
         db.add(HeaderNavLink(**item))

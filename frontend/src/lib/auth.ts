@@ -92,7 +92,14 @@ export async function mergeCartAfterLogin() {
     body: JSON.stringify({ session_id: sessionId }),
   });
   if (!res.ok) return null;
-  return res.json() as Promise<{ merged: number; message: string }>;
+  const data = (await res.json()) as { merged: number; message: string };
+  try {
+    const { CART_EVENTS } = await import("@/lib/storage-keys");
+    window.dispatchEvent(new Event(CART_EVENTS.update));
+  } catch {
+    /* ignore */
+  }
+  return data;
 }
 
 export async function fetchMe(token?: string | null): Promise<AuthUser | null> {

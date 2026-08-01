@@ -68,9 +68,9 @@ def mask_api_key(key: str) -> str:
     return API_KEY_MASK if (key or "").strip() else ""
 
 DEFAULTS: dict[str, object] = {
-    "shop_name": "SelectBox",
+    "shop_name": "فروشگاه دشتستان",
     "shop_description": "فروشگاه آنلاین لوازم خانگی، سبک زندگی و وسایل روزمره",
-    "default_meta_title": "SelectBox — لوازم خانگی و سبک زندگی",
+    "default_meta_title": "فروشگاه دشتستان — لوازم خانگی و سبک زندگی",
     "default_meta_description": "خرید آنلاین لوازم خانگی، سبک زندگی و وسایل روزمره با گارانتی اصلی، قیمت رقابتی و ارسال سریع.",
     "site_url": "http://localhost:3000",
     "shipping_flat_toman": 49000,
@@ -78,7 +78,7 @@ DEFAULTS: dict[str, object] = {
     "payment_gateway": "mock",
     "card_transfer_enabled": True,
     "card_number": "6037-9971-1234-5678",
-    "card_holder": "SelectBox",
+    "card_holder": "فروشگاه دشتستان",
     "card_bank_name": "بانک ملت",
     "card_transfer_instructions": "لطفاً کد رهگیری سفارش را در توضیحات واریز بنویسید.",
     "zarinpal_merchant_id": "",

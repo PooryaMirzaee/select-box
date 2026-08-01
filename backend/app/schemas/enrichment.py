@@ -60,3 +60,16 @@ class EnrichmentStatsOut(BaseModel):
 class EnrichmentApproveIn(BaseModel):
     candidate_id: int | None = None
     apply_description: bool = True
+
+
+class EnrichmentBulkIn(BaseModel):
+    """عملیات گروهی روی جاب‌ها — approve با بهترین کاندید هر جاب."""
+
+    job_ids: list[int] = Field(min_length=1, max_length=500)
+    action: str = Field(pattern="^(approve|reject|retry)$")
+
+
+class EnrichmentBulkOut(BaseModel):
+    done: int
+    failed: int
+    errors: list[str] = []

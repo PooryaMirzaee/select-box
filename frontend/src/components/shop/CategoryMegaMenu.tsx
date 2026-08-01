@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { ArrowLeft, ChevronDown, Grid3X3 } from "@/components/icons";
 import type { CategoryNavNode } from "@/lib/category-nav";
@@ -10,24 +10,23 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   categories: CategoryNavNode[];
-  /** بستن منوی موبایل هدر پس از ناوبری */
   onNavigate?: () => void;
 };
 
-function CategoryThumb({
+export function CategoryThumb({
   category,
   size = "md",
 }: {
   category: Pick<CategoryNavNode, "name_fa" | "image_url">;
   size?: "sm" | "md" | "lg";
 }) {
-  const dims = size === "sm" ? "h-9 w-9" : size === "lg" ? "h-14 w-14" : "h-11 w-11";
-  const text = size === "sm" ? "text-sm" : size === "lg" ? "text-xl" : "text-base";
+  const dims = size === "sm" ? "h-9 w-9" : size === "lg" ? "h-12 w-12" : "h-10 w-10";
+  const text = size === "sm" ? "text-sm" : size === "lg" ? "text-lg" : "text-base";
 
   return (
     <div
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-xl border border-theme/50 bg-[var(--bg)]",
+        "relative shrink-0 overflow-hidden rounded-xl border border-theme bg-[var(--bg-elevated)]",
         dims,
       )}
     >
@@ -37,7 +36,7 @@ function CategoryThumb({
       ) : (
         <div
           className={cn(
-            "flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--accent)]/25 to-[var(--bg-elevated)] font-semibold text-[var(--accent)]",
+            "flex h-full w-full items-center justify-center bg-[var(--accent-soft)] font-display text-[var(--accent)]",
             text,
           )}
         >
@@ -57,7 +56,9 @@ function DesktopPanel({
   open: boolean;
   onClose: () => void;
 }) {
-  const [top, setTop] = useState(57);
+  const [top, setTop] = useState(64);
+  const [activeId, setActiveId] = useState(categories[0]?.id ?? 0);
+  const active = categories.find((c) => c.id === activeId) ?? categories[0];
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +71,10 @@ function DesktopPanel({
     return () => window.removeEventListener("resize", measure);
   }, [open]);
 
+  useEffect(() => {
+    if (open && categories[0]) setActiveId(categories[0].id);
+  }, [open, categories]);
+
   if (!categories.length) return null;
 
   return (
@@ -80,76 +85,101 @@ function DesktopPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 bottom-0 z-[38] bg-black/20 backdrop-blur-[2px] dark:bg-black/40"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-x-0 bottom-0 z-[38] bg-black/35 backdrop-blur-[1px]"
             style={{ top }}
             onClick={onClose}
             aria-hidden
           />
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 z-[39] border-b border-theme bg-header shadow-[var(--shadow-soft)] backdrop-blur-xl"
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-x-0 z-[39] border-b border-theme bg-[var(--card)] shadow-[var(--shadow-soft)]"
             style={{ top }}
-            role="region"
+            role="dialog"
             aria-label="دسته‌بندی محصولات"
           >
-            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-              <div
-                className={cn(
-                  "grid gap-6",
-                  categories.length === 1 && "max-w-sm",
-                  categories.length === 2 && "sm:grid-cols-2",
-                  categories.length >= 3 && "sm:grid-cols-2 lg:grid-cols-3",
-                  categories.length >= 4 && "xl:grid-cols-4",
-                )}
-              >
-                {categories.map((root, i) => (
-                  <motion.div
-                    key={root.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04, duration: 0.25 }}
-                    className="rounded-2xl border border-theme/60 bg-card/80 p-4"
-                  >
-                    <Link
-                      href={`/browse/${root.path}`}
-                      onClick={onClose}
-                      className="group flex items-center gap-3 rounded-xl p-1 transition hover:bg-[var(--accent-soft)]"
-                    >
-                      <CategoryThumb category={root} size="lg" />
-                      <div className="min-w-0">
-                        <p className="font-semibold leading-snug transition group-hover:text-[var(--accent)]">
-                          {root.name_fa}
-                        </p>
-                        {root.child_count > 0 ? (
-                          <p className="mt-0.5 text-xs text-muted">{root.child_count} زیردسته</p>
-                        ) : null}
-                      </div>
-                    </Link>
+            <div className="mx-auto grid max-w-6xl md:grid-cols-[220px_1fr]">
+              {/* ریشه دسته‌ها */}
+              <aside className="border-b border-theme bg-[var(--bg-elevated)] md:border-b-0 md:border-e">
+                <ul className="no-scrollbar flex max-h-[40vh] flex-row gap-1 overflow-x-auto p-3 md:max-h-[min(70vh,520px)] md:flex-col md:overflow-y-auto">
+                  {categories.map((root) => {
+                    const selected = root.id === active?.id;
+                    return (
+                      <li key={root.id} className="shrink-0 md:w-full">
+                        <button
+                          type="button"
+                          onClick={() => setActiveId(root.id)}
+                          onMouseEnter={() => setActiveId(root.id)}
+                          className={cn(
+                            "flex w-full min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition",
+                            selected
+                              ? "bg-[var(--card)] font-semibold text-[var(--fg)] shadow-sm ring-1 ring-[var(--accent)]/30"
+                              : "text-muted hover:bg-[var(--card)]/70 hover:text-[var(--fg)]",
+                          )}
+                        >
+                          <CategoryThumb category={root} size="sm" />
+                          <span className="truncate">{root.name_fa}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </aside>
 
-                    {root.children.length > 0 ? (
-                      <ul className="mt-3 space-y-0.5 border-s-2 border-[var(--accent)]/20 ps-3">
-                        {root.children.map((child) => (
+              {/* زیردسته‌ها */}
+              <div className="max-h-[min(70vh,520px)] overflow-y-auto p-4 sm:p-6">
+                {active ? (
+                  <>
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <CategoryThumb category={active} size="lg" />
+                        <div>
+                          <h3 className="font-display text-lg">{active.name_fa}</h3>
+                          {active.child_count > 0 ? (
+                            <p className="text-xs text-muted">{active.child_count} زیردسته</p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <Link
+                        href={`/browse/${active.path}`}
+                        onClick={onClose}
+                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-theme px-4 text-sm font-medium transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                      >
+                        مشاهده همه
+                        <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+                      </Link>
+                    </div>
+
+                    {active.children.length > 0 ? (
+                      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {active.children.map((child) => (
                           <li key={child.id}>
                             <Link
                               href={`/browse/${child.path}`}
                               onClick={onClose}
-                              className="flex min-h-[36px] items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted transition hover:bg-[var(--bg-elevated)] hover:text-[var(--fg)]"
+                              className="flex min-h-[52px] items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-theme hover:bg-[var(--bg-elevated)]"
                             >
                               <CategoryThumb category={child} size="sm" />
-                              <span className="min-w-0 truncate">{child.name_fa}</span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-medium">{child.name_fa}</span>
+                                {child.children.length > 0 ? (
+                                  <span className="text-[11px] text-muted">
+                                    {child.children.length} مورد
+                                  </span>
+                                ) : null}
+                              </span>
                             </Link>
                             {child.children.length > 0 ? (
-                              <ul className="me-2 mt-0.5 space-y-0.5 border-s border-theme/40 ps-3">
-                                {child.children.map((grand) => (
+                              <ul className="mb-1 me-2 mt-0.5 space-y-0.5 border-s border-theme/60 ps-4">
+                                {child.children.slice(0, 6).map((grand) => (
                                   <li key={grand.id}>
                                     <Link
                                       href={`/browse/${grand.path}`}
                                       onClick={onClose}
-                                      className="block rounded-md px-2 py-1 text-xs text-muted transition hover:text-[var(--accent)]"
+                                      className="block rounded-md px-2 py-1.5 text-xs text-muted transition hover:text-[var(--accent)]"
                                     >
                                       {grand.name_fa}
                                     </Link>
@@ -160,29 +190,24 @@ function DesktopPanel({
                           </li>
                         ))}
                       </ul>
-                    ) : null}
+                    ) : (
+                      <p className="rounded-xl border border-dashed border-theme bg-[var(--bg-elevated)] px-4 py-8 text-center text-sm text-muted">
+                        زیردسته‌ای نیست — مستقیم وارد این دسته شوید.
+                      </p>
+                    )}
+                  </>
+                ) : null}
 
-                    <Link
-                      href={`/browse/${root.path}`}
-                      onClick={onClose}
-                      className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[var(--accent)] transition hover:gap-2"
-                    >
-                      مشاهده همه
-                      <ArrowLeft className="h-3 w-3 rotate-180" />
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="mt-5 border-t border-theme pt-4">
-                <Link
-                  href="/browse"
-                  onClick={onClose}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] transition hover:opacity-80"
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                  همه دسته‌بندی‌ها
-                </Link>
+                <div className="mt-6 border-t border-theme pt-4">
+                  <Link
+                    href="/browse"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] transition hover:opacity-80"
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    همه دسته‌بندی‌ها
+                  </Link>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -270,33 +295,30 @@ function MobileAccordionNode({
 
 export function CategoryMegaMenuDesktop({ categories }: Pick<Props, "categories">) {
   const [open, setOpen] = useState(false);
+  const btnId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
-
-  const scheduleClose = useCallback(() => {
-    clearCloseTimer();
-    closeTimer.current = setTimeout(() => setOpen(false), 120);
-  }, [clearCloseTimer]);
-
-  const handleOpen = useCallback(() => {
-    clearCloseTimer();
-    setOpen(true);
-  }, [clearCloseTimer]);
+  const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
+    };
+    const onPointer = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) {
+        const panel = document.querySelector('[role="dialog"][aria-label="دسته‌بندی محصولات"]');
+        if (panel && panel.contains(e.target as Node)) return;
+        close();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    window.addEventListener("mousedown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onPointer);
+    };
+  }, [open, close]);
 
   if (!categories.length) {
     return (
@@ -307,36 +329,31 @@ export function CategoryMegaMenuDesktop({ categories }: Pick<Props, "categories"
   }
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative"
-      onMouseEnter={handleOpen}
-      onMouseLeave={scheduleClose}
-      onFocus={handleOpen}
-      onBlur={(e) => {
-        if (!wrapRef.current?.contains(e.relatedTarget as Node)) scheduleClose();
-      }}
-    >
+    <div ref={wrapRef} className="relative">
       <button
+        id={btnId}
         type="button"
         className={cn(
-          "inline-flex items-center gap-1 transition hover:text-[var(--fg)]",
-          open && "text-[var(--fg)]",
+          "inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 transition",
+          open
+            ? "border-[var(--accent)]/40 bg-[var(--accent-soft)] text-[var(--fg)]"
+            : "hover:bg-[var(--bg-elevated)] hover:text-[var(--fg)]",
         )}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
       >
+        <Grid3X3 className="h-3.5 w-3.5 text-[var(--accent)]" />
         دسته‌بندی
         <ChevronDown className={cn("h-3.5 w-3.5 transition", open && "rotate-180")} />
       </button>
-      <DesktopPanel categories={categories} open={open} onClose={() => setOpen(false)} />
+      <DesktopPanel categories={categories} open={open} onClose={close} />
     </div>
   );
 }
 
 export function CategoryMegaMenuMobile({ categories, onNavigate }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   if (!categories.length) {
     return (
@@ -355,12 +372,12 @@ export function CategoryMegaMenuMobile({ categories, onNavigate }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 py-3 text-sm"
+        className="flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 py-3 text-sm font-medium"
         aria-expanded={expanded}
       >
         <span className="flex items-center gap-2">
           <Grid3X3 className="h-4 w-4 text-[var(--accent)]" />
-          دسته‌بندی
+          دسته‌بندی‌ها
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted transition", expanded && "rotate-180")} />
       </button>

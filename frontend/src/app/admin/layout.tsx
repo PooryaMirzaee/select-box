@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         style={{ background: "var(--sidebar-bg)" }}
       >
         <SelectBoxLogo href="/" size="sm" />
-        <p className="mt-1 text-xs text-muted">ادمین SelectBox</p>
+        <p className="mt-1 text-xs text-muted">ادمین فروشگاه دشتستان</p>
         <nav className="mt-10 flex-1 space-y-1">
           {links.map(({ href, label, icon: Icon }) => (
             <Link

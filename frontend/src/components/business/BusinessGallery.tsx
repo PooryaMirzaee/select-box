@@ -55,7 +55,7 @@ export function BusinessGallery({ title, items, samples = [] }: Props) {
           <p className="mt-1 text-sm text-muted">نمونه‌های واقعی از پروژه‌های سازمانی</p>
         </div>
         {items.length === 0 && samples.length > 0 ? (
-          <span className="rounded-full border border-theme px-3 py-1 text-[10px] text-muted">از کاتالوگ</span>
+          <span className="rounded-full border border-theme px-3 py-1 text-[10px] text-muted">از فروشگاه</span>
         ) : null}
       </div>
 

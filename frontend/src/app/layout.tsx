@@ -4,13 +4,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { fetchShopSettings } from "@/lib/api";
+import { fontDisplay, fontSans } from "@/lib/fonts";
 import { rootMetadataFromSettings } from "@/lib/seo-metadata";
 import "./globals.css";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#141210" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -25,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const settings = await fetchShopSettings().catch(() => null);
 
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
+    <html lang="fa" dir="rtl" suppressHydrationWarning className={`${fontSans.variable} ${fontDisplay.variable}`}>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{

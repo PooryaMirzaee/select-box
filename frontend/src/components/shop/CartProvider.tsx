@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -16,11 +17,13 @@ import { CART_EVENTS } from "@/lib/storage-keys";
 
 type CartContextValue = {
   cart: Cart | null;
+  loading: boolean;
   itemCount: number;
   open: boolean;
   openCart: () => void;
   closeCart: () => void;
   refreshCart: () => Promise<void>;
+  applyCart: (cart: Cart | null) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -33,32 +36,65 @@ export function useCart() {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
+  const refreshSeq = useRef(0);
+
+  const applyCart = useCallback((next: Cart | null) => {
+    refreshSeq.current += 1;
+    setCart(next);
+    setLoading(false);
+  }, []);
 
   const refreshCart = useCallback(async () => {
+    const seq = ++refreshSeq.current;
+    setLoading(true);
     try {
       const c = await getCartClient();
-      setCart(c);
+      if (seq === refreshSeq.current) {
+        setCart(c);
+      }
     } catch {
-      setCart(null);
+      if (seq === refreshSeq.current) {
+        // خطای شبکه را به معنای سبد خالی نگیر
+        setCart((prev) => prev);
+      }
+    } finally {
+      if (seq === refreshSeq.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     setDrawerMounted(true);
-    refreshCart();
-    const onUpdate = () => refreshCart();
-    const onOpen = () => {
-      refreshCart().then(() => setOpen(true));
+    void refreshCart();
+
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<Cart | undefined>).detail;
+      if (detail && typeof detail === "object" && Array.isArray(detail.items)) {
+        applyCart(detail);
+        return;
+      }
+      void refreshCart();
     };
+
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<Cart | undefined>).detail;
+      if (detail && typeof detail === "object" && Array.isArray(detail.items)) {
+        applyCart(detail);
+        setOpen(true);
+        return;
+      }
+      void refreshCart().then(() => setOpen(true));
+    };
+
     window.addEventListener(CART_EVENTS.update, onUpdate);
     window.addEventListener(CART_EVENTS.open, onOpen);
     return () => {
       window.removeEventListener(CART_EVENTS.update, onUpdate);
       window.removeEventListener(CART_EVENTS.open, onOpen);
     };
-  }, [refreshCart]);
+  }, [refreshCart, applyCart]);
 
   const itemCount = useMemo(
     () => cart?.items.reduce((s, i) => s + i.quantity, 0) ?? 0,
@@ -68,15 +104,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       cart,
+      loading,
       itemCount,
       open,
       openCart: () => {
-        refreshCart().then(() => setOpen(true));
+        void refreshCart().then(() => setOpen(true));
       },
       closeCart: () => setOpen(false),
       refreshCart,
+      applyCart,
     }),
-    [cart, itemCount, open, refreshCart],
+    [cart, loading, itemCount, open, refreshCart, applyCart],
   );
 
   return (

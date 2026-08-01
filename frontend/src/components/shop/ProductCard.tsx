@@ -21,9 +21,9 @@ export function ProductCard({ product, index = 0 }: { product: ProductSummary; i
     >
       <Link
         href={`/product/${product.slug}`}
-        className="group block overflow-hidden rounded-2xl border border-theme bg-card transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] hover:shadow-[var(--shadow-soft)]"
+        className="group block overflow-hidden rounded-xl border border-theme bg-card transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] hover:shadow-[var(--shadow-soft)]"
       >
-        <div className="relative aspect-[4/5] overflow-hidden bg-white dark:bg-[var(--bg-elevated)]">
+        <div className="relative aspect-square overflow-hidden bg-[var(--card)] dark:bg-[var(--bg-elevated)]">
           {product.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -31,7 +31,7 @@ export function ProductCard({ product, index = 0 }: { product: ProductSummary; i
               alt={product.title}
               loading={index < 2 ? "eager" : "lazy"}
               decoding="async"
-              className="product-img h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.03] sm:p-3"
+              className="product-img h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.03]"
             />
           ) : (
             <div className="flex h-full items-center justify-center opacity-50">
@@ -39,13 +39,13 @@ export function ProductCard({ product, index = 0 }: { product: ProductSummary; i
             </div>
           )}
         </div>
-        <div className="p-3 sm:p-4">
-          <p className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug">
+        <div className="p-2.5 sm:p-3">
+          <p className="line-clamp-2 min-h-[2.25rem] text-[13px] font-medium leading-snug">
             {product.title}
           </p>
-          <p className="mt-2 text-sm sm:text-base">
+          <p className="mt-1.5 text-sm">
             <span className="font-bold">{formatToman(product.base_price, false)}</span>
-            <span className="ms-1 text-[11px] font-normal text-muted">تومان</span>
+            <span className="ms-1 text-[10px] font-normal text-muted">تومان</span>
           </p>
         </div>
       </Link>

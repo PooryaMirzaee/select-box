@@ -70,7 +70,7 @@ function DefaultPromoSections() {
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-medium tracking-wide text-[var(--accent)]">گارانتی اصلی</p>
-              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">خرید مطمئن از SelectBox</h2>
+              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">خرید مطمئن از فروشگاه دشتستان</h2>
               <p className="mt-2 max-w-md text-sm text-muted">
                 تمام محصولات با گارانتی معتبر، ارسال سریع و پشتیبانی تخصصی — از یخچال تا لوازم روزمره.
               </p>
@@ -79,7 +79,7 @@ function DefaultPromoSections() {
               href="/catalog"
               className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-sm font-medium text-[var(--accent-fg)] transition hover:opacity-90"
             >
-              مشاهده کاتالوگ
+              مشاهده همه محصولات
             </Link>
           </div>
         </div>
@@ -89,14 +89,21 @@ function DefaultPromoSections() {
 }
 
 export default async function HomePage() {
-  const [products, browse, settings, homepage, heroBanners, promoBanners] = await Promise.all([
-    fetchProducts().catch(() => []),
+  const [productList, browse, settings, homepage, heroBanners, promoBanners] = await Promise.all([
+    fetchProducts(undefined, undefined, { limit: 48 }).catch(() => ({
+      items: [],
+      total: 0,
+      limit: 48,
+      offset: 0,
+    })),
     fetchBrowse("").catch(() => null),
     fetchShopSettings().catch(() => null),
     fetchHomepageConfig().catch(() => DEFAULT_HOMEPAGE_CONFIG),
     fetchHomeBanners("hero").catch(() => []),
     fetchHomeBanners("promo").catch(() => []),
   ]);
+
+  const products = productList.items;
 
   const config = {
     ...DEFAULT_HOMEPAGE_CONFIG,
@@ -139,7 +146,7 @@ export default async function HomePage() {
             </Link>
           ) : null}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {featuredProducts.map((p, i) => (
             <ProductCard key={p.id} product={p} index={i} />
           ))}

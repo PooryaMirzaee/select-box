@@ -292,11 +292,27 @@ export async function apiFetch<T>(path: string, init?: ApiFetchInit, token?: str
   return res.json() as Promise<T>;
 }
 
-export function fetchProducts(parentSlug?: string, search?: string) {
-  const params = new URLSearchParams({ limit: "48" });
+export type ProductListResponse = {
+  items: ProductSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export function fetchProducts(
+  parentSlug?: string,
+  search?: string,
+  opts?: { limit?: number; offset?: number },
+) {
+  const limit = opts?.limit ?? 48;
+  const offset = opts?.offset ?? 0;
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
   if (parentSlug) params.set("parent_slug", parentSlug);
   if (search?.trim()) params.set("q", search.trim());
-  return apiFetch<ProductSummary[]>(`/api/v1/catalog/products?${params}`, {
+  return apiFetch<ProductListResponse>(`/api/v1/catalog/products?${params}`, {
     next: { revalidate: 60, tags: ["catalog"] },
   });
 }
@@ -543,51 +559,63 @@ export function fetchBrowse(path: string, productType?: string) {
   });
 }
 
-/* --- مرورگر --- */
+/* --- مرورگر / سبد خرید --- */
+
+let pendingCartSession: Promise<string> | null = null;
 
 export async function ensureCartSession(): Promise<string> {
   const { getSessionId, setSessionId } = await import("./cart-session");
-  let sid = getSessionId();
-  if (sid) return sid;
-  const res = await apiFetch<{ session_id: string }>("/api/v1/cart/session", {
-    method: "POST",
-  });
-  setSessionId(res.session_id);
-  return res.session_id;
+  const existing = getSessionId();
+  if (existing) return existing;
+
+  if (!pendingCartSession) {
+    pendingCartSession = apiFetch<{ session_id: string }>("/api/v1/cart/session", {
+      method: "POST",
+    })
+      .then((res) => {
+        // اگر همزمان سشن دیگری نوشته شده، همان را نگه دار
+        const raced = getSessionId();
+        if (raced) return raced;
+        setSessionId(res.session_id);
+        return res.session_id;
+      })
+      .finally(() => {
+        pendingCartSession = null;
+      });
+  }
+  return pendingCartSession;
 }
 
-function sessionHeaders(sid: string) {
-  return { "X-Session-Id": sid };
+async function cartRequestHeaders(): Promise<Record<string, string>> {
+  const sid = await ensureCartSession();
+  const { authHeaders } = await import("@/lib/auth");
+  return { "X-Session-Id": sid, ...authHeaders() };
 }
 
 export async function getCartClient(): Promise<Cart> {
-  const sid = await ensureCartSession();
-  return apiFetch<Cart>("/api/v1/cart", { headers: sessionHeaders(sid) });
+  return apiFetch<Cart>("/api/v1/cart", { headers: await cartRequestHeaders() });
 }
 
 export async function addToCart(variationId: number, quantity = 1) {
-  const sid = await ensureCartSession();
   return apiFetch<Cart>("/api/v1/cart/items", {
     method: "POST",
     body: JSON.stringify({ variation_id: variationId, quantity }),
-    headers: sessionHeaders(sid),
+    headers: await cartRequestHeaders(),
   });
 }
 
 export async function updateCartItem(itemId: number, quantity: number) {
-  const sid = await ensureCartSession();
   return apiFetch<Cart>(`/api/v1/cart/items/${itemId}`, {
     method: "PATCH",
     body: JSON.stringify({ quantity }),
-    headers: sessionHeaders(sid),
+    headers: await cartRequestHeaders(),
   });
 }
 
 export async function removeCartItem(itemId: number) {
-  const sid = await ensureCartSession();
   return apiFetch<Cart>(`/api/v1/cart/items/${itemId}`, {
     method: "DELETE",
-    headers: sessionHeaders(sid),
+    headers: await cartRequestHeaders(),
   });
 }
 
@@ -595,8 +623,6 @@ export async function createOrder(payload: {
   coupon_code?: string;
   shipping_address?: Record<string, string>;
 }) {
-  const sid = await ensureCartSession();
-  const { authHeaders } = await import("@/lib/auth");
   return apiFetch<{
     order_id: number;
     tracking_code: string;
@@ -605,13 +631,11 @@ export async function createOrder(payload: {
   }>("/api/v1/checkout/orders", {
     method: "POST",
     body: JSON.stringify(payload),
-    headers: { ...sessionHeaders(sid), ...authHeaders() },
+    headers: await cartRequestHeaders(),
   });
 }
 
 export async function initiatePayment(orderId: number) {
-  const sid = await ensureCartSession();
-  const { authHeaders } = await import("@/lib/auth");
   return apiFetch<{
     payment_id: number;
     payment_url: string;
@@ -619,7 +643,7 @@ export async function initiatePayment(orderId: number) {
     amount: string;
   }>(`/api/v1/payments/orders/${orderId}/initiate`, {
     method: "POST",
-    headers: { ...sessionHeaders(sid), ...authHeaders() },
+    headers: await cartRequestHeaders(),
   });
 }
 
@@ -637,22 +661,18 @@ export type CardTransferInit = {
 };
 
 export async function initiateCardTransfer(orderId: number) {
-  const sid = await ensureCartSession();
-  const { authHeaders } = await import("@/lib/auth");
   return apiFetch<CardTransferInit>(`/api/v1/payments/orders/${orderId}/card-transfer`, {
     method: "POST",
-    headers: { ...sessionHeaders(sid), ...authHeaders() },
+    headers: await cartRequestHeaders(),
   });
 }
 
 export async function uploadPaymentReceipt(paymentId: number, file: File, customerNote?: string) {
-  const sid = await ensureCartSession();
-  const { authHeaders } = await import("@/lib/auth");
+  const headers = await cartRequestHeaders();
   const form = new FormData();
   form.append("file", file);
   if (customerNote?.trim()) form.append("customer_note", customerNote.trim());
 
-  const headers: Record<string, string> = { ...sessionHeaders(sid), ...authHeaders() };
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/v1/payments/${paymentId}/receipt`, {
@@ -687,13 +707,11 @@ export async function adminRejectCardPayment(
 }
 
 export async function confirmPayment(orderId: number) {
-  const sid = await ensureCartSession();
-  const { authHeaders } = await import("@/lib/auth");
   return apiFetch<{ ok: boolean; tracking_code: string }>(
     `/api/v1/payments/orders/${orderId}/confirm`,
     {
       method: "POST",
-      headers: { ...sessionHeaders(sid), ...authHeaders() },
+      headers: await cartRequestHeaders(),
     },
   );
 }

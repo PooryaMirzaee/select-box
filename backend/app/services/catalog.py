@@ -7,7 +7,7 @@
 from decimal import Decimal
 from urllib.parse import unquote
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -335,11 +335,49 @@ def list_products(
       • thematic_slug: موضوع طرح از طریق join به designs.thematic_category
       • search: جستجوی متنی روی عنوان و توضیح
     """
-    q = select(Product).options(
+    q = _products_base_query(
+        parent_slug=parent_slug,
+        thematic_slug=thematic_slug,
+        thematic_category_id=thematic_category_id,
+        include_draft=include_draft,
+        search=search,
+    ).options(
         joinedload(Product.parent_category),
         joinedload(Product.images),
         joinedload(Product.design).joinedload(Design.assets),
     )
+    q = q.order_by(Product.id.desc()).limit(limit).offset(offset)
+    return list(db.scalars(q).unique().all())
+
+
+def count_products(
+    db: Session,
+    *,
+    parent_slug: str | None = None,
+    thematic_slug: str | None = None,
+    thematic_category_id: int | None = None,
+    include_draft: bool = False,
+    search: str | None = None,
+) -> int:
+    q = _products_base_query(
+        parent_slug=parent_slug,
+        thematic_slug=thematic_slug,
+        thematic_category_id=thematic_category_id,
+        include_draft=include_draft,
+        search=search,
+    )
+    return int(db.scalar(select(func.count()).select_from(q.subquery())) or 0)
+
+
+def _products_base_query(
+    *,
+    parent_slug: str | None,
+    thematic_slug: str | None = None,
+    thematic_category_id: int | None = None,
+    include_draft: bool = False,
+    search: str | None = None,
+):
+    q = select(Product)
     if not include_draft:
         q = q.where(Product.status == "published")
 
@@ -359,8 +397,7 @@ def list_products(
             Category, Category.id == Design.thematic_category_id
         ).where(Category.slug == thematic_slug)
 
-    q = q.order_by(Product.id.desc()).limit(limit).offset(offset)
-    return list(db.scalars(q).unique().all())
+    return q
 
 
 def get_product_by_slug(db: Session, slug: str) -> Product | None:

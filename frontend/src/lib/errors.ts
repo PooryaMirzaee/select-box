@@ -47,7 +47,7 @@ export const ERROR_CONTENT: Record<ErrorKind, ErrorContent> = {
     codeFa: "۴۰۴",
     title: "محصول پیدا نشد",
     description: "این محصول هنوز منتشر نشده، حذف شده، یا موقتاً در دسترس نیست.",
-    hint: "محصولات مشابه را در کاتالوگ ببینید.",
+    hint: "محصولات مشابه را در بخش همه محصولات ببینید.",
   },
   design_not_found: {
     kind: "design_not_found",
@@ -192,13 +192,13 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
   switch (kind) {
     case "product_not_found":
       return [
-        { label: "کاتالوگ", href: "/catalog", primary: true },
+        { label: "همه محصولات", href: "/catalog", primary: true },
         { label: "صفحهٔ اصلی", href: "/" },
       ];
     case "design_not_found":
     case "studio_not_found":
       return [
-        { label: "کاتالوگ", href: "/catalog", primary: true },
+        { label: "همه محصولات", href: "/catalog", primary: true },
         { label: "صفحهٔ اصلی", href: "/" },
       ];
     case "order_not_found":
@@ -214,11 +214,11 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
     case "checkout_failed":
       return [
         { label: "سبد خرید", href: "/cart", primary: true },
-        { label: "کاتالوگ", href: "/catalog" },
+        { label: "همه محصولات", href: "/catalog" },
       ];
     case "customizer_unavailable":
       return [
-        { label: "کاتالوگ", href: "/catalog", primary: true },
+        { label: "همه محصولات", href: "/catalog", primary: true },
         { label: "صفحهٔ اصلی", href: "/" },
       ];
     case "server_error":
@@ -229,7 +229,7 @@ export function errorActions(kind: ErrorKind, surface: ErrorSurface): ErrorActio
     default:
       return [
         { label: "صفحهٔ اصلی", href: "/", primary: true },
-        { label: "کاتالوگ", href: "/catalog" },
+        { label: "همه محصولات", href: "/catalog" },
       ];
   }
 }

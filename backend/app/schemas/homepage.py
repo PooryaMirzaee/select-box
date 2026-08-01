@@ -9,7 +9,7 @@ class HomepageCta(BaseModel):
 
 
 class HomepageHeroConfig(BaseModel):
-    badge: str = "SelectBox"
+    badge: str = "فروشگاه دشتستان"
     title: str = "لوازم خانگی و سبک زندگی"
     subtitle: str = "خرید آنلاین با گارانتی اصلی، قیمت رقابتی و ارسال سریع."
     primary_cta: HomepageCta = Field(default_factory=lambda: HomepageCta(label="مشاهده کاتالوگ", href="/catalog"))

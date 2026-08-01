@@ -108,14 +108,14 @@ export function BlogPostView({ post }: Props) {
           <div className="flex-1">
             <p className="font-medium">محصول مناسب پیدا نکردید؟</p>
             <p className="mt-1 text-sm text-muted">
-              تیم SelectBox در انتخاب لوازم خانگی و سبک زندگی راهنمایی‌تان می‌کند.
+              تیم فروشگاه دشتستان در انتخاب لوازم خانگی و سبک زندگی راهنمایی‌تان می‌کند.
             </p>
           </div>
           <Link
             href="/catalog"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-fg)] transition hover:opacity-90"
           >
-            مشاهده کاتالوگ
+            مشاهده همه محصولات
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </aside>

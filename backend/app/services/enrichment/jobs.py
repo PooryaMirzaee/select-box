@@ -127,7 +127,7 @@ def _apply_description(db: Session, job: ProductEnrichmentJob) -> None:
     if job.meta_draft:
         product.meta_description = job.meta_draft
         if not product.meta_title:
-            product.meta_title = f"{product.title} | SelectBox"
+            product.meta_title = f"{product.title} | فروشگاه دشتستان"
 
 
 def _apply_category(db: Session, job: ProductEnrichmentJob) -> None:

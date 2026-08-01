@@ -1,11 +1,13 @@
-/** نام برند — SelectBox */
-export const BRAND_NAME = "SelectBox";
+/** نام برند — فروشگاه دشتستان */
+export const BRAND_NAME = "فروشگاه دشتستان";
+
+export const BRAND_SHORT = "دشتستان";
 
 export const BRAND_TAGLINE = "لوازم خانگی و سبک زندگی";
 
 export const BRAND_TITLE = `${BRAND_NAME} — ${BRAND_TAGLINE}`;
 
-/** لوگوی اصلی */
+/** لوگوی اصلی (اختیاری؛ وردمارک متنی در کامپوننت برند اولویت دارد) */
 export const BRAND_LOGO_SRC = "/brand/selectbox-logo.png";
 
 /** نسبت تصویر لوگو */

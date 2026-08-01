@@ -27,7 +27,7 @@ export function BusinessFeatures({ features }: { features: BusinessFeature[] }) 
   if (!features.length) return null;
   return (
     <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-      <h2 className="text-xl font-semibold sm:text-2xl">چرا CORALAY برای سازمان‌ها؟</h2>
+      <h2 className="text-xl font-semibold sm:text-2xl">چرا فروشگاه دشتستان برای سازمان‌ها؟</h2>
       <p className="mt-2 max-w-lg text-sm text-muted">کیفیت، شفافیت قیمت و پشتیبانی اختصاصی.</p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((f) => (

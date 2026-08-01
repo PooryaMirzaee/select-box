@@ -11,6 +11,8 @@ from app.db.session import get_db
 from app.models.enrichment import ProductEnrichmentJob
 from app.schemas.enrichment import (
     EnrichmentApproveIn,
+    EnrichmentBulkIn,
+    EnrichmentBulkOut,
     EnrichmentEnqueueIn,
     EnrichmentEnqueueOut,
     EnrichmentJobOut,
@@ -97,6 +99,38 @@ def retry(job_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="جاب یافت نشد") from None
     kick_enrichment_worker()
     return EnrichmentJobOut(**enrich_jobs.serialize_job(db, job))
+
+
+@router.post("/jobs/bulk", response_model=EnrichmentBulkOut)
+def bulk_action(body: EnrichmentBulkIn, db: Session = Depends(get_db)):
+    """اعمال/رد/تلاش مجدد گروهی — خطای هر جاب مانع بقیه نمی‌شود."""
+    done = 0
+    failed = 0
+    errors: list[str] = []
+
+    for job_id in body.job_ids:
+        try:
+            if body.action == "approve":
+                enrich_jobs.approve_job(db, job_id, candidate_id=None, apply_description=True)
+            elif body.action == "reject":
+                enrich_jobs.reject_job(db, job_id)
+            else:
+                enrich_jobs.retry_job(db, job_id)
+            done += 1
+        except LookupError:
+            failed += 1
+            errors.append(f"#{job_id}: جاب یافت نشد")
+        except ValueError as e:
+            failed += 1
+            errors.append(f"#{job_id}: {e}")
+        except Exception:
+            db.rollback()
+            failed += 1
+            errors.append(f"#{job_id}: خطای غیرمنتظره")
+
+    if body.action == "retry" and done:
+        kick_enrichment_worker()
+    return EnrichmentBulkOut(done=done, failed=failed, errors=errors[:20])
 
 
 @router.post("/worker/kick")

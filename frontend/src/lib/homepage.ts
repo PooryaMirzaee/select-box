@@ -76,7 +76,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   ],
   hero: {
     badge: "لوازم خانگی و سبک زندگی",
-    title: "خانه‌ای مدرن با SelectBox",
+    title: "خانه‌ای مدرن با فروشگاه دشتستان",
     subtitle: "یخچال، ماشین لباسشویی، لوازم روزمره و صدها محصول با گارانتی اصلی — ارسال سریع به سراسر کشور.",
     primary_cta: { label: "مشاهده محصولات", href: "/catalog" },
     secondary_cta: { label: "دسته‌بندی‌ها", href: "/browse" },
@@ -89,7 +89,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   featured: {
     title: "پرفروش‌ترین‌ها",
     subtitle: "محصولات منتخب",
-    catalog_label: "کاتالوگ ←",
+    catalog_label: "همه محصولات ←",
     catalog_href: "/catalog",
     product_count: 6,
     parent_slug: null,

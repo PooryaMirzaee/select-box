@@ -29,9 +29,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BusinessHubPage() {
-  const [data, products] = await Promise.all([
+  const [data, productList] = await Promise.all([
     fetchBusinessHub().catch(() => null),
-    fetchProducts().catch(() => []),
+    fetchProducts(undefined, undefined, { limit: 12 }).catch(() => ({
+      items: [],
+      total: 0,
+      limit: 12,
+      offset: 0,
+    })),
   ]);
   if (!data) notFound();
 
@@ -41,7 +46,7 @@ export default async function BusinessHubPage() {
       productLandings={data.product_landings}
       productType="hub"
       showProductCards
-      catalogSamples={products}
+      catalogSamples={productList.items}
     />
   );
 }

@@ -26,11 +26,14 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "" });
   const [loading, setLoading] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
 
   useEffect(() => {
-    getCartClient().then(setCart).catch(() => setCart(null));
-    fetchShopSettings().then(setShop).catch(() => null);
+    Promise.all([
+      getCartClient().then(setCart).catch(() => setCart(null)),
+      fetchShopSettings().then(setShop).catch(() => null),
+    ]).finally(() => setBooting(false));
   }, []);
 
   const cardTransferAvailable = Boolean(
@@ -81,6 +84,15 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (booting) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-20">
+        <div className="skeleton mx-auto h-8 w-48 rounded-xl" />
+        <div className="skeleton mt-8 h-40 rounded-2xl" />
+      </div>
+    );
   }
 
   if (!cart?.items.length) {

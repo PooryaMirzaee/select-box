@@ -25,7 +25,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         siteUrl={siteUrl}
         name={shopName}
         description={settings?.shop_description ?? settings?.default_meta_description}
-        logoUrl={absoluteUrl(siteUrl, "/brand/coralay-logo.png")}
+        logoUrl={absoluteUrl(siteUrl, "/brand/selectbox-logo.png")}
         sameAs={socialSameAs(settings)}
         contact={{
           phone: contact.contact_phone || undefined,

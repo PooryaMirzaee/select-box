@@ -82,12 +82,19 @@ function canApplyCategory(job: Job) {
   );
 }
 
+/** جاب چیزی برای اعمال گروهی دارد؟ */
+function canBulkApply(job: Job) {
+  return canApplyCandidate(job) || canApplyDescription(job) || canApplyCategory(job);
+}
+
 export default function AdminEnrichmentPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -113,12 +120,67 @@ export default function AdminEnrichmentPage() {
 
   useEffect(() => {
     setLoading(true);
+    setSelected(new Set());
     load();
     const t = setInterval(() => {
-      if (busyId == null) load();
+      if (busyId == null && !bulkBusy) load();
     }, 5000);
     return () => clearInterval(t);
-  }, [load, busyId]);
+  }, [load, busyId, bulkBusy]);
+
+  function toggleSelect(jobId: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  }
+
+  const applyableJobs = jobs.filter(canBulkApply);
+  const selectedApplyable = applyableJobs.filter((j) => selected.has(j.id));
+  const selectedRetryable = jobs.filter(
+    (j) => selected.has(j.id) && (j.status === "failed" || j.status === "rejected"),
+  );
+  const selectedRejectable = jobs.filter(
+    (j) => selected.has(j.id) && j.status === "needs_review",
+  );
+
+  function selectAllApplyable() {
+    setSelected((prev) => {
+      const allSelected = applyableJobs.length > 0 && applyableJobs.every((j) => prev.has(j.id));
+      if (allSelected) return new Set();
+      return new Set(applyableJobs.map((j) => j.id));
+    });
+  }
+
+  async function bulkAction(action: "approve" | "reject" | "retry", ids: number[]) {
+    if (!ids.length) return;
+    if (action === "approve" && !confirm(`اعمال ${ids.length} مورد به‌صورت گروهی؟ (بهترین عکس/توضیح/دسته هر جاب)`)) {
+      return;
+    }
+    setBulkBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const res = await adminFetch<{ done: number; failed: number; errors: string[] }>(
+        "/api/v1/admin/enrichment/jobs/bulk",
+        token(),
+        { method: "POST", body: JSON.stringify({ job_ids: ids, action }) },
+      );
+      const verb = action === "approve" ? "اعمال" : action === "reject" ? "رد" : "تلاش مجدد";
+      setNotice(
+        `${verb} گروهی: ${res.done} موفق` +
+          (res.failed ? ` — ${res.failed} ناموفق${res.errors.length ? ` (${res.errors[0]})` : ""}` : ""),
+      );
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "عملیات گروهی ناموفق");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   async function approve(job: Job, candidateId?: number, applyDescription = true) {
     setBusyId(job.id);
@@ -221,15 +283,70 @@ export default function AdminEnrichmentPage() {
       {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
       {loading && !jobs.length ? <p className="mt-8 text-muted">بارگذاری…</p> : null}
 
+      {jobs.length > 0 ? (
+        <div className="card-theme sticky top-2 z-10 mt-6 flex flex-wrap items-center gap-3 p-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--accent)]"
+              checked={applyableJobs.length > 0 && applyableJobs.every((j) => selected.has(j.id))}
+              onChange={selectAllApplyable}
+            />
+            انتخاب همه قابل‌اعمال‌ها ({applyableJobs.length.toLocaleString("fa-IR")})
+          </label>
+          {selected.size > 0 ? (
+            <span className="text-sm text-muted">
+              {selected.size.toLocaleString("fa-IR")} انتخاب شده
+            </span>
+          ) : null}
+          <div className="ms-auto flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={bulkBusy || selectedApplyable.length === 0}
+              onClick={() => bulkAction("approve", selectedApplyable.map((j) => j.id))}
+            >
+              {bulkBusy ? "…" : `اعمال گروهی (${selectedApplyable.length.toLocaleString("fa-IR")})`}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy || selectedRetryable.length === 0}
+              onClick={() => bulkAction("retry", selectedRetryable.map((j) => j.id))}
+            >
+              تلاش مجدد ({selectedRetryable.length.toLocaleString("fa-IR")})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy || selectedRejectable.length === 0}
+              onClick={() => bulkAction("reject", selectedRejectable.map((j) => j.id))}
+            >
+              رد ({selectedRejectable.length.toLocaleString("fa-IR")})
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-6 space-y-4">
         {jobs.map((job) => {
           const busy = busyId === job.id;
           const applyable = canApplyCandidate(job);
           const descApplyable = canApplyDescription(job);
           return (
-            <div key={job.id} className="card-theme p-4">
+            <div
+              key={job.id}
+              className={cn("card-theme p-4", selected.has(job.id) && "ring-2 ring-[var(--accent)]/50")}
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                    checked={selected.has(job.id)}
+                    onChange={() => toggleSelect(job.id)}
+                    aria-label={`انتخاب ${job.product_title}`}
+                  />
+                  <div>
                   <p className="font-medium">
                     #{job.id} — {job.product_title}
                   </p>
@@ -249,6 +366,7 @@ export default function AdminEnrichmentPage() {
                   {job.description_draft ? (
                     <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
                   ) : null}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {canApplyCategory(job) ? (

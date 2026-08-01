@@ -8,10 +8,11 @@ import { useCart } from "@/components/shop/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { removeCartItem, updateCartItem } from "@/lib/api";
 import { mediaUrl } from "@/lib/media";
+import { CART_EVENTS } from "@/lib/storage-keys";
 import { cn, formatToman } from "@/lib/utils";
 
 export function CartDrawer() {
-  const { cart, open, closeCart, refreshCart } = useCart();
+  const { cart, loading, open, closeCart, applyCart } = useCart();
   const [busyLine, setBusyLine] = useState<number | null>(null);
 
   const subtotal =
@@ -20,12 +21,10 @@ export function CartDrawer() {
   async function changeQty(lineId: number, next: number) {
     setBusyLine(lineId);
     try {
-      if (next <= 0) {
-        await removeCartItem(lineId);
-      } else {
-        await updateCartItem(lineId, next);
-      }
-      await refreshCart();
+      const nextCart =
+        next <= 0 ? await removeCartItem(lineId) : await updateCartItem(lineId, next);
+      applyCart(nextCart);
+      window.dispatchEvent(new CustomEvent(CART_EVENTS.update, { detail: nextCart }));
     } finally {
       setBusyLine(null);
     }
@@ -63,7 +62,13 @@ export function CartDrawer() {
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-          {!cart?.items.length ? (
+          {loading && !cart?.items.length ? (
+            <div className="space-y-4 py-4">
+              {[0, 1].map((i) => (
+                <div key={i} className="skeleton h-24 rounded-2xl" />
+              ))}
+            </div>
+          ) : !cart?.items.length ? (
             <div className="flex flex-col items-center gap-4 py-16 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent-soft)]">
                 <ShoppingBag className="h-7 w-7 text-[var(--accent)]" />

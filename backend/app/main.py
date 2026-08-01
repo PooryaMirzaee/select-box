@@ -49,6 +49,7 @@ async def lifespan(app: FastAPI):
     _ensure_chat_canned_seed()
     _ensure_header_nav_seed()
     _ensure_homepage_default()
+    _ensure_brand_rebrand()
     _ensure_site_url_from_env()
     _ensure_ai_columns()
     _ensure_ai_suggested_seed()
@@ -264,6 +265,63 @@ def _ensure_homepage_default() -> None:
     db = SessionLocal()
     try:
         homepage_service.ensure_default(db)
+    finally:
+        db.close()
+
+
+def _ensure_brand_rebrand() -> None:
+    """اگر نام قدیمی SelectBox در تنظیمات باشد، به فروشگاه دشتستان به‌روز می‌شود."""
+    from app.db.session import SessionLocal
+    from app.services import settings as shop_settings
+    from app.services import homepage as homepage_service
+
+    old_names = {"SelectBox", "selectbox", "SELECTBOX"}
+    db = SessionLocal()
+    try:
+        name = str(shop_settings.get_setting(db, "shop_name", "") or "").strip()
+        if name in old_names:
+            shop_settings.set_setting(db, "shop_name", "فروشگاه دشتستان")
+        meta = str(shop_settings.get_setting(db, "default_meta_title", "") or "")
+        if "SelectBox" in meta:
+            shop_settings.set_setting(
+                db,
+                "default_meta_title",
+                meta.replace("SelectBox", "فروشگاه دشتستان"),
+            )
+        holder = str(shop_settings.get_setting(db, "card_holder", "") or "").strip()
+        if holder in old_names:
+            shop_settings.set_setting(db, "card_holder", "فروشگاه دشتستان")
+
+        cfg = homepage_service.get_config(db)
+        hero = cfg.hero.model_dump()
+        featured = cfg.featured.model_dump()
+        changed_hero = False
+        changed_featured = False
+        for key in ("title", "badge", "subtitle"):
+            val = str(hero.get(key) or "")
+            if "SelectBox" in val:
+                hero[key] = val.replace("SelectBox", "فروشگاه دشتستان")
+                changed_hero = True
+        label = str(featured.get("catalog_label") or "")
+        if "کاتالوگ" in label:
+            featured["catalog_label"] = "همه محصولات ←"
+            changed_featured = True
+        if changed_hero or changed_featured:
+            from app.schemas.homepage import (
+                HomepageConfigPatch,
+                HomepageFeaturedConfig,
+                HomepageHeroConfig,
+            )
+
+            homepage_service.patch_config(
+                db,
+                HomepageConfigPatch(
+                    hero=HomepageHeroConfig(**hero) if changed_hero else None,
+                    featured=HomepageFeaturedConfig(**featured) if changed_featured else None,
+                ),
+            )
+    except Exception:
+        pass
     finally:
         db.close()
 

@@ -2,95 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-/* فونت‌ها از /public/fonts — تیتر: Cactus | متن: IRANSansX (اعداد فارسی) */
-@font-face {
-  font-family: "Cactus";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url("/fonts/cactus-bold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  src: url("/fonts/IRANSansXFaNum-Regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url("/fonts/IRANSansXFaNum-Medium.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url("/fonts/IRANSansXFaNum-DemiBold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url("/fonts/IRANSansXFaNum-Bold.woff2") format("woff2");
-}
-
-/* پالت فروشگاهی — بستر سنگی + اکسنت گرم مسی برای حس فروشگاه؛ بدون آبی */
+/* فونت‌ها با next/font (preload) — متغیرها از layout: --font-iran / --font-capsule */
+/* پالت سیاه/سفید + طلایی خاص */
 :root {
   color-scheme: light;
-  --font-sans: "IRANSansX", Tahoma, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Cactus", "IRANSansX", Tahoma, sans-serif;
+  --font-sans: var(--font-iran), Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-capsule), var(--font-iran), Tahoma, sans-serif;
 
-  --bg: #faf9f7;
-  --bg-elevated: #f3f1ee;
-  --fg: #1c1917;
-  --fg-muted: #78716c;
-  --border: #e7e5e4;
-  --accent: #c2410c;
-  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
-  --accent-fg: #fffbf7;
+  --bg: #ffffff;
+  --bg-elevated: #f4f4f5;
+  --fg: #0a0a0a;
+  --fg-muted: #71717a;
+  --border: #e4e4e7;
+  --accent: #b8860b;
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-fg: #0a0a0a;
   --success: #15803d;
   --danger: #dc2626;
   --card: #ffffff;
-  --header-bg: rgba(250, 249, 247, 0.92);
-  --sidebar-bg: #f3f1ee;
-  --sidebar-fg: #57534e;
-  --sidebar-hover: color-mix(in srgb, var(--accent) 6%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
-  --sidebar-active-fg: var(--accent);
-  --shadow-soft: 0 8px 32px color-mix(in srgb, var(--fg) 8%, transparent);
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --sidebar-bg: #f4f4f5;
+  --sidebar-fg: #52525b;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 16%, var(--bg-elevated));
+  --sidebar-active-fg: #8a6508;
+  --shadow-soft: 0 10px 40px color-mix(in srgb, var(--fg) 6%, transparent);
   --input-bg: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #141210;
-  --bg-elevated: #1c1917;
-  --fg: #f5f5f4;
-  --fg-muted: #a8a29e;
-  --border: #292524;
-  --accent: #fb923c;
-  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-fg: #1c1208;
+  --bg: #0a0a0a;
+  --bg-elevated: #141414;
+  --fg: #fafafa;
+  --fg-muted: #a1a1aa;
+  --border: #27272a;
+  --accent: #d4af37;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-fg: #0a0a0a;
   --success: #4ade80;
   --danger: #f87171;
-  --card: #1c1917;
-  --header-bg: rgba(20, 18, 16, 0.92);
-  --sidebar-bg: #0c0a09;
-  --sidebar-fg: #a8a29e;
-  --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
+  --card: #121212;
+  --header-bg: rgba(10, 10, 10, 0.92);
+  --sidebar-bg: #050505;
+  --sidebar-fg: #a1a1aa;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
   --sidebar-active-fg: var(--accent);
-  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --input-bg: #1c1917;
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --input-bg: #141414;
 }
 
 html {
@@ -100,8 +60,8 @@ html {
 body {
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 90% 60% at 100% -15%, var(--accent-soft), transparent 55%),
-    radial-gradient(ellipse 70% 50% at -10% 110%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 50%);
+    radial-gradient(ellipse 80% 50% at 100% 0%, var(--accent-soft), transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fg) 2.5%, transparent), transparent 280px);
   color: var(--fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -268,7 +228,7 @@ a,
   }
 
   .chip-theme {
-    @apply inline-flex min-h-[40px] items-center rounded-full border border-theme px-4 text-sm text-muted transition;
+    @apply inline-flex min-h-[40px] items-center rounded-xl border border-theme px-4 text-sm text-muted transition;
   }
 
   .chip-theme.is-active {

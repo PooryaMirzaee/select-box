@@ -213,7 +213,7 @@ async def initiate_payment(
         callback = str(cfg.get("zarinpal_callback_url") or "").strip()
         if not callback:
             callback = f"{env.public_api_url.rstrip('/')}/api/v1/payments/zarinpal/callback"
-        shop_name = str(cfg.get("shop_name", "SelectBox"))
+        shop_name = str(cfg.get("shop_name", "فروشگاه دشتستان"))
         try:
             result = await zarinpal.request_payment(
                 merchant_id=merchant,

@@ -10,6 +10,7 @@ import {
   CategoryMegaMenuDesktop,
   CategoryMegaMenuMobile,
 } from "@/components/shop/CategoryMegaMenu";
+import { CategoryIconStrip } from "@/components/shop/CategoryIconStrip";
 import { ContactMobileSection } from "@/components/shop/ShopContact";
 import { SearchBar } from "@/components/shop/SearchBar";
 import { useCart } from "@/components/shop/CartProvider";
@@ -93,16 +94,12 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
       <header className="sticky top-0 z-40 border-b border-theme bg-header backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <SelectBoxLogo size="sm" className="sm:hidden" priority />
-          <SelectBoxLogo
-            size="md"
-            className="hidden sm:inline-flex"
-            priority
-            imageStyle={{ height: 66, width: 44, maxHeight: 80 }}
-          />
+          <SelectBoxLogo size="md" className="hidden sm:inline-flex" priority />
 
           <SearchBar className="hidden w-full max-w-xs md:block lg:max-w-sm" />
 
-          <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
+          <nav className="hidden items-center gap-4 text-sm text-muted md:flex lg:gap-5">
+            <CategoryMegaMenuDesktop categories={categoryNav} />
             {headerNav.map((link) => (
               <NavLinkItem
                 key={link.id}
@@ -110,7 +107,6 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
                 className="transition hover:text-[var(--fg)]"
               />
             ))}
-            <CategoryMegaMenuDesktop categories={categoryNav} />
             {me ? (
               <Link href="/account" className="inline-flex items-center gap-1 transition hover:text-[var(--fg)]">
                 <User className="h-3.5 w-3.5" />
@@ -168,9 +164,12 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
           <SearchBar />
         </div>
 
+        <CategoryIconStrip categories={categoryNav} />
+
         {menuOpen ? (
           <div className="max-h-[min(70vh,520px)] overflow-y-auto border-t border-theme px-4 py-3 md:hidden">
             <div className="flex flex-col gap-1">
+              <CategoryMegaMenuMobile categories={categoryNav} onNavigate={closeMobileMenu} />
               {headerNav.map((link) => (
                 <NavLinkItem
                   key={link.id}
@@ -179,7 +178,6 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
                   onNavigate={closeMobileMenu}
                 />
               ))}
-              <CategoryMegaMenuMobile categories={categoryNav} onNavigate={closeMobileMenu} />
               {me ? (
                 <Link
                   href="/account"

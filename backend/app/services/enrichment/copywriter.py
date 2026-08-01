@@ -47,7 +47,7 @@ def _parse_copy(content: str, title: str) -> tuple[str, str] | None:
     desc_m = _DESC_RE.search(text)
     meta_m = _META_RE.search(text)
     desc = (desc_m.group(1).strip() if desc_m else text)[:2000].strip()
-    meta = (meta_m.group(1).strip() if meta_m else f"{title} | SelectBox")[:255].strip()
+    meta = (meta_m.group(1).strip() if meta_m else f"{title} | فروشگاه دشتستان")[:255].strip()
     if not desc or len(desc) < 40:
         return None
     # رد کردن خروجی‌های استاتیک/الگویی بی‌فایده
@@ -64,7 +64,7 @@ def _build_user_prompt(title: str, query: str, context: str, *, with_web: bool) 
         else ""
     )
     return (
-        f"برای فروشگاه اینترنتی ایرانی SelectBox یک توضیح فروشگاهی بنویس.\n"
+        f"برای فروشگاه اینترنتی ایرانی «فروشگاه دشتستان» یک توضیح فروشگاهی بنویس.\n"
         f"نام کالا در فروشگاه ما: {title}\n"
         f"عبارت جستجو: {query}\n"
         f"{web_line}"
@@ -93,7 +93,7 @@ def _from_hits_without_ai(title: str, hits: list[DescriptionHit]) -> tuple[str, 
     if not parts:
         return None
     desc = " ".join(parts)[:2000]
-    meta = f"{title} | {_clean_meta_bit(best.title)} | SelectBox"[:255]
+    meta = f"{title} | {_clean_meta_bit(best.title)} | فروشگاه دشتستان"[:255]
     return desc, meta
 
 

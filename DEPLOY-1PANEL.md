@@ -170,7 +170,8 @@ docker compose cp backend/scripts/seed_demo_products.py api:/app/seed_demo_produ
 docker compose exec -T api python seed_demo_products.py
 ```
 
-ورود: `https://selectbox.ir/admin/login` — `09120000000` / `admin123`
+ورود: `https://selectbox.ir/admin/login`  
+پس از اولین ورود، از بخش کاربران رمز پیش‌فرض را عوض کنید — هرگز رمز را در UI یا پیام خطا نمایش ندهید.
 
 تنظیم کارت‌به‌کارت: **ادمین → تنظیمات → کارت‌به‌کارت**
 

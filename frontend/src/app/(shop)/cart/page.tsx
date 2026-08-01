@@ -30,6 +30,17 @@ export default function CartPage() {
 
   useEffect(() => {
     load();
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<{ items?: unknown[] }>).detail;
+      if (detail && Array.isArray(detail.items)) {
+        setCart(detail as Cart);
+        setLoading(false);
+        return;
+      }
+      load();
+    };
+    window.addEventListener(CART_EVENTS.update, onUpdate);
+    return () => window.removeEventListener(CART_EVENTS.update, onUpdate);
   }, []);
 
   async function changeQty(lineId: number, next: number) {
@@ -37,7 +48,7 @@ export default function CartPage() {
     try {
       const c = next <= 0 ? await removeCartItem(lineId) : await updateCartItem(lineId, next);
       setCart(c);
-      window.dispatchEvent(new Event(CART_EVENTS.update));
+      window.dispatchEvent(new CustomEvent(CART_EVENTS.update, { detail: c }));
     } finally {
       setBusyLine(null);
     }

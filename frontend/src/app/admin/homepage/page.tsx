@@ -355,7 +355,7 @@ export default function AdminHomepagePage() {
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1 text-sm">
-                  متن لینک کاتالوگ
+                  متن لینک همه محصولات
                   <input
                     className={inputClass}
                     value={draft.featured.catalog_label}
@@ -365,7 +365,7 @@ export default function AdminHomepagePage() {
                   />
                 </label>
                 <label className="grid gap-1 text-sm">
-                  آدرس کاتالوگ
+                  آدرس صفحه همه محصولات
                   <input
                     dir="ltr"
                     className={inputClass}

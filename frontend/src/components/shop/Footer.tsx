@@ -38,7 +38,7 @@ export function Footer({ settings }: Props) {
           </div>
 
           <div className="text-sm">
-            <p className="mb-3 font-medium">فروشگاه</p>
+            <p className="mb-3 font-medium">{shopName}</p>
             <ul className="space-y-2.5 text-muted">
               <li>
                 <Link href="/browse" className="transition hover:text-[var(--fg)]">
@@ -47,12 +47,7 @@ export function Footer({ settings }: Props) {
               </li>
               <li>
                 <Link href="/catalog" className="transition hover:text-[var(--fg)]">
-                  کاتالوگ
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="transition hover:text-[var(--fg)]">
-                  مجله
+                  همه محصولات
                 </Link>
               </li>
               <li>
@@ -74,9 +69,9 @@ export function Footer({ settings }: Props) {
                 </Link>
               </li>
               <li>
-                <a href="https://selectbox.ir" className="transition hover:text-[var(--fg)]">
-                  selectbox.ir
-                </a>
+                <Link href="/catalog" className="transition hover:text-[var(--fg)]">
+                  همه محصولات
+                </Link>
               </li>
             </ul>
           </div>

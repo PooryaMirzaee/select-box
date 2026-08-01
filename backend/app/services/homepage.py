@@ -21,7 +21,7 @@ DEFAULT_CONFIG: dict[str, object] = {
     "sections": DEFAULT_SECTIONS,
     "hero": {
         "badge": "لوازم خانگی و سبک زندگی",
-        "title": "خانه‌ای مدرن با SelectBox",
+        "title": "خانه‌ای مدرن با فروشگاه دشتستان",
         "subtitle": "یخچال، ماشین لباسشویی، لوازم روزمره و صدها محصول با گارانتی اصلی — ارسال سریع به سراسر کشور.",
         "primary_cta": {"label": "مشاهده محصولات", "href": "/catalog"},
         "secondary_cta": {"label": "دسته‌بندی‌ها", "href": "/browse"},
@@ -34,7 +34,7 @@ DEFAULT_CONFIG: dict[str, object] = {
     "featured": {
         "title": "پرفروش‌ترین‌ها",
         "subtitle": "محصولات منتخب",
-        "catalog_label": "کاتالوگ ←",
+        "catalog_label": "همه محصولات ←",
         "catalog_href": "/catalog",
         "product_count": 8,
         "parent_slug": None,

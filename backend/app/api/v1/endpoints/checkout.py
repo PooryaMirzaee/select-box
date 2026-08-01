@@ -16,6 +16,7 @@ from app.db.session import get_db
 from app.models import User
 from app.models import CartItem, Coupon, Order, OrderItem, Payment, ProductVariation
 from app.core.config import settings as env
+from app.services import auth_user as auth_user_service
 from app.services import catalog as catalog_service
 from app.services import settings as shop_settings
 
@@ -33,6 +34,12 @@ def _session_id(x_session_id: str | None = Header(default=None, alias=SESSION_HE
     if not x_session_id or not x_session_id.strip():
         raise HTTPException(status_code=400, detail=f"Header {SESSION_HEADER} is required.")
     return x_session_id.strip()
+
+
+def _active_cart(db: Session, session_id: str, user: User | None):
+    if user is not None:
+        return auth_user_service.get_or_create_user_cart(db, user.id)
+    return catalog_service.get_or_create_session_cart(db, session_id)
 
 
 class OrderCreateIn(BaseModel):
@@ -72,7 +79,7 @@ def create_order(
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
-    cart = catalog_service.get_or_create_session_cart(db, session_id)
+    cart = _active_cart(db, session_id, current_user)
     cart = catalog_service.cart_with_items(db, cart.id)
     if cart is None or not cart.items:
         raise HTTPException(status_code=400, detail="Cart is empty")

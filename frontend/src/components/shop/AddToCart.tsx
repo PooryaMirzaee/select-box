@@ -50,15 +50,14 @@ export function AddToCart({ product }: { product: ProductDetail }) {
     setLoading(true);
     setMsg(null);
     try {
-      await addToCart(target.id, qty);
+      const cart = await addToCart(target.id, qty);
       trackEvent("add_to_cart", window.location.pathname, {
         product_id: product.id,
         product_slug: product.slug,
         variation_id: target.id,
         quantity: qty,
       });
-      window.dispatchEvent(new Event(CART_EVENTS.update));
-      window.dispatchEvent(new Event(CART_EVENTS.open));
+      window.dispatchEvent(new CustomEvent(CART_EVENTS.open, { detail: cart }));
       setMsg("به سبد اضافه شد");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "خطا در افزودن به سبد");
