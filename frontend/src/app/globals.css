@@ -2,42 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* فونت از /public/fonts — در Docker standalone قابل اعتماد است */
+/* فونت‌ها از /public/fonts — تیتر: Cactus | متن: IRANSansX (اعداد فارسی) */
 @font-face {
-  font-family: "Vazirmatn";
+  font-family: "Cactus";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url("/fonts/vazirmatn-arabic-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF,
-    U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+  font-weight: 700;
+  src: url("/fonts/cactus-bold.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "Vazirmatn";
+  font-family: "IRANSansX";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url("/fonts/vazirmatn-latin-ext-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
-    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
-    U+2C60-2C7F, U+A720-A7FF;
+  font-weight: 400;
+  src: url("/fonts/IRANSansXFaNum-Regular.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "Vazirmatn";
+  font-family: "IRANSansX";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url("/fonts/vazirmatn-latin-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
-    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  font-weight: 500;
+  src: url("/fonts/IRANSansXFaNum-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IRANSansX";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/fonts/IRANSansXFaNum-DemiBold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IRANSansX";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("/fonts/IRANSansXFaNum-Bold.woff2") format("woff2");
 }
 
 /* پالت فروشگاهی — بستر سنگی + اکسنت گرم مسی برای حس فروشگاه؛ بدون آبی */
 :root {
   color-scheme: light;
-  --font-sans: "Vazirmatn", Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "IRANSansX", Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Cactus", "IRANSansX", Tahoma, sans-serif;
 
   --bg: #faf9f7;
   --bg-elevated: #f3f1ee;
@@ -98,6 +108,15 @@ body {
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /* لمس سریع و بدون هایلایت آبی موبایل */
