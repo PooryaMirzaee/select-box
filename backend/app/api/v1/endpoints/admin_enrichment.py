@@ -24,9 +24,15 @@ router = APIRouter(prefix="/admin/enrichment", tags=["admin-enrichment"], depend
 
 @router.post("/enqueue", response_model=EnrichmentEnqueueOut)
 def enqueue(body: EnrichmentEnqueueIn, db: Session = Depends(get_db)):
-    job_ids, skipped = enrich_jobs.enqueue_products(
-        db, body.product_ids, auto_apply=body.auto_apply
-    )
+    try:
+        job_ids, skipped = enrich_jobs.enqueue_products(
+            db,
+            body.product_ids,
+            auto_apply=body.auto_apply,
+            mode=body.mode,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     if job_ids:
         kick_enrichment_worker()
     return EnrichmentEnqueueOut(queued=len(job_ids), skipped=skipped, job_ids=job_ids)

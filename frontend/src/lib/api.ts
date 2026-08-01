@@ -292,9 +292,11 @@ export async function apiFetch<T>(path: string, init?: ApiFetchInit, token?: str
   return res.json() as Promise<T>;
 }
 
-export function fetchProducts(parentSlug?: string) {
-  const q = parentSlug ? `?parent_slug=${parentSlug}&limit=48` : "?limit=48";
-  return apiFetch<ProductSummary[]>(`/api/v1/catalog/products${q}`, {
+export function fetchProducts(parentSlug?: string, search?: string) {
+  const params = new URLSearchParams({ limit: "48" });
+  if (parentSlug) params.set("parent_slug", parentSlug);
+  if (search?.trim()) params.set("q", search.trim());
+  return apiFetch<ProductSummary[]>(`/api/v1/catalog/products?${params}`, {
     next: { revalidate: 60, tags: ["catalog"] },
   });
 }

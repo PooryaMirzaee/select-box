@@ -6,8 +6,10 @@ from pydantic import BaseModel, Field
 
 
 class EnrichmentEnqueueIn(BaseModel):
-    product_ids: list[int] = Field(min_length=1, max_length=200)
+    product_ids: list[int] = Field(min_length=1, max_length=500)
     auto_apply: bool = True
+    # images = فقط عکس | description = فقط توضیح | both = هر دو | category = دسته‌بندی خودکار
+    mode: str = Field(default="both", pattern="^(images|description|both|category)$")
 
 
 class EnrichmentEnqueueOut(BaseModel):
@@ -32,9 +34,12 @@ class EnrichmentJobOut(BaseModel):
     product_slug: str
     design_code: str | None = None
     status: str
+    mode: str = "both"
     query_used: str | None = None
     description_draft: str | None = None
     meta_draft: str | None = None
+    category_draft_id: int | None = None
+    category_draft_name: str | None = None
     error: str | None = None
     attempts: int
     auto_apply: bool

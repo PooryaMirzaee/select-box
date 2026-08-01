@@ -23,8 +23,11 @@ type Job = {
   product_slug: string;
   design_code: string | null;
   status: string;
+  mode: string;
   query_used: string | null;
   description_draft: string | null;
+  category_draft_id: number | null;
+  category_draft_name: string | null;
   error: string | null;
   attempts: number;
   auto_apply: boolean;
@@ -49,9 +52,32 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "ناموفق",
 };
 
+const MODE_LABEL: Record<string, string> = {
+  images: "عکس",
+  description: "توضیح",
+  both: "عکس + توضیح",
+  category: "دسته‌بندی",
+};
+
 function canApplyCandidate(job: Job) {
   return (
     job.candidates.length > 0 &&
+    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+  );
+}
+
+function canApplyDescription(job: Job) {
+  return (
+    Boolean(job.description_draft) &&
+    (job.mode === "description" || job.mode === "both") &&
+    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+  );
+}
+
+function canApplyCategory(job: Job) {
+  return (
+    job.mode === "category" &&
+    Boolean(job.category_draft_id) &&
     (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
   );
 }
@@ -94,7 +120,7 @@ export default function AdminEnrichmentPage() {
     return () => clearInterval(t);
   }, [load, busyId]);
 
-  async function approve(job: Job, candidateId?: number) {
+  async function approve(job: Job, candidateId?: number, applyDescription = true) {
     setBusyId(job.id);
     setNotice(null);
     try {
@@ -102,10 +128,18 @@ export default function AdminEnrichmentPage() {
         method: "POST",
         body: JSON.stringify({
           candidate_id: candidateId ?? null,
-          apply_description: true,
+          apply_description: applyDescription,
         }),
       });
-      setNotice(`عکس برای «${job.product_title}» اعمال شد`);
+      const what =
+        job.mode === "category"
+          ? "دسته‌بندی"
+          : job.mode === "description"
+            ? "توضیح"
+            : candidateId || job.mode === "images"
+              ? "عکس"
+              : "عکس/توضیح";
+      setNotice(`${what} برای «${job.product_title}» اعمال شد`);
       load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "تأیید ناموفق");
@@ -150,7 +184,8 @@ export default function AdminEnrichmentPage() {
         <div>
           <h1 className="text-3xl font-semibold">غنی‌سازی محصولات</h1>
           <p className="mt-2 text-sm text-muted">
-            روی هر تصویر کلیک کنید تا همان عکس روی محصول اعمال شود.
+            عکس را جداگانه یا توضیح کرال‌شده از وب را جداگانه اعمال کنید. توضیحات از دیجی‌کالا/ترب و AvalAI web
+            search ساخته می‌شوند.
           </p>
         </div>
         <Link href="/admin/products">
@@ -190,6 +225,7 @@ export default function AdminEnrichmentPage() {
         {jobs.map((job) => {
           const busy = busyId === job.id;
           const applyable = canApplyCandidate(job);
+          const descApplyable = canApplyDescription(job);
           return (
             <div key={job.id} className="card-theme p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -199,18 +235,40 @@ export default function AdminEnrichmentPage() {
                   </p>
                   <p className="mt-1 text-xs text-muted">
                     {STATUS_LABEL[job.status] || job.status}
+                    {` · ${MODE_LABEL[job.mode] || job.mode || "both"}`}
                     {job.design_code ? ` · ${job.design_code}` : ""}
                     {job.query_used ? ` · «${job.query_used}»` : ""}
                   </p>
                   {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
+                  {job.category_draft_name ? (
+                    <p className="mt-2 text-sm">
+                      <span className="text-muted">دسته پیشنهادی: </span>
+                      <span className="font-medium text-[var(--accent)]">{job.category_draft_name}</span>
+                    </p>
+                  ) : null}
                   {job.description_draft ? (
                     <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {applyable ? (
+                  {canApplyCategory(job) ? (
+                    <Button size="sm" disabled={busy} onClick={() => approve(job, undefined, false)}>
+                      {busy ? "…" : "اعمال دسته‌بندی"}
+                    </Button>
+                  ) : null}
+                  {job.mode === "description" && descApplyable ? (
+                    <Button size="sm" disabled={busy} onClick={() => approve(job, undefined, true)}>
+                      {busy ? "…" : "اعمال توضیح"}
+                    </Button>
+                  ) : null}
+                  {job.mode !== "description" && applyable ? (
                     <Button size="sm" disabled={busy} onClick={() => approve(job)}>
                       {busy ? "…" : "اعمال بهترین عکس"}
+                    </Button>
+                  ) : null}
+                  {job.mode === "both" && descApplyable && !applyable ? (
+                    <Button size="sm" disabled={busy} onClick={() => approve(job, undefined, true)}>
+                      {busy ? "…" : "اعمال توضیح"}
                     </Button>
                   ) : null}
                   {job.status === "needs_review" ? (
@@ -263,7 +321,7 @@ export default function AdminEnrichmentPage() {
         })}
         {!loading && jobs.length === 0 ? (
           <p className="p-8 text-center text-muted">
-            جابی نیست. از صفحه محصولات چند کالا را انتخاب و «دریافت عکس از وب» را بزنید.
+            جابی نیست. از صفحه محصولات چند کالا را انتخاب و «دریافت عکس» یا «کرال توضیح» را بزنید.
           </p>
         ) : null}
       </div>

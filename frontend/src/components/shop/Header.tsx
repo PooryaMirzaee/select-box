@@ -11,6 +11,7 @@ import {
   CategoryMegaMenuMobile,
 } from "@/components/shop/CategoryMegaMenu";
 import { ContactMobileSection } from "@/components/shop/ShopContact";
+import { SearchBar } from "@/components/shop/SearchBar";
 import { useCart } from "@/components/shop/CartProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { CategoryNavNode } from "@/lib/category-nav";
@@ -90,7 +91,7 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-theme bg-header backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <SelectBoxLogo size="sm" className="sm:hidden" priority />
           <SelectBoxLogo
             size="md"
@@ -98,6 +99,8 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
             priority
             imageStyle={{ height: 66, width: 44, maxHeight: 80 }}
           />
+
+          <SearchBar className="hidden w-full max-w-xs md:block lg:max-w-sm" />
 
           <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
             {headerNav.map((link) => (
@@ -159,6 +162,10 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
               ) : null}
             </button>
           </div>
+        </div>
+
+        <div className="px-4 pb-3 md:hidden">
+          <SearchBar />
         </div>
 
         {menuOpen ? (

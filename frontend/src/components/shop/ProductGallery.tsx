@@ -26,24 +26,37 @@ export function ProductGallery({ images, title }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-theme bg-[var(--bg-elevated)]">
+      <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-theme bg-white dark:bg-[var(--bg-elevated)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={main} alt={title} className="h-full w-full object-cover" />
+        <img
+          src={main}
+          alt={title}
+          decoding="async"
+          className="product-img h-full w-full object-contain p-3 sm:p-5"
+        />
       </div>
       {urls.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
           {urls.map((url, i) => (
             <button
               key={`${url}-${i}`}
               type="button"
               onClick={() => setActive(i)}
+              aria-label={`تصویر ${(i + 1).toLocaleString("fa-IR")}`}
+              aria-pressed={i === active}
               className={cn(
-                "h-16 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition",
+                "h-16 w-14 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition dark:bg-[var(--bg-elevated)]",
                 i === active ? "border-[var(--accent)]" : "border-transparent opacity-70 hover:opacity-100",
               )}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="h-full w-full object-cover" />
+              <img
+                src={url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="product-img h-full w-full object-contain p-0.5"
+              />
             </button>
           ))}
         </div>

@@ -22,6 +22,26 @@ class ImageHit:
     score: float
 
 
+# نسخه پرکیفیت تصاویر — دیجی‌کالا thumbnail 300px می‌دهد؛ اصل تصویر را بخواه
+_DK_HIRES_PARAMS = "?x-oss-process=image/resize,m_lfit,h_1600,w_1600/quality,q_95"
+_TOROB_FIT_RE = re.compile(r"/fit-in/\d+x\d+/")
+_SIZE_SUFFIX_RE = re.compile(r"/(\d{2,4})x\1(?=\.[a-zA-Z]{3,4}$)")
+
+
+def upgrade_image_url(url: str) -> str:
+    """URL تصویر را به بزرگ‌ترین نسخه ممکن تبدیل می‌کند."""
+    u = (url or "").strip()
+    if not u:
+        return u
+    if "x-oss-process" in u:
+        return u.split("?", 1)[0] + _DK_HIRES_PARAMS
+    if _TOROB_FIT_RE.search(u):
+        return _TOROB_FIT_RE.sub("/fit-in/1600x1600/", u)
+    if _SIZE_SUFFIX_RE.search(u):
+        return _SIZE_SUFFIX_RE.sub("/1600x1600", u)
+    return u
+
+
 def _collect_http_urls(node) -> list[str]:
     out: list[str] = []
     if isinstance(node, str) and node.startswith("http"):
@@ -37,7 +57,7 @@ def _collect_http_urls(node) -> list[str]:
 
 def _digikala(query: str, limit: int) -> list[ImageHit]:
     hits: list[ImageHit] = []
-    with enrichment_client() as client:
+    with enrichment_client(timeout=25.0) as client:
         res = client.get("https://api.digikala.com/v1/search/", params={"q": query})
         if res.status_code >= 400:
             logger.warning("digikala HTTP %s", res.status_code)
@@ -46,16 +66,47 @@ def _digikala(query: str, limit: int) -> list[ImageHit]:
             products = res.json().get("data", {}).get("products", []) or []
         except Exception:
             return hits
-        for i, p in enumerate(products):
-            urls = _collect_http_urls(p.get("images"))
-            if not urls:
-                urls = _collect_http_urls(p.get("image_src") or p.get("image"))
-            # prefer larger-looking urls later in digikala size lists often last is biggest
-            chosen = urls[-1] if urls else None
+
+        for i, p in enumerate(products[:limit]):
+            chosen = None
+            thumb = None
+            pid = p.get("id")
+
+            # جزئیات محصول — تصاویر بزرگ‌تر (۸۰۰px) نسبت به سرچ (۳۰۰px)
+            if pid:
+                try:
+                    detail = client.get(f"https://api.digikala.com/v2/product/{pid}/")
+                    if detail.status_code < 400:
+                        imgs = (detail.json().get("data") or {}).get("product", {}).get("images") or {}
+                        main = imgs.get("main") if isinstance(imgs, dict) else None
+                        if isinstance(main, dict):
+                            urls = main.get("url") or []
+                            if isinstance(urls, list) and urls:
+                                chosen = urls[0]
+                            webp = main.get("webp_url") or []
+                            if not chosen and isinstance(webp, list) and webp:
+                                chosen = webp[0]
+                except Exception as e:
+                    logger.info("digikala detail skip %s: %s", pid, e)
+
+            if not chosen:
+                urls = _collect_http_urls(p.get("images"))
+                if not urls:
+                    urls = _collect_http_urls(p.get("image_src") or p.get("image"))
+                # ترجیح url معمولی بر webp کوچک سرچ
+                chosen = next((u for u in urls if "format,webp" not in u), None) or (urls[0] if urls else None)
+                thumb = urls[-1] if urls else None
+
             if not chosen:
                 continue
+
             hits.append(
-                ImageHit(url=chosen, thumb=urls[0] if urls else None, source="digikala", score=float(100 - i))
+                ImageHit(
+                    url=upgrade_image_url(chosen),
+                    thumb=thumb or chosen,
+                    source="digikala",
+                    score=float(100 - i),
+                )
             )
             if len(hits) >= limit:
                 break
@@ -81,7 +132,7 @@ def _torob(query: str, limit: int) -> list[ImageHit]:
             img = (row.get("image_url") or row.get("image") or "").strip()
             if not img.startswith("http"):
                 continue
-            hits.append(ImageHit(url=img, thumb=None, source="torob", score=float(95 - i)))
+            hits.append(ImageHit(url=upgrade_image_url(img), thumb=None, source="torob", score=float(95 - i)))
             if len(hits) >= limit:
                 break
     return hits
@@ -100,13 +151,13 @@ def _bing(query: str, limit: int) -> list[ImageHit]:
             url = unquote(m.group(1).replace("\\u0026", "&"))
             if not url.startswith("http"):
                 continue
-            hits.append(ImageHit(url=url, thumb=None, source="bing", score=float(70 - i)))
+            hits.append(ImageHit(url=upgrade_image_url(url), thumb=None, source="bing", score=float(70 - i)))
             if len(hits) >= limit:
                 break
         if not hits:
             for i, m in enumerate(re.finditer(r'"murl"\s*:\s*"(https?://[^"]+)"', res.text)):
                 url = m.group(1).encode().decode("unicode_escape", errors="ignore")
-                hits.append(ImageHit(url=url, thumb=None, source="bing", score=float(70 - i)))
+                hits.append(ImageHit(url=upgrade_image_url(url), thumb=None, source="bing", score=float(70 - i)))
                 if len(hits) >= limit:
                     break
     return hits
@@ -142,7 +193,7 @@ def _ddg(query: str, limit: int) -> list[ImageHit]:
                 continue
             hits.append(
                 ImageHit(
-                    url=url,
+                    url=upgrade_image_url(url),
                     thumb=row.get("thumbnail"),
                     source="duckduckgo",
                     score=float(60 - i),

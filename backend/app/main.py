@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
     _ensure_ai_columns()
     _ensure_ai_suggested_seed()
     _ensure_ai_tools_seed()
+    _ensure_enrichment_columns()
     _warmup_bg_remove()
     try:
         from app.services.enrichment.runner import kick_enrichment_worker
@@ -379,6 +380,32 @@ def _ensure_ai_tools_seed() -> None:
         ai_admin.seed_default_tools(db)
     finally:
         db.close()
+
+
+def _ensure_enrichment_columns() -> None:
+    """ستون‌های جدید جاب‌های enrichment — mode و پیش‌نویس دسته‌بندی."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "product_enrichment_jobs" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("product_enrichment_jobs")}
+    with engine.begin() as conn:
+        if "mode" not in cols:
+            conn.execute(
+                text(
+                    "ALTER TABLE product_enrichment_jobs "
+                    "ADD COLUMN mode VARCHAR(24) DEFAULT 'both' NOT NULL"
+                )
+            )
+        if "category_draft_id" not in cols:
+            conn.execute(
+                text("ALTER TABLE product_enrichment_jobs ADD COLUMN category_draft_id INTEGER")
+            )
+        if "category_draft_name" not in cols:
+            conn.execute(
+                text("ALTER TABLE product_enrichment_jobs ADD COLUMN category_draft_name VARCHAR(512)")
+            )
 
 
 def _warmup_bg_remove() -> None:

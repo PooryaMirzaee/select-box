@@ -7,6 +7,7 @@ import { HomeBannerCarousel } from "@/components/shop/HomeBannerCarousel";
 import { HomePromoBanner } from "@/components/shop/HomePromoBanner";
 import { Hero } from "@/components/shop/Hero";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { TrustStrip } from "@/components/shop/TrustStrip";
 import {
   fetchBrowse,
   fetchHomeBanners,
@@ -161,10 +162,14 @@ export default async function HomePage() {
     ) : null,
   };
 
+  const [firstSection, ...restSections] = config.sections;
+
   return (
     <>
       <WebSiteJsonLd siteUrl={siteUrl} name={shopName} description={description} />
-      {config.sections.map((section) => (
+      {firstSection ? <div key={firstSection.id}>{sectionBlocks[firstSection.id]}</div> : null}
+      <TrustStrip />
+      {restSections.map((section) => (
         <div key={section.id}>{sectionBlocks[section.id]}</div>
       ))}
     </>

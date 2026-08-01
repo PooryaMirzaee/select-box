@@ -28,9 +28,13 @@ class ProductEnrichmentJob(Base):
     )
     design_code: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(24), default="pending", nullable=False)
+    # images | description | both | category
+    mode: Mapped[str] = mapped_column(String(24), default="both", nullable=False)
     query_used: Mapped[str | None] = mapped_column(String(512))
     description_draft: Mapped[str | None] = mapped_column(Text)
     meta_draft: Mapped[str | None] = mapped_column(Text)
+    category_draft_id: Mapped[int | None] = mapped_column(Integer)
+    category_draft_name: Mapped[str | None] = mapped_column(String(512))
     error: Mapped[str | None] = mapped_column(Text)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     auto_apply: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -52,6 +56,10 @@ class ProductEnrichmentJob(Base):
         CheckConstraint(
             "status IN ('pending','running','needs_review','approved','rejected','failed')",
             name="ck_enrichment_jobs_status",
+        ),
+        CheckConstraint(
+            "mode IN ('images','description','both','category')",
+            name="ck_enrichment_jobs_mode",
         ),
         Index("idx_enrichment_jobs_status", "status"),
         Index("idx_enrichment_jobs_product", "product_id"),

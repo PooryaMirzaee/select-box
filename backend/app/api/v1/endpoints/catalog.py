@@ -79,6 +79,7 @@ def browse(
 def list_products(
     parent_slug: str | None = None,
     thematic_slug: str | None = None,
+    q: str | None = None,
     limit: int = 24,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -87,6 +88,7 @@ def list_products(
         db,
         parent_slug=parent_slug,
         thematic_slug=thematic_slug,
+        search=q,
         limit=min(limit, 100),
         offset=max(offset, 0),
     )

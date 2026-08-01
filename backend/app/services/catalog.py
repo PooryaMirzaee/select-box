@@ -327,11 +327,13 @@ def list_products(
     limit: int,
     offset: int,
     include_draft: bool = False,
+    search: str | None = None,
 ) -> list[Product]:
     """
     فهرست محصولات منتشرشده با فیلتر اختیاری:
       • parent_slug: نوع جسم (مثلاً tshirt)
       • thematic_slug: موضوع طرح از طریق join به designs.thematic_category
+      • search: جستجوی متنی روی عنوان و توضیح
     """
     q = select(Product).options(
         joinedload(Product.parent_category),
@@ -340,6 +342,10 @@ def list_products(
     )
     if not include_draft:
         q = q.where(Product.status == "published")
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.where(Product.title.ilike(term) | Product.description.ilike(term))
 
     if parent_slug:
         q = q.join(Category, Category.id == Product.parent_category_id).where(Category.slug == parent_slug)

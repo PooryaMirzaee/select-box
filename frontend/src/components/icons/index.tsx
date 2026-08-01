@@ -56,6 +56,12 @@ import {
   User as PhUser,
   X as PhX,
   FloppyDisk as PhFloppyDisk,
+  MagnifyingGlass as PhMagnifyingGlass,
+  Truck as PhTruck,
+  ShieldCheck as PhShieldCheck,
+  ArrowCounterClockwise as PhArrowCounterClockwise,
+  CreditCard as PhCreditCard,
+  Headset as PhHeadset,
 } from "@phosphor-icons/react";
 
 import { createIcon, type BrutalIconProps } from "./createIcon";
@@ -114,6 +120,12 @@ export const Save = createIcon(PhFloppyDisk);
 export const Shirt = createIcon(PhTShirt);
 export const Type = createIcon(PhTextT);
 export const Coffee = createIcon(PhCoffee);
+export const Search = createIcon(PhMagnifyingGlass);
+export const Truck = createIcon(PhTruck);
+export const ShieldCheck = createIcon(PhShieldCheck);
+export const RotateCcw = createIcon(PhArrowCounterClockwise);
+export const CreditCard = createIcon(PhCreditCard);
+export const Headset = createIcon(PhHeadset);
 
 export function Loader2({ className, size = 20, ...props }: BrutalIconProps) {
   return (

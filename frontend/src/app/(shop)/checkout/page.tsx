@@ -85,7 +85,12 @@ export default function CheckoutPage() {
 
   if (!cart?.items.length) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-20 text-center text-muted">سبد خالی است.</div>
+      <div className="mx-auto max-w-lg px-4 py-20 text-center">
+        <p className="text-muted">سبد خرید شما خالی است.</p>
+        <Button className="mt-6" onClick={() => router.push("/catalog")}>
+          مشاهده محصولات
+        </Button>
+      </div>
     );
   }
 
@@ -103,36 +108,56 @@ export default function CheckoutPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold sm:text-3xl">تسویه حساب</h1>
         <div className="space-y-4 rounded-2xl border border-theme bg-card p-5">
-          <input
-            placeholder="نام و نام خانوادگی"
-            className="w-full rounded-xl border border-theme bg-[var(--bg)] px-4 py-3"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            placeholder="شماره موبایل"
-            className="w-full rounded-xl border border-theme bg-[var(--bg)] px-4 py-3"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-          <input
-            placeholder="شهر"
-            className="w-full rounded-xl border border-theme bg-[var(--bg)] px-4 py-3"
-            value={form.city}
-            onChange={(e) => setForm({ ...form, city: e.target.value })}
-          />
-          <textarea
-            placeholder="آدرس کامل"
-            rows={3}
-            className="w-full rounded-xl border border-theme bg-[var(--bg)] px-4 py-3"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
+          <h2 className="text-sm font-medium text-muted">اطلاعات گیرنده</h2>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">نام و نام خانوادگی</span>
+            <input
+              autoComplete="name"
+              placeholder="مثلاً علی محمدی"
+              className="input-theme min-h-[48px]"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">شماره موبایل</span>
+            <input
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              autoComplete="tel"
+              placeholder="09xxxxxxxxx"
+              className="input-theme min-h-[48px] text-right"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">شهر</span>
+            <input
+              autoComplete="address-level2"
+              placeholder="مثلاً تهران"
+              className="input-theme min-h-[48px]"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">آدرس کامل</span>
+            <textarea
+              autoComplete="street-address"
+              placeholder="خیابان، کوچه، پلاک، واحد"
+              rows={3}
+              className="input-theme"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </label>
         </div>
         <div className="flex gap-2">
           <input
-            placeholder="کد تخفیف"
-            className="flex-1 rounded-xl border border-theme bg-card px-4 py-3"
+            placeholder="کد تخفیف دارید؟"
+            className="input-theme min-h-[48px] flex-1"
             value={coupon}
             onChange={(e) => setCoupon(e.target.value)}
           />

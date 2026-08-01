@@ -77,10 +77,13 @@ export default async function ProductPage({ params }: Props) {
                     <Link
                       key={r.id}
                       href={`/product/${r.slug}`}
-                      className="min-h-[52px] rounded-xl border border-theme px-4 py-3 transition hover:border-[var(--accent)]/40"
+                      className="flex min-h-[56px] items-center justify-between gap-3 rounded-xl border border-theme px-4 py-3 transition hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] hover:bg-[var(--bg-elevated)]"
                     >
-                      <p className="text-sm font-medium">{r.title}</p>
-                      <p className="text-xs text-muted">{formatToman(r.base_price)}</p>
+                      <p className="line-clamp-1 text-sm font-medium">{r.title}</p>
+                      <p className="shrink-0 text-xs">
+                        <span className="font-bold">{formatToman(r.base_price, false)}</span>
+                        <span className="ms-1 text-[10px] text-muted">تومان</span>
+                      </p>
                     </Link>
                   ))}
                 </div>

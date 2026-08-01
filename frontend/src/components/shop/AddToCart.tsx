@@ -3,12 +3,19 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { RotateCcw, ShieldCheck, Truck } from "@/components/icons";
 import { ProductSizeGuideModal } from "@/components/shop/ProductSizeGuide";
 import { addToCart, type ProductDetail, type VariationPublic } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { sizeGuideHasContent } from "@/lib/size-guide";
 import { CART_EVENTS } from "@/lib/storage-keys";
 import { cn, formatToman } from "@/lib/utils";
+
+const TRUST_ITEMS = [
+  { icon: Truck, label: "ارسال به سراسر کشور" },
+  { icon: ShieldCheck, label: "ضمانت اصالت کالا" },
+  { icon: RotateCcw, label: "۷ روز مهلت بازگشت" },
+] as const;
 
 function isPlainVariation(v: VariationPublic): boolean {
   return !(v.color_name || "").trim() && !(v.size_label || "").trim();
@@ -70,7 +77,10 @@ export function AddToCart({ product }: { product: ProductDetail }) {
     <div className="card-theme space-y-6 p-5 sm:p-6">
       <div>
         <p className="text-xs text-muted">قیمت</p>
-        <p className="text-2xl font-semibold sm:text-3xl">{formatToman(price)}</p>
+        <p className="text-2xl sm:text-3xl">
+          <span className="font-bold">{formatToman(price, false)}</span>
+          <span className="ms-1.5 text-sm font-normal text-muted">تومان</span>
+        </p>
         {product.compare_at_price ? (
           <p className="text-sm text-muted line-through">{formatToman(product.compare_at_price)}</p>
         ) : null}
@@ -161,16 +171,18 @@ export function AddToCart({ product }: { product: ProductDetail }) {
         <div className="flex items-center justify-center rounded-full border border-theme">
           <button
             type="button"
-            className="min-h-[44px] min-w-[44px] text-lg"
+            className="min-h-[44px] min-w-[44px] text-lg transition hover:text-[var(--accent)]"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
             aria-label="کم کردن"
           >
             −
           </button>
-          <span className="min-w-[2rem] text-center">{qty}</span>
+          <span className="min-w-[2rem] text-center font-medium">
+            {qty.toLocaleString("fa-IR")}
+          </span>
           <button
             type="button"
-            className="min-h-[44px] min-w-[44px] text-lg"
+            className="min-h-[44px] min-w-[44px] text-lg transition hover:text-[var(--accent)]"
             onClick={() => setQty((q) => q + 1)}
             aria-label="زیاد کردن"
           >
@@ -178,14 +190,29 @@ export function AddToCart({ product }: { product: ProductDetail }) {
           </button>
         </div>
         <Button className="w-full sm:flex-1" disabled={loading || !canAdd} onClick={handleAdd}>
-          {loading ? "..." : canAdd ? "افزودن به سبد" : "ناموجود"}
+          {loading ? "در حال افزودن…" : canAdd ? "افزودن به سبد خرید" : "ناموجود"}
         </Button>
       </div>
       {msg ? (
-        <p className={cn("text-sm", msg.includes("سبد") ? "text-green-600" : "text-red-500")}>
+        <p
+          role="status"
+          className={cn(
+            "text-sm",
+            msg.includes("سبد") ? "text-[var(--success)]" : "text-[var(--danger)]",
+          )}
+        >
           {msg}
         </p>
       ) : null}
+
+      <ul className="grid grid-cols-3 gap-2 border-t border-theme pt-4">
+        {TRUST_ITEMS.map(({ icon: Icon, label }) => (
+          <li key={label} className="flex flex-col items-center gap-1.5 text-center">
+            <Icon className="h-5 w-5 text-[var(--accent)]" />
+            <span className="text-[11px] leading-tight text-muted">{label}</span>
+          </li>
+        ))}
+      </ul>
 
       {showSizeGuide ? (
         <ProductSizeGuideModal
@@ -194,6 +221,30 @@ export function AddToCart({ product }: { product: ProductDetail }) {
           onClose={() => setSizeGuideOpen(false)}
         />
       ) : null}
+
+      {/* نوار خرید چسبان موبایل — همیشه در دسترس */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-theme bg-header pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+        <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base">
+              <span className="font-bold">{formatToman(price, false)}</span>
+              <span className="ms-1 text-[11px] text-muted">تومان</span>
+            </p>
+            {selected?.color_name || selected?.size_label ? (
+              <p className="truncate text-[11px] text-muted">
+                {[selected?.color_name, selected?.size_label].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
+          </div>
+          <Button
+            className="shrink-0 px-6"
+            disabled={loading || !canAdd}
+            onClick={handleAdd}
+          >
+            {loading ? "…" : canAdd ? "افزودن به سبد" : "ناموجود"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
