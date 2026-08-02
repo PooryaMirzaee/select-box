@@ -63,13 +63,27 @@ class EnrichmentApproveIn(BaseModel):
 
 
 class EnrichmentBulkIn(BaseModel):
-    """عملیات گروهی روی جاب‌ها — approve با بهترین کاندید هر جاب."""
+    """عملیات گروهی روی جاب‌ها.
 
-    job_ids: list[int] = Field(min_length=1, max_length=500)
+    یا job_ids بفرستید، یا status_filter تا همه جاب‌های آن وضعیت پردازش شوند.
+    """
+
+    job_ids: list[int] = Field(default_factory=list, max_length=2000)
     action: str = Field(pattern="^(approve|reject|retry)$")
+    status_filter: str | None = Field(
+        default=None,
+        pattern="^(pending|running|needs_review|approved|rejected|failed)$",
+    )
 
 
 class EnrichmentBulkOut(BaseModel):
     done: int
     failed: int
     errors: list[str] = []
+
+
+class EnrichmentJobListOut(BaseModel):
+    items: list[EnrichmentJobOut]
+    total: int
+    limit: int
+    offset: int

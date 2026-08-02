@@ -275,13 +275,16 @@ async def generate_image(
     *,
     prompt: str,
     aspect_ratio: str = "1:1",
+    include_system_suffix: bool = True,
 ) -> bytes:
     api_key = _api_key(db)
     if not api_key:
         raise AiServiceError(MSG_NOT_CONFIGURED, internal="api key missing")
 
     primary = image_model(db)
-    user_prompt = _build_text_prompt(db, prompt)
+    user_prompt = _build_text_prompt(db, prompt) if include_system_suffix else prompt.strip()
+    if not user_prompt:
+        raise ValueError("prompt is empty")
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",

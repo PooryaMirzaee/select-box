@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.deps_auth import require_admin
@@ -15,6 +14,7 @@ from app.schemas.enrichment import (
     EnrichmentBulkOut,
     EnrichmentEnqueueIn,
     EnrichmentEnqueueOut,
+    EnrichmentJobListOut,
     EnrichmentJobOut,
     EnrichmentStatsOut,
 )
@@ -45,17 +45,36 @@ def stats(db: Session = Depends(get_db)):
     return EnrichmentStatsOut(**enrich_jobs.job_stats(db))
 
 
-@router.get("/jobs", response_model=list[EnrichmentJobOut])
+@router.get("/jobs", response_model=EnrichmentJobListOut)
 def list_jobs(
     status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    q = select(ProductEnrichmentJob).order_by(ProductEnrichmentJob.id.desc()).limit(limit)
-    if status:
-        q = q.where(ProductEnrichmentJob.status == status)
-    rows = db.scalars(q).all()
-    return [EnrichmentJobOut(**enrich_jobs.serialize_job(db, j)) for j in rows]
+    rows, total = enrich_jobs.list_jobs_page(db, status=status, limit=limit, offset=offset)
+    return EnrichmentJobListOut(
+        items=[EnrichmentJobOut(**enrich_jobs.serialize_job(db, j)) for j in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post("/jobs/bulk", response_model=EnrichmentBulkOut)
+def bulk_action(body: EnrichmentBulkIn, db: Session = Depends(get_db)):
+    """اعمال/رد/تلاش مجدد گروهی — با job_ids یا status_filter."""
+    job_ids = list(body.job_ids or [])
+    if body.status_filter and not job_ids:
+        # برای approve معمولاً needs_review؛ برای retry معمولاً failed
+        job_ids = enrich_jobs.job_ids_for_status(db, body.status_filter, limit=2000)
+    if not job_ids:
+        raise HTTPException(status_code=400, detail="هیچ جابی برای عملیات گروهی انتخاب نشده")
+
+    result = enrich_jobs.run_bulk_action(db, action=body.action, job_ids=job_ids)
+    if body.action == "retry" and result["done"]:
+        kick_enrichment_worker()
+    return EnrichmentBulkOut(**result)
 
 
 @router.get("/jobs/{job_id}", response_model=EnrichmentJobOut)
@@ -99,38 +118,6 @@ def retry(job_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="جاب یافت نشد") from None
     kick_enrichment_worker()
     return EnrichmentJobOut(**enrich_jobs.serialize_job(db, job))
-
-
-@router.post("/jobs/bulk", response_model=EnrichmentBulkOut)
-def bulk_action(body: EnrichmentBulkIn, db: Session = Depends(get_db)):
-    """اعمال/رد/تلاش مجدد گروهی — خطای هر جاب مانع بقیه نمی‌شود."""
-    done = 0
-    failed = 0
-    errors: list[str] = []
-
-    for job_id in body.job_ids:
-        try:
-            if body.action == "approve":
-                enrich_jobs.approve_job(db, job_id, candidate_id=None, apply_description=True)
-            elif body.action == "reject":
-                enrich_jobs.reject_job(db, job_id)
-            else:
-                enrich_jobs.retry_job(db, job_id)
-            done += 1
-        except LookupError:
-            failed += 1
-            errors.append(f"#{job_id}: جاب یافت نشد")
-        except ValueError as e:
-            failed += 1
-            errors.append(f"#{job_id}: {e}")
-        except Exception:
-            db.rollback()
-            failed += 1
-            errors.append(f"#{job_id}: خطای غیرمنتظره")
-
-    if body.action == "retry" and done:
-        kick_enrichment_worker()
-    return EnrichmentBulkOut(done=done, failed=failed, errors=errors[:20])
 
 
 @router.post("/worker/kick")

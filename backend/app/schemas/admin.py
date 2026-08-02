@@ -138,6 +138,18 @@ class BulkIdsIn(BaseModel):
     ids: list[int] = Field(min_length=1, max_length=500)
 
 
+class CategoryGenerateIconIn(BaseModel):
+    """پرامپت اختیاری برای تصویر دسته."""
+
+    extra_prompt: str | None = Field(default=None, max_length=500)
+
+
+class CategoryBulkGenerateIconsIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=40)
+    only_missing: bool = True
+    extra_prompt: str | None = Field(default=None, max_length=500)
+
+
 class BulkDeleteFailedItem(BaseModel):
     id: int
     reason: str

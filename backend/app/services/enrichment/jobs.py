@@ -33,7 +33,7 @@ def enqueue_products(
     """برمی‌گرداند (job_ids, skipped)."""
     mode_norm = (mode or "both").strip().lower()
     if mode_norm not in VALID_MODES:
-        raise ValueError("mode باید images یا description یا both باشد")
+        raise ValueError("mode باید images یا description یا both یا category باشد")
 
     queued: list[int] = []
     skipped = 0
@@ -140,6 +140,11 @@ def _apply_category(db: Session, job: ProductEnrichmentJob) -> None:
     if category is None:
         raise ValueError("دسته پیشنهادی حذف شده است")
     product.parent_category_id = category.id
+    # browse برگهٔ دسته از thematic هم می‌خواند — هم‌تراز نگه دار
+    if product.design_id:
+        design = db.get(Design, product.design_id)
+        if design is not None:
+            design.thematic_category_id = category.id
 
 
 def _apply_to_product(
@@ -323,6 +328,8 @@ def approve_job(
     mode = (job.mode or "both").strip().lower()
 
     if mode == "category":
+        if not job.category_draft_id:
+            raise ValueError("دسته پیشنهادی وجود ندارد")
         _apply_to_product(
             db,
             job,
@@ -339,17 +346,25 @@ def approve_job(
     if mode in ("images", "both") and job.candidates:
         if candidate_id is not None:
             cand = next((c for c in job.candidates if c.id == candidate_id), None)
+            if cand is None:
+                raise ValueError("کاندید یافت نشد")
         else:
-            cand = next((c for c in job.candidates if c.is_selected), None) or (
-                sorted(job.candidates, key=lambda c: (-c.score, c.id))[0]
+            with_file = [c for c in job.candidates if c.local_storage_key]
+            pool = with_file or list(job.candidates)
+            cand = next((c for c in pool if c.is_selected), None) or (
+                sorted(pool, key=lambda c: (-c.score, c.id))[0] if pool else None
             )
         if cand is None and mode == "images":
             raise ValueError("کاندید انتخاب نشده")
+        if cand is not None and not cand.local_storage_key and mode == "images":
+            raise ValueError("کاندید تصویر فایل محلی ندارد")
 
-    apply_images = mode in ("images", "both") and cand is not None
-    apply_desc = apply_description and mode in ("description", "both")
+    apply_images = mode in ("images", "both") and cand is not None and bool(cand.local_storage_key)
+    apply_desc = apply_description and mode in ("description", "both") and bool(job.description_draft)
     if mode == "description":
         apply_images = False
+        if not job.description_draft:
+            raise ValueError("توضیح پیشنهادی وجود ندارد")
         apply_desc = True
     if not apply_images and not apply_desc:
         raise ValueError("چیزی برای اعمال وجود ندارد")
@@ -357,13 +372,92 @@ def approve_job(
     _apply_to_product(
         db,
         job,
-        cand,
+        cand if apply_images else None,
         apply_description=apply_desc,
         apply_images=apply_images,
     )
     db.commit()
     db.refresh(job)
     return job
+
+
+def list_jobs_page(
+    db: Session,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[ProductEnrichmentJob], int]:
+    base = select(ProductEnrichmentJob)
+    count_q = select(func.count()).select_from(ProductEnrichmentJob)
+    if status:
+        base = base.where(ProductEnrichmentJob.status == status)
+        count_q = count_q.where(ProductEnrichmentJob.status == status)
+    total = int(db.scalar(count_q) or 0)
+    rows = list(
+        db.scalars(
+            base.order_by(ProductEnrichmentJob.id.desc()).offset(offset).limit(limit)
+        ).all()
+    )
+    return rows, total
+
+
+def job_ids_for_status(db: Session, status: str, *, limit: int = 2000) -> list[int]:
+    return list(
+        db.scalars(
+            select(ProductEnrichmentJob.id)
+            .where(ProductEnrichmentJob.status == status)
+            .order_by(ProductEnrichmentJob.id.desc())
+            .limit(limit)
+        ).all()
+    )
+
+
+def run_bulk_action(
+    db: Session,
+    *,
+    action: str,
+    job_ids: list[int],
+) -> dict:
+    """اعمال/رد/تلاش مجدد گروهی — خطای یک جاب مانع بقیه نمی‌شود."""
+    done = 0
+    failed = 0
+    errors: list[str] = []
+    unique_ids = list(dict.fromkeys(job_ids))
+
+    for job_id in unique_ids:
+        try:
+            if action == "approve":
+                approve_job(db, job_id, candidate_id=None, apply_description=True)
+            elif action == "reject":
+                reject_job(db, job_id)
+            else:
+                retry_job(db, job_id)
+            done += 1
+        except LookupError:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            failed += 1
+            errors.append(f"#{job_id}: جاب یافت نشد")
+        except ValueError as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            failed += 1
+            errors.append(f"#{job_id}: {e}")
+        except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            failed += 1
+            logger.exception("bulk enrichment %s job %s", action, job_id)
+            errors.append(f"#{job_id}: {friendly_network_error(e)}")
+
+    return {"done": done, "failed": failed, "errors": errors[:30]}
 
 
 def reject_job(db: Session, job_id: int) -> ProductEnrichmentJob:

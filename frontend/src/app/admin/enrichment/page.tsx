@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { adminFetch } from "@/lib/api";
@@ -43,6 +43,15 @@ type Stats = {
   failed: number;
 };
 
+type JobsPage = {
+  items: Job[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+const PAGE_SIZE = 50;
+
 const STATUS_LABEL: Record<string, string> = {
   pending: "در صف",
   running: "در حال اجرا",
@@ -61,8 +70,8 @@ const MODE_LABEL: Record<string, string> = {
 
 function canApplyCandidate(job: Job) {
   return (
-    job.candidates.length > 0 &&
-    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+    job.candidates.some((c) => c.local_url || c.image_url) &&
+    (job.status === "needs_review" || job.status === "failed")
   );
 }
 
@@ -70,7 +79,7 @@ function canApplyDescription(job: Job) {
   return (
     Boolean(job.description_draft) &&
     (job.mode === "description" || job.mode === "both") &&
-    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+    (job.status === "needs_review" || job.status === "failed")
   );
 }
 
@@ -78,7 +87,7 @@ function canApplyCategory(job: Job) {
   return (
     job.mode === "category" &&
     Boolean(job.category_draft_id) &&
-    (job.status === "needs_review" || job.status === "approved" || job.status === "failed")
+    (job.status === "needs_review" || job.status === "failed")
   );
 }
 
@@ -90,7 +99,9 @@ function canBulkApply(job: Job) {
 export default function AdminEnrichmentPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [filter, setFilter] = useState<string>("");
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<string>("needs_review");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -100,23 +111,31 @@ export default function AdminEnrichmentPage() {
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const offset = safePage * PAGE_SIZE;
+
   const load = useCallback(() => {
     setError(null);
-    const q = filter ? `?status=${encodeURIComponent(filter)}&limit=80` : "?limit=80";
+    const params = new URLSearchParams();
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String(offset));
+    if (filter) params.set("status", filter);
     Promise.all([
       adminFetch<Stats>("/api/v1/admin/enrichment/stats", token()),
-      adminFetch<Job[]>(`/api/v1/admin/enrichment/jobs${q}`, token()),
+      adminFetch<JobsPage>(`/api/v1/admin/enrichment/jobs?${params}`, token()),
     ])
-      .then(([s, rows]) => {
+      .then(([s, pageData]) => {
         setStats(s);
-        setJobs(rows);
+        setJobs(pageData.items ?? []);
+        setTotal(pageData.total ?? 0);
         setLoading(false);
       })
       .catch((e) => {
         setError(e instanceof Error ? e.message : "خطا");
         setLoading(false);
       });
-  }, [filter]);
+  }, [filter, offset]);
 
   useEffect(() => {
     setLoading(true);
@@ -128,6 +147,11 @@ export default function AdminEnrichmentPage() {
     return () => clearInterval(t);
   }, [load, busyId, bulkBusy]);
 
+  function changeFilter(next: string) {
+    setFilter(next);
+    setPage(0);
+  }
+
   function toggleSelect(jobId: number) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -137,7 +161,7 @@ export default function AdminEnrichmentPage() {
     });
   }
 
-  const applyableJobs = jobs.filter(canBulkApply);
+  const applyableJobs = useMemo(() => jobs.filter(canBulkApply), [jobs]);
   const selectedApplyable = applyableJobs.filter((j) => selected.has(j.id));
   const selectedRetryable = jobs.filter(
     (j) => selected.has(j.id) && (j.status === "failed" || j.status === "rejected"),
@@ -146,7 +170,7 @@ export default function AdminEnrichmentPage() {
     (j) => selected.has(j.id) && j.status === "needs_review",
   );
 
-  function selectAllApplyable() {
+  function selectAllApplyableOnPage() {
     setSelected((prev) => {
       const allSelected = applyableJobs.length > 0 && applyableJobs.every((j) => prev.has(j.id));
       if (allSelected) return new Set();
@@ -154,24 +178,56 @@ export default function AdminEnrichmentPage() {
     });
   }
 
-  async function bulkAction(action: "approve" | "reject" | "retry", ids: number[]) {
-    if (!ids.length) return;
-    if (action === "approve" && !confirm(`اعمال ${ids.length} مورد به‌صورت گروهی؟ (بهترین عکس/توضیح/دسته هر جاب)`)) {
+  async function bulkAction(
+    action: "approve" | "reject" | "retry",
+    opts: { ids?: number[]; statusFilter?: string; labelCount?: number },
+  ) {
+    const ids = opts.ids ?? [];
+    const usingFilter = Boolean(opts.statusFilter) && ids.length === 0;
+    if (!usingFilter && !ids.length) return;
+
+    const countHint = opts.labelCount ?? ids.length;
+    if (
+      action === "approve" &&
+      !confirm(
+        usingFilter
+          ? `اعمال همه جاب‌های «${STATUS_LABEL[opts.statusFilter!] || opts.statusFilter}» (تا ${countHint.toLocaleString("fa-IR")} مورد)؟`
+          : `اعمال ${countHint.toLocaleString("fa-IR")} مورد انتخاب‌شده؟`,
+      )
+    ) {
       return;
     }
+    if (
+      action !== "approve" &&
+      usingFilter &&
+      !confirm(
+        `${action === "reject" ? "رد" : "تلاش مجدد"} همه موارد این فیلتر (تا ${countHint.toLocaleString("fa-IR")})؟`,
+      )
+    ) {
+      return;
+    }
+
     setBulkBusy(true);
     setNotice(null);
     setError(null);
     try {
+      const body: { action: string; job_ids: number[]; status_filter?: string } = {
+        action,
+        job_ids: ids,
+      };
+      if (usingFilter && opts.statusFilter) body.status_filter = opts.statusFilter;
+
       const res = await adminFetch<{ done: number; failed: number; errors: string[] }>(
         "/api/v1/admin/enrichment/jobs/bulk",
         token(),
-        { method: "POST", body: JSON.stringify({ job_ids: ids, action }) },
+        { method: "POST", body: JSON.stringify(body) },
       );
       const verb = action === "approve" ? "اعمال" : action === "reject" ? "رد" : "تلاش مجدد";
       setNotice(
-        `${verb} گروهی: ${res.done} موفق` +
-          (res.failed ? ` — ${res.failed} ناموفق${res.errors.length ? ` (${res.errors[0]})` : ""}` : ""),
+        `${verb} گروهی: ${res.done.toLocaleString("fa-IR")} موفق` +
+          (res.failed
+            ? ` — ${res.failed.toLocaleString("fa-IR")} ناموفق${res.errors.length ? ` (${res.errors[0]})` : ""}`
+            : ""),
       );
       setSelected(new Set());
       load();
@@ -240,6 +296,11 @@ export default function AdminEnrichmentPage() {
     }
   }
 
+  const filterTotal =
+    filter && stats
+      ? (stats[filter as keyof Stats] as number | undefined) ?? total
+      : total;
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -271,7 +332,7 @@ export default function AdminEnrichmentPage() {
               key={key || "all"}
               type="button"
               className={cn("chip-theme", filter === key && "is-active")}
-              onClick={() => setFilter(key)}
+              onClick={() => changeFilter(key)}
             >
               {label}
             </button>
@@ -283,49 +344,100 @@ export default function AdminEnrichmentPage() {
       {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
       {loading && !jobs.length ? <p className="mt-8 text-muted">بارگذاری…</p> : null}
 
-      {jobs.length > 0 ? (
-        <div className="card-theme sticky top-2 z-10 mt-6 flex flex-wrap items-center gap-3 p-3">
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-[var(--accent)]"
-              checked={applyableJobs.length > 0 && applyableJobs.every((j) => selected.has(j.id))}
-              onChange={selectAllApplyable}
-            />
-            انتخاب همه قابل‌اعمال‌ها ({applyableJobs.length.toLocaleString("fa-IR")})
-          </label>
-          {selected.size > 0 ? (
-            <span className="text-sm text-muted">
-              {selected.size.toLocaleString("fa-IR")} انتخاب شده
-            </span>
+      <div className="card-theme sticky top-2 z-10 mt-6 flex flex-wrap items-center gap-3 p-3">
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--accent)]"
+            checked={applyableJobs.length > 0 && applyableJobs.every((j) => selected.has(j.id))}
+            onChange={selectAllApplyableOnPage}
+            disabled={!applyableJobs.length}
+          />
+          انتخاب صفحه ({applyableJobs.length.toLocaleString("fa-IR")})
+        </label>
+        <span className="text-sm text-muted">
+          {total.toLocaleString("fa-IR")} جاب
+          {total > 0
+            ? ` · صفحه ${(safePage + 1).toLocaleString("fa-IR")} از ${totalPages.toLocaleString("fa-IR")}`
+            : ""}
+        </span>
+        {selected.size > 0 ? (
+          <span className="text-sm text-muted">
+            {selected.size.toLocaleString("fa-IR")} انتخاب شده
+          </span>
+        ) : null}
+        <div className="ms-auto flex flex-wrap gap-2">
+          {filter === "needs_review" && (stats?.needs_review ?? 0) > 0 ? (
+            <Button
+              size="sm"
+              disabled={bulkBusy}
+              onClick={() =>
+                bulkAction("approve", {
+                  statusFilter: "needs_review",
+                  labelCount: stats?.needs_review ?? filterTotal,
+                })
+              }
+            >
+              {bulkBusy
+                ? "…"
+                : `اعمال همهٔ تأییدها (${(stats?.needs_review ?? 0).toLocaleString("fa-IR")})`}
+            </Button>
           ) : null}
-          <div className="ms-auto flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              disabled={bulkBusy || selectedApplyable.length === 0}
-              onClick={() => bulkAction("approve", selectedApplyable.map((j) => j.id))}
-            >
-              {bulkBusy ? "…" : `اعمال گروهی (${selectedApplyable.length.toLocaleString("fa-IR")})`}
-            </Button>
+          {filter === "failed" && (stats?.failed ?? 0) > 0 ? (
             <Button
               size="sm"
               variant="outline"
-              disabled={bulkBusy || selectedRetryable.length === 0}
-              onClick={() => bulkAction("retry", selectedRetryable.map((j) => j.id))}
+              disabled={bulkBusy}
+              onClick={() =>
+                bulkAction("retry", {
+                  statusFilter: "failed",
+                  labelCount: stats?.failed ?? 0,
+                })
+              }
             >
-              تلاش مجدد ({selectedRetryable.length.toLocaleString("fa-IR")})
+              تلاش مجدد همه ناموفق‌ها ({(stats?.failed ?? 0).toLocaleString("fa-IR")})
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkBusy || selectedRejectable.length === 0}
-              onClick={() => bulkAction("reject", selectedRejectable.map((j) => j.id))}
-            >
-              رد ({selectedRejectable.length.toLocaleString("fa-IR")})
-            </Button>
-          </div>
+          ) : null}
+          <Button
+            size="sm"
+            disabled={bulkBusy || selectedApplyable.length === 0}
+            onClick={() =>
+              bulkAction("approve", {
+                ids: selectedApplyable.map((j) => j.id),
+                labelCount: selectedApplyable.length,
+              })
+            }
+          >
+            {bulkBusy ? "…" : `اعمال انتخاب‌شده (${selectedApplyable.length.toLocaleString("fa-IR")})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulkBusy || selectedRetryable.length === 0}
+            onClick={() =>
+              bulkAction("retry", {
+                ids: selectedRetryable.map((j) => j.id),
+                labelCount: selectedRetryable.length,
+              })
+            }
+          >
+            تلاش مجدد ({selectedRetryable.length.toLocaleString("fa-IR")})
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulkBusy || selectedRejectable.length === 0}
+            onClick={() =>
+              bulkAction("reject", {
+                ids: selectedRejectable.map((j) => j.id),
+                labelCount: selectedRejectable.length,
+              })
+            }
+          >
+            رد ({selectedRejectable.length.toLocaleString("fa-IR")})
+          </Button>
         </div>
-      ) : null}
+      </div>
 
       <div className="mt-6 space-y-4">
         {jobs.map((job) => {
@@ -347,25 +459,25 @@ export default function AdminEnrichmentPage() {
                     aria-label={`انتخاب ${job.product_title}`}
                   />
                   <div>
-                  <p className="font-medium">
-                    #{job.id} — {job.product_title}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {STATUS_LABEL[job.status] || job.status}
-                    {` · ${MODE_LABEL[job.mode] || job.mode || "both"}`}
-                    {job.design_code ? ` · ${job.design_code}` : ""}
-                    {job.query_used ? ` · «${job.query_used}»` : ""}
-                  </p>
-                  {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
-                  {job.category_draft_name ? (
-                    <p className="mt-2 text-sm">
-                      <span className="text-muted">دسته پیشنهادی: </span>
-                      <span className="font-medium text-[var(--accent)]">{job.category_draft_name}</span>
+                    <p className="font-medium">
+                      #{job.id} — {job.product_title}
                     </p>
-                  ) : null}
-                  {job.description_draft ? (
-                    <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
-                  ) : null}
+                    <p className="mt-1 text-xs text-muted">
+                      {STATUS_LABEL[job.status] || job.status}
+                      {` · ${MODE_LABEL[job.mode] || job.mode || "both"}`}
+                      {job.design_code ? ` · ${job.design_code}` : ""}
+                      {job.query_used ? ` · «${job.query_used}»` : ""}
+                    </p>
+                    {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
+                    {job.category_draft_name ? (
+                      <p className="mt-2 text-sm">
+                        <span className="text-muted">دسته پیشنهادی: </span>
+                        <span className="font-medium text-[var(--accent)]">{job.category_draft_name}</span>
+                      </p>
+                    ) : null}
+                    {job.description_draft ? (
+                      <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -443,6 +555,30 @@ export default function AdminEnrichmentPage() {
           </p>
         ) : null}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage <= 0 || loading || bulkBusy}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            قبلی
+          </Button>
+          <span className="text-sm text-muted">
+            {(safePage + 1).toLocaleString("fa-IR")} / {totalPages.toLocaleString("fa-IR")}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage >= totalPages - 1 || loading || bulkBusy}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            بعدی
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

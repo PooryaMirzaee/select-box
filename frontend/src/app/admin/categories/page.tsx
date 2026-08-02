@@ -12,6 +12,7 @@ import { apiUrl } from "@/lib/api-base";
 import {
   collectDescendantIds,
   findNode,
+  flattenTree,
   parentSelectOptions,
   type CategoryTreeNode,
 } from "@/lib/category-tree";
@@ -32,6 +33,8 @@ export default function AdminCategoriesPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [generatingIcon, setGeneratingIcon] = useState(false);
+  const [aiExtraPrompt, setAiExtraPrompt] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -68,6 +71,11 @@ export default function AdminCategoriesPage() {
     return parentSelectOptions(tree, exclude);
   }, [tree, editId]);
 
+  const missingIconCount = useMemo(
+    () => flattenTree(tree).filter((n) => !n.icon_url).length,
+    [tree],
+  );
+
   function toggleExpand(id: number) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -81,11 +89,13 @@ export default function AdminCategoriesPage() {
     setForm(empty);
     setEditId(null);
     setIconFile(null);
+    setAiExtraPrompt("");
   }
 
   function startEdit(node: CategoryTreeNode) {
     setEditId(node.id);
     setIconFile(null);
+    setAiExtraPrompt("");
     setForm({
       parent_id: node.parent_id,
       slug: node.slug,
@@ -240,6 +250,85 @@ export default function AdminCategoriesPage() {
     load();
   }
 
+  async function generateIconForCurrent() {
+    if (!editId) {
+      alert("ابتدا دسته را ذخیره کنید، بعد تصویر بسازید.");
+      return;
+    }
+    if (!form.name_fa.trim()) {
+      alert("نام فارسی دسته لازم است.");
+      return;
+    }
+    setGeneratingIcon(true);
+    try {
+      // همگام‌سازی نام قبل از تولید تا پرامپت درست باشد
+      await adminFetch(`/api/v1/admin/categories/${editId}`, token(), {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...form,
+          parent_id: form.parent_id || null,
+          meta_title: form.meta_title || null,
+          meta_description: form.meta_description || null,
+        }),
+      });
+      await adminFetch(`/api/v1/admin/categories/${editId}/generate-icon`, token(), {
+        method: "POST",
+        body: JSON.stringify({
+          extra_prompt: aiExtraPrompt.trim() || null,
+        }),
+      });
+      setIconFile(null);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "تولید تصویر ناموفق بود");
+    } finally {
+      setGeneratingIcon(false);
+    }
+  }
+
+  async function generateIconsBulk(ids: number[], onlyMissing: boolean) {
+    if (!ids.length) return;
+    const label = onlyMissing ? "بدون تصویر" : "انتخاب‌شده";
+    if (
+      !confirm(
+        `تولید تصویر AvalAI برای ${ids.length} دسته (${label})؟ این کار ممکن است چند دقیقه طول بکشد.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await adminFetch<{
+        generated_count: number;
+        skipped: number[];
+        failed: { id: number; reason: string }[];
+      }>("/api/v1/admin/categories/generate-icons", token(), {
+        method: "POST",
+        body: JSON.stringify({
+          ids,
+          only_missing: onlyMissing,
+          extra_prompt: aiExtraPrompt.trim() || null,
+        }),
+      });
+      const failHint = res.failed.length
+        ? `\nناموفق: ${res.failed
+            .slice(0, 5)
+            .map((f) => `#${f.id}: ${f.reason}`)
+            .join(" | ")}`
+        : "";
+      alert(
+        `${res.generated_count} تصویر ساخته شد` +
+          (res.skipped.length ? `، ${res.skipped.length} رد شد (از قبل تصویر داشت)` : "") +
+          failHint,
+      );
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "تولید گروهی ناموفق بود");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const formTitle = editId ? "ویرایش دسته" : form.parent_id ? "زیردسته جدید" : "دسته جدید";
 
   return (
@@ -252,11 +341,38 @@ export default function AdminCategoriesPage() {
             با آیکون در مگامenu هدر فروشگاه نمایش داده می‌شوند.
           </p>
         </div>
-        {checkedIds.size > 0 ? (
-          <Button variant="outline" disabled={busy} onClick={removeSelected}>
-            حذف انتخاب‌شده ({checkedIds.size})
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {missingIconCount > 0 ? (
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() =>
+                generateIconsBulk(
+                  flattenTree(tree)
+                    .filter((n) => !n.icon_url)
+                    .map((n) => n.id),
+                  true,
+                )
+              }
+            >
+              ساخت تصویر برای بدون‌آیکون ({missingIconCount})
+            </Button>
+          ) : null}
+          {checkedIds.size > 0 ? (
+            <>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => generateIconsBulk([...checkedIds], false)}
+              >
+                ساخت تصویر انتخاب‌شده ({checkedIds.size})
+              </Button>
+              <Button variant="outline" disabled={busy} onClick={removeSelected}>
+                حذف انتخاب‌شده ({checkedIds.size})
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start">
@@ -333,8 +449,29 @@ export default function AdminCategoriesPage() {
                 className="text-sm"
                 onChange={(e) => setIconFile(e.target.files?.[0] ?? null)}
               />
+              <div className="mt-3 space-y-2 rounded-xl border border-dashed border-theme bg-[var(--bg-elevated)] p-3">
+                <p className="text-xs text-muted">ساخت با AvalAI — مدل تصویر تنظیمات فروشگاه</p>
+                <input
+                  placeholder="جزئیات اضافه (اختیاری) مثلاً یخچال استیل نقره‌ای"
+                  className="w-full rounded-lg border border-theme bg-[var(--input-bg)] px-3 py-2 text-sm"
+                  value={aiExtraPrompt}
+                  onChange={(e) => setAiExtraPrompt(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!editId || generatingIcon || busy}
+                  onClick={generateIconForCurrent}
+                >
+                  {generatingIcon ? "در حال ساخت…" : "ساخت تصویر با AvalAI"}
+                </Button>
+                {!editId ? (
+                  <p className="text-xs text-muted">اول دسته را ذخیره کنید، بعد تصویر بسازید.</p>
+                ) : null}
+              </div>
             </div>
-            <Button type="submit" disabled={uploading}>
+            <Button type="submit" disabled={uploading || generatingIcon}>
               {uploading ? "..." : editId ? "ذخیره" : "افزودن"}
             </Button>
             {editId || form.parent_id ? (

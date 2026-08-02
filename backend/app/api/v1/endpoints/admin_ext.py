@@ -22,6 +22,8 @@ from app.models import (
 from app.schemas.admin import (
     BulkDeleteOut,
     BulkIdsIn,
+    CategoryBulkGenerateIconsIn,
+    CategoryGenerateIconIn,
     CategoryIn,
     CategoryOut,
     CouponIn,
@@ -93,6 +95,87 @@ async def upload_category_icon(
     db.commit()
     db.refresh(c)
     return {"storage_key": key, "icon_url": public_url(key)}
+
+
+@router.post("/categories/{category_id}/generate-icon")
+async def generate_category_icon(
+    category_id: int,
+    body: CategoryGenerateIconIn | None = None,
+    db: Session = Depends(get_db),
+):
+    """ساخت آیکون دسته با AvalAI و ذخیره روی همان دسته."""
+    from app.services.ai_errors import AiServiceError
+    from app.services.category_image import generate_and_attach_category_icon
+
+    try:
+        return await generate_and_attach_category_icon(
+            db,
+            category_id,
+            extra_prompt=(body.extra_prompt if body else None),
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "not_found":
+            raise HTTPException(status_code=404, detail="دسته یافت نشد") from e
+        if code == "avalai_disabled":
+            raise HTTPException(
+                status_code=503,
+                detail="AvalAI غیرفعال است — از تنظیمات فروشگاه کلید و فعال‌سازی را تنظیم کنید",
+            ) from e
+        raise HTTPException(status_code=400, detail=code) from e
+    except AiServiceError as e:
+        status = 429 if e.retryable else 502
+        raise HTTPException(status_code=status, detail=e.user_message) from e
+
+
+@router.post("/categories/generate-icons")
+async def bulk_generate_category_icons(
+    body: CategoryBulkGenerateIconsIn,
+    db: Session = Depends(get_db),
+):
+    """تولید گروهی آیکون — پیش‌فرض فقط دسته‌های بدون تصویر."""
+    from app.services.ai_errors import AiServiceError
+    from app.services.category_image import generate_and_attach_category_icon
+
+    unique_ids = list(dict.fromkeys(body.ids))
+    generated: list[dict] = []
+    failed: list[dict] = []
+    skipped: list[int] = []
+
+    for cid in unique_ids:
+        cat = db.get(Category, cid)
+        if cat is None:
+            failed.append({"id": cid, "reason": "دسته یافت نشد"})
+            continue
+        if body.only_missing and cat.icon_storage_key:
+            skipped.append(cid)
+            continue
+        try:
+            row = await generate_and_attach_category_icon(
+                db,
+                cid,
+                extra_prompt=body.extra_prompt,
+            )
+            generated.append({"id": cid, "icon_url": row.get("icon_url"), "name_fa": row.get("name_fa")})
+        except ValueError as e:
+            code = str(e)
+            if code == "avalai_disabled":
+                raise HTTPException(
+                    status_code=503,
+                    detail="AvalAI غیرفعال است — از تنظیمات فروشگاه کلید و فعال‌سازی را تنظیم کنید",
+                ) from e
+            failed.append({"id": cid, "reason": code})
+        except AiServiceError as e:
+            failed.append({"id": cid, "reason": e.user_message})
+            if e.retryable:
+                break
+
+    return {
+        "generated": generated,
+        "failed": failed,
+        "skipped": skipped,
+        "generated_count": len(generated),
+    }
 
 
 @router.delete("/categories/{category_id}/icon")

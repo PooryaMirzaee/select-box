@@ -50,10 +50,15 @@ def _category_paths(db: Session) -> list[tuple[Category, str]]:
 
 
 def _slugify(text: str) -> str:
-    s = text.strip().lower()
-    s = re.sub(r"[^\w\s\u0600-\u06FF-]", "", s, flags=re.UNICODE)
-    s = re.sub(r"[\s_]+", "-", s)
-    return s[:150] or secrets.token_hex(4)
+    from app.services.category_helpers import normalize_category_slug
+
+    try:
+        return normalize_category_slug(text)[:150]
+    except ValueError:
+        s = text.strip().lower()
+        s = re.sub(r"[^\w\s\u0600-\u06FF-]", "", s, flags=re.UNICODE)
+        s = re.sub(r"[\s_]+", "-", s)
+        return (s[:150] or secrets.token_hex(4))
 
 
 def _find_by_name(db: Session, name: str, parent_id: int | None) -> Category | None:

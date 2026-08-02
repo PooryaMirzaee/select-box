@@ -20,7 +20,11 @@ from app.models import (
     ProductImage,
     ProductVariation,
 )
-from app.services.category_helpers import category_browse_dict, category_image_url
+from app.services.category_helpers import (
+    category_browse_dict,
+    category_image_url,
+    normalize_category_slug,
+)
 from app.services.storage import public_url
 
 
@@ -28,13 +32,27 @@ def normalize_slug_param(slug: str) -> str:
     """اسلاگ URL را یک‌بار decode می‌کند — Next.js گاهی پارامتر فارسی را encode‌شده می‌فرستد."""
     if not slug:
         return slug
+    raw = slug
+    for _ in range(3):
+        try:
+            decoded = unquote(raw)
+        except ValueError:
+            break
+        if decoded == raw:
+            break
+        raw = decoded
+    return raw
+
+
+def normalize_category_slug_param(slug: str) -> str:
+    """Decode + نرمال‌سازی هم‌شکل ساخت دسته در ادمین."""
+    raw = normalize_slug_param(slug).strip().lower()
+    if not raw:
+        return raw
     try:
-        decoded = unquote(slug)
-        if decoded != slug or "%" in slug:
-            return decoded
+        return normalize_category_slug(raw)
     except ValueError:
-        pass
-    return slug
+        return raw
 
 
 # دسته‌های نوع محصول فیزیکی — در فروشگاه لوازم خانگی استفاده نمی‌شود
@@ -101,6 +119,41 @@ def category_navigation_tree(db: Session) -> list[dict]:
     return [attach(r, [r.slug]) for r in roots]
 
 
+def _category_slug_candidates(slug: str) -> list[str]:
+    """اشکال محتمل اسلاگ برای جستجو — خام، lower، و نرمال‌شده."""
+    decoded = normalize_slug_param(slug).strip()
+    out: list[str] = []
+    if decoded:
+        out.append(decoded)
+        low = decoded.lower()
+        if low not in out:
+            out.append(low)
+    try:
+        n = normalize_category_slug(decoded.lower() if decoded else decoded)
+        if n and n not in out:
+            out.append(n)
+    except ValueError:
+        pass
+    return out
+
+
+def _find_child_category(
+    db: Session, *, parent_id: int | None, slug_candidates: list[str]
+) -> Category | None:
+    if not slug_candidates:
+        return None
+    lowered = list({c.lower() for c in slug_candidates if c})
+    q = select(Category).where(
+        func.lower(Category.slug).in_(lowered),
+        Category.is_active.is_(True),
+    )
+    if parent_id is None:
+        q = q.where(Category.parent_id.is_(None))
+    else:
+        q = q.where(Category.parent_id == parent_id)
+    return db.scalar(q)
+
+
 def resolve_category_path(db: Session, slugs: list[str]) -> Category | None:
     """مسیر اسلاگ‌ها را به یک دسته تبدیل می‌کند؛ مثلاً kitchen/refrigerator"""
     if not slugs:
@@ -108,16 +161,8 @@ def resolve_category_path(db: Session, slugs: list[str]) -> Category | None:
     parent_id: int | None = None
     cat: Category | None = None
     for slug in slugs:
-        normalized = normalize_slug_param(slug).strip().lower()
-        if not normalized:
-            return None
-        cat = db.scalar(
-            select(Category).where(
-                Category.slug == normalized,
-                Category.parent_id == parent_id,
-                Category.is_active.is_(True),
-            )
-        )
+        candidates = _category_slug_candidates(slug)
+        cat = _find_child_category(db, parent_id=parent_id, slug_candidates=candidates)
         if cat is None:
             return None
         parent_id = cat.id
@@ -126,17 +171,43 @@ def resolve_category_path(db: Session, slugs: list[str]) -> Category | None:
 
 def resolve_category_by_unique_slug(db: Session, slug: str) -> Category | None:
     """اگر فقط یک دستهٔ فعال با این اسلاگ وجود داشته باشد، همان را برمی‌گرداند."""
-    normalized = normalize_slug_param(slug).strip().lower()
-    if not normalized:
+    candidates = _category_slug_candidates(slug)
+    if not candidates:
         return None
+    lowered = list({c.lower() for c in candidates if c})
     rows = list(
         db.scalars(
-            select(Category).where(Category.slug == normalized, Category.is_active.is_(True))
+            select(Category).where(
+                func.lower(Category.slug).in_(lowered),
+                Category.is_active.is_(True),
+            )
         ).all()
     )
-    if len(rows) == 1:
-        return rows[0]
+    by_id = {r.id: r for r in rows}
+    if len(by_id) == 1:
+        return next(iter(by_id.values()))
     return None
+
+
+def resolve_category_flexible(db: Session, path_slugs: list[str]) -> Category | None:
+    """Resolve مقاوم: مسیر کامل → پسوند مسیر → اسلاگ یکتای آخرین بخش."""
+    normalized = [normalize_category_slug_param(s) for s in path_slugs if s and str(s).strip()]
+    normalized = [s for s in normalized if s]
+    if not normalized:
+        return None
+
+    cat = resolve_category_path(db, normalized)
+    if cat is not None:
+        return cat
+
+    # مسیر قدیمی بعد از جابه‌جایی والد — پسوند را امتحان کن
+    for start in range(1, len(normalized)):
+        cat = resolve_category_path(db, normalized[start:])
+        if cat is not None:
+            return cat
+
+    # لینک کوتاه یا اسلاگ تکراری‌نداشته
+    return resolve_category_by_unique_slug(db, normalized[-1])
 
 
 def category_full_path(db: Session, cat: Category) -> str:
@@ -245,15 +316,22 @@ def browse_context(db: Session, path_slugs: list[str], product_type: str | None)
             "products": [],
         }
 
-    cat = resolve_category_path(db, path_slugs)
-    if cat is None and len(path_slugs) == 1:
-        cat = resolve_category_by_unique_slug(db, path_slugs[0])
+    cat = resolve_category_flexible(db, path_slugs)
     if cat is None:
         return {"breadcrumbs": [], "current": None, "children": [], "products": [], "error": "not_found"}
 
     crumbs = category_breadcrumbs(db, cat)
     kids = children_of(db, cat.id)
     canonical_path = category_full_path(db, cat)
+
+    products = list_products_in_category(
+        db,
+        category_id=cat.id,
+        parent_slug=product_type,
+        limit=48,
+        offset=0,
+    )
+    product_dicts = [_product_summary_dict(p) for p in products]
 
     if kids:
         base = canonical_path
@@ -266,22 +344,15 @@ def browse_context(db: Session, path_slugs: list[str], product_type: str | None)
                 )
                 for ch in kids
             ],
-            "products": [],
+            "products": product_dicts,
             "canonical_path": canonical_path,
         }
 
-    products = list_products(
-        db,
-        parent_slug=product_type,
-        thematic_category_id=cat.id,
-        limit=48,
-        offset=0,
-    )
     return {
         "breadcrumbs": crumbs,
         "current": category_current_dict(cat),
         "children": [],
-        "products": [_product_summary_dict(p) for p in products],
+        "products": product_dicts,
         "canonical_path": canonical_path,
     }
 
@@ -345,6 +416,42 @@ def list_products(
         joinedload(Product.parent_category),
         joinedload(Product.images),
         joinedload(Product.design).joinedload(Design.assets),
+    )
+    q = q.order_by(Product.id.desc()).limit(limit).offset(offset)
+    return list(db.scalars(q).unique().all())
+
+
+def list_products_in_category(
+    db: Session,
+    *,
+    category_id: int,
+    parent_slug: str | None = None,
+    limit: int = 48,
+    offset: int = 0,
+    include_draft: bool = False,
+) -> list[Product]:
+    """محصولات یک دسته — هم parent_category_id و هم thematic_category_id طرح."""
+    from sqlalchemy import or_
+
+    q = select(Product).options(
+        joinedload(Product.parent_category),
+        joinedload(Product.images),
+        joinedload(Product.design).joinedload(Design.assets),
+    )
+    if not include_draft:
+        q = q.where(Product.status == "published")
+
+    if parent_slug:
+        type_cat = db.scalar(select(Category).where(Category.slug == parent_slug))
+        if type_cat is None:
+            return []
+        q = q.where(Product.parent_category_id == type_cat.id)
+
+    q = q.outerjoin(Design, Design.id == Product.design_id).where(
+        or_(
+            Product.parent_category_id == category_id,
+            Design.thematic_category_id == category_id,
+        )
     )
     q = q.order_by(Product.id.desc()).limit(limit).offset(offset)
     return list(db.scalars(q).unique().all())

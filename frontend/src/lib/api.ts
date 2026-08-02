@@ -551,11 +551,17 @@ export async function submitBusinessQuote(payload: {
 }
 
 export function fetchBrowse(path: string, productType?: string) {
+  const normalized = path
+    .split("/")
+    .map((s) => normalizeSlugParam(s.trim()))
+    .filter(Boolean)
+    .join("/");
   const q = new URLSearchParams();
-  if (path) q.set("path", path);
+  if (normalized) q.set("path", normalized);
   if (productType) q.set("product_type", productType);
+  const tag = normalized ? `browse:${normalized}` : "browse:root";
   return apiFetch<BrowseResponse>(`/api/v1/catalog/browse?${q}`, {
-    next: { revalidate: 60, tags: ["browse"] },
+    next: { revalidate: 30, tags: ["browse", tag] },
   });
 }
 
