@@ -2,6 +2,7 @@
 
 import type { CategoryCardItem } from "@/components/shop/CategoryCard";
 import { HeroCategoryTile } from "@/components/shop/HeroCategoryTile";
+import { browseHref } from "@/lib/browse-path";
 import { cn } from "@/lib/utils";
 
 export type BrowseCategory = CategoryCardItem & { child_count?: number };
@@ -12,9 +13,9 @@ type Props = {
   queryType?: string;
 };
 
-function tileHref(base: string, path: string, type?: string) {
+function tileHref(_base: string, path: string, type?: string) {
   const q = type ? `?type=${type}` : "";
-  return `${base}/${path}${q}`;
+  return `${browseHref(path)}${q}`;
 }
 
 function subtitle(c: BrowseCategory) {

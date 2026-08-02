@@ -28,6 +28,8 @@ type Job = {
   description_draft: string | null;
   category_draft_id: number | null;
   category_draft_name: string | null;
+  current_category_id?: number | null;
+  current_category_name?: string | null;
   error: string | null;
   attempts: number;
   auto_apply: boolean;
@@ -61,6 +63,15 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "ناموفق",
 };
 
+const STATUS_STYLE: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-700",
+  running: "bg-sky-500/15 text-sky-700",
+  needs_review: "bg-[var(--accent-soft)] text-[var(--accent)]",
+  approved: "bg-emerald-500/15 text-emerald-700",
+  rejected: "bg-zinc-500/15 text-zinc-600",
+  failed: "bg-red-500/15 text-red-600",
+};
+
 const MODE_LABEL: Record<string, string> = {
   images: "عکس",
   description: "توضیح",
@@ -70,7 +81,7 @@ const MODE_LABEL: Record<string, string> = {
 
 function canApplyCandidate(job: Job) {
   return (
-    job.candidates.some((c) => c.local_url || c.image_url) &&
+    job.candidates.some((c) => Boolean(c.local_url || c.image_url)) &&
     (job.status === "needs_review" || job.status === "failed")
   );
 }
@@ -91,9 +102,21 @@ function canApplyCategory(job: Job) {
   );
 }
 
-/** جاب چیزی برای اعمال گروهی دارد؟ */
 function canBulkApply(job: Job) {
   return canApplyCandidate(job) || canApplyDescription(job) || canApplyCategory(job);
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+        STATUS_STYLE[status] || "bg-zinc-500/10 text-muted",
+      )}
+    >
+      {STATUS_LABEL[status] || status}
+    </span>
+  );
 }
 
 export default function AdminEnrichmentPage() {
@@ -115,35 +138,42 @@ export default function AdminEnrichmentPage() {
   const safePage = Math.min(page, totalPages - 1);
   const offset = safePage * PAGE_SIZE;
 
-  const load = useCallback(() => {
-    setError(null);
-    const params = new URLSearchParams();
-    params.set("limit", String(PAGE_SIZE));
-    params.set("offset", String(offset));
-    if (filter) params.set("status", filter);
-    Promise.all([
-      adminFetch<Stats>("/api/v1/admin/enrichment/stats", token()),
-      adminFetch<JobsPage>(`/api/v1/admin/enrichment/jobs?${params}`, token()),
-    ])
-      .then(([s, pageData]) => {
-        setStats(s);
-        setJobs(pageData.items ?? []);
-        setTotal(pageData.total ?? 0);
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : "خطا");
-        setLoading(false);
-      });
-  }, [filter, offset]);
+  const load = useCallback(
+    (opts?: { quiet?: boolean }) => {
+      if (!opts?.quiet) setError(null);
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(offset));
+      if (filter) params.set("status", filter);
+      Promise.all([
+        adminFetch<Stats>("/api/v1/admin/enrichment/stats", token()),
+        adminFetch<JobsPage>(`/api/v1/admin/enrichment/jobs?${params}`, token()),
+      ])
+        .then(([s, pageData]) => {
+          setStats(s);
+          setJobs(pageData.items ?? []);
+          setTotal(pageData.total ?? 0);
+          setLoading(false);
+          // انتخاب‌های خارج از صفحهٔ فعلی را نگه می‌داریم؛ فقط idهای ناموجود را پاک نمی‌کنیم
+        })
+        .catch((e) => {
+          setError(e instanceof Error ? e.message : "خطا");
+          setLoading(false);
+        });
+    },
+    [filter, offset],
+  );
 
   useEffect(() => {
     setLoading(true);
     setSelected(new Set());
     load();
+  }, [filter, page]); // eslint-disable-line react-hooks/exhaustive-deps -- فقط با تغییر فیلتر/صفحه ریست انتخاب
+
+  useEffect(() => {
     const t = setInterval(() => {
-      if (busyId == null && !bulkBusy) load();
-    }, 5000);
+      if (busyId == null && !bulkBusy) load({ quiet: true });
+    }, 8000);
     return () => clearInterval(t);
   }, [load, busyId, bulkBusy]);
 
@@ -161,8 +191,10 @@ export default function AdminEnrichmentPage() {
     });
   }
 
-  const applyableJobs = useMemo(() => jobs.filter(canBulkApply), [jobs]);
-  const selectedApplyable = applyableJobs.filter((j) => selected.has(j.id));
+  const pageIds = useMemo(() => jobs.map((j) => j.id), [jobs]);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const selectedOnPage = pageIds.filter((id) => selected.has(id));
+  const selectedApplyable = jobs.filter((j) => selected.has(j.id) && canBulkApply(j));
   const selectedRetryable = jobs.filter(
     (j) => selected.has(j.id) && (j.status === "failed" || j.status === "rejected"),
   );
@@ -170,11 +202,15 @@ export default function AdminEnrichmentPage() {
     (j) => selected.has(j.id) && j.status === "needs_review",
   );
 
-  function selectAllApplyableOnPage() {
+  function toggleSelectPage() {
     setSelected((prev) => {
-      const allSelected = applyableJobs.length > 0 && applyableJobs.every((j) => prev.has(j.id));
-      if (allSelected) return new Set();
-      return new Set(applyableJobs.map((j) => j.id));
+      const next = new Set(prev);
+      if (allPageSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
     });
   }
 
@@ -187,21 +223,13 @@ export default function AdminEnrichmentPage() {
     if (!usingFilter && !ids.length) return;
 
     const countHint = opts.labelCount ?? ids.length;
+    const verbAsk =
+      action === "approve" ? "اعمال" : action === "reject" ? "رد" : "تلاش مجدد";
     if (
-      action === "approve" &&
       !confirm(
         usingFilter
-          ? `اعمال همه جاب‌های «${STATUS_LABEL[opts.statusFilter!] || opts.statusFilter}» (تا ${countHint.toLocaleString("fa-IR")} مورد)؟`
-          : `اعمال ${countHint.toLocaleString("fa-IR")} مورد انتخاب‌شده؟`,
-      )
-    ) {
-      return;
-    }
-    if (
-      action !== "approve" &&
-      usingFilter &&
-      !confirm(
-        `${action === "reject" ? "رد" : "تلاش مجدد"} همه موارد این فیلتر (تا ${countHint.toLocaleString("fa-IR")})؟`,
+          ? `${verbAsk} همه جاب‌های «${STATUS_LABEL[opts.statusFilter!] || opts.statusFilter}» (تا ${countHint.toLocaleString("fa-IR")} مورد)؟`
+          : `${verbAsk} ${countHint.toLocaleString("fa-IR")} مورد انتخاب‌شده؟`,
       )
     ) {
       return;
@@ -222,9 +250,8 @@ export default function AdminEnrichmentPage() {
         token(),
         { method: "POST", body: JSON.stringify(body) },
       );
-      const verb = action === "approve" ? "اعمال" : action === "reject" ? "رد" : "تلاش مجدد";
       setNotice(
-        `${verb} گروهی: ${res.done.toLocaleString("fa-IR")} موفق` +
+        `${verbAsk} گروهی: ${res.done.toLocaleString("fa-IR")} موفق` +
           (res.failed
             ? ` — ${res.failed.toLocaleString("fa-IR")} ناموفق${res.errors.length ? ` (${res.errors[0]})` : ""}`
             : ""),
@@ -258,7 +285,7 @@ export default function AdminEnrichmentPage() {
               ? "عکس"
               : "عکس/توضیح";
       setNotice(`${what} برای «${job.product_title}» اعمال شد`);
-      load();
+      load({ quiet: true });
     } catch (e) {
       alert(e instanceof Error ? e.message : "تأیید ناموفق");
     } finally {
@@ -273,7 +300,7 @@ export default function AdminEnrichmentPage() {
         method: "POST",
         body: "{}",
       });
-      load();
+      load({ quiet: true });
     } catch (e) {
       alert(e instanceof Error ? e.message : "رد ناموفق");
     } finally {
@@ -288,7 +315,7 @@ export default function AdminEnrichmentPage() {
         method: "POST",
         body: "{}",
       });
-      load();
+      load({ quiet: true });
     } catch (e) {
       alert(e instanceof Error ? e.message : "تلاش مجدد ناموفق");
     } finally {
@@ -296,19 +323,13 @@ export default function AdminEnrichmentPage() {
     }
   }
 
-  const filterTotal =
-    filter && stats
-      ? (stats[filter as keyof Stats] as number | undefined) ?? total
-      : total;
-
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">غنی‌سازی محصولات</h1>
           <p className="mt-2 text-sm text-muted">
-            عکس را جداگانه یا توضیح کرال‌شده از وب را جداگانه اعمال کنید. توضیحات از دیجی‌کالا/ترب و AvalAI web
-            search ساخته می‌شوند.
+            وضعیت هر جاب با برچسب رنگی مشخص است. دستهٔ فعلی محصول بعد از اعمال نمایش داده می‌شود.
           </p>
         </div>
         <Link href="/admin/products">
@@ -324,7 +345,7 @@ export default function AdminEnrichmentPage() {
               ["pending", `صف (${stats.pending})`],
               ["running", `اجرا (${stats.running})`],
               ["needs_review", `تأیید (${stats.needs_review})`],
-              ["approved", `اعمال (${stats.approved})`],
+              ["approved", `اعمال‌شده (${stats.approved})`],
               ["failed", `ناموفق (${stats.failed})`],
             ] as const
           ).map(([key, label]) => (
@@ -349,11 +370,11 @@ export default function AdminEnrichmentPage() {
           <input
             type="checkbox"
             className="h-4 w-4 accent-[var(--accent)]"
-            checked={applyableJobs.length > 0 && applyableJobs.every((j) => selected.has(j.id))}
-            onChange={selectAllApplyableOnPage}
-            disabled={!applyableJobs.length}
+            checked={allPageSelected}
+            onChange={toggleSelectPage}
+            disabled={!pageIds.length || bulkBusy}
           />
-          انتخاب صفحه ({applyableJobs.length.toLocaleString("fa-IR")})
+          انتخاب همهٔ این صفحه ({pageIds.length.toLocaleString("fa-IR")})
         </label>
         <span className="text-sm text-muted">
           {total.toLocaleString("fa-IR")} جاب
@@ -361,9 +382,12 @@ export default function AdminEnrichmentPage() {
             ? ` · صفحه ${(safePage + 1).toLocaleString("fa-IR")} از ${totalPages.toLocaleString("fa-IR")}`
             : ""}
         </span>
-        {selected.size > 0 ? (
-          <span className="text-sm text-muted">
-            {selected.size.toLocaleString("fa-IR")} انتخاب شده
+        {selectedOnPage.length > 0 ? (
+          <span className="text-sm font-medium text-[var(--accent)]">
+            {selectedOnPage.length.toLocaleString("fa-IR")} انتخاب در این صفحه
+            {selectedApplyable.length
+              ? ` · ${selectedApplyable.length.toLocaleString("fa-IR")} قابل‌اعمال`
+              : ""}
           </span>
         ) : null}
         <div className="ms-auto flex flex-wrap gap-2">
@@ -374,7 +398,7 @@ export default function AdminEnrichmentPage() {
               onClick={() =>
                 bulkAction("approve", {
                   statusFilter: "needs_review",
-                  labelCount: stats?.needs_review ?? filterTotal,
+                  labelCount: stats?.needs_review ?? 0,
                 })
               }
             >
@@ -408,7 +432,9 @@ export default function AdminEnrichmentPage() {
               })
             }
           >
-            {bulkBusy ? "…" : `اعمال انتخاب‌شده (${selectedApplyable.length.toLocaleString("fa-IR")})`}
+            {bulkBusy
+              ? "…"
+              : `اعمال انتخاب‌شده (${selectedApplyable.length.toLocaleString("fa-IR")})`}
           </Button>
           <Button
             size="sm"
@@ -444,10 +470,19 @@ export default function AdminEnrichmentPage() {
           const busy = busyId === job.id;
           const applyable = canApplyCandidate(job);
           const descApplyable = canApplyDescription(job);
+          const categoryApplied =
+            job.status === "approved" &&
+            job.mode === "category" &&
+            job.category_draft_id &&
+            job.current_category_id === job.category_draft_id;
           return (
             <div
               key={job.id}
-              className={cn("card-theme p-4", selected.has(job.id) && "ring-2 ring-[var(--accent)]/50")}
+              className={cn(
+                "card-theme p-4",
+                selected.has(job.id) && "ring-2 ring-[var(--accent)]/50",
+                job.status === "approved" && "border-emerald-500/30",
+              )}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
@@ -459,24 +494,41 @@ export default function AdminEnrichmentPage() {
                     aria-label={`انتخاب ${job.product_title}`}
                   />
                   <div>
-                    <p className="font-medium">
-                      #{job.id} — {job.product_title}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">
+                        #{job.id} — {job.product_title}
+                      </p>
+                      <StatusBadge status={job.status} />
+                      <span className="rounded-full border border-theme px-2 py-0.5 text-xs text-muted">
+                        {MODE_LABEL[job.mode] || job.mode || "both"}
+                      </span>
+                    </div>
                     <p className="mt-1 text-xs text-muted">
-                      {STATUS_LABEL[job.status] || job.status}
-                      {` · ${MODE_LABEL[job.mode] || job.mode || "both"}`}
-                      {job.design_code ? ` · ${job.design_code}` : ""}
-                      {job.query_used ? ` · «${job.query_used}»` : ""}
+                      {job.design_code ? `${job.design_code} · ` : ""}
+                      {job.query_used ? `«${job.query_used}»` : null}
                     </p>
                     {job.error ? <p className="mt-2 text-sm text-red-500">{job.error}</p> : null}
                     {job.category_draft_name ? (
                       <p className="mt-2 text-sm">
-                        <span className="text-muted">دسته پیشنهادی: </span>
+                        <span className="text-muted">پیشنهاد دسته: </span>
                         <span className="font-medium text-[var(--accent)]">{job.category_draft_name}</span>
+                        {categoryApplied ? (
+                          <span className="ms-2 text-xs text-emerald-600">✓ روی محصول اعمال شده</span>
+                        ) : job.status === "approved" && job.mode === "category" ? (
+                          <span className="ms-2 text-xs text-amber-600">اعمال شد ولی دستهٔ فعلی فرق دارد</span>
+                        ) : null}
                       </p>
                     ) : null}
+                    {job.current_category_name ? (
+                      <p className="mt-1 text-sm text-muted">
+                        دستهٔ فعلی محصول:{" "}
+                        <span className="font-medium text-[var(--fg)]">{job.current_category_name}</span>
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-muted">دستهٔ فعلی محصول ثبت نشده</p>
+                    )}
                     {job.description_draft ? (
-                      <p className="mt-2 max-w-2xl text-sm text-muted">{job.description_draft}</p>
+                      <p className="mt-2 max-w-2xl text-sm text-muted line-clamp-3">{job.description_draft}</p>
                     ) : null}
                   </div>
                 </div>
@@ -551,7 +603,7 @@ export default function AdminEnrichmentPage() {
         })}
         {!loading && jobs.length === 0 ? (
           <p className="p-8 text-center text-muted">
-            جابی نیست. از صفحه محصولات چند کالا را انتخاب و «دریافت عکس» یا «کرال توضیح» را بزنید.
+            جابی در این فیلتر نیست. فیلتر «تأیید» یا «ناموفق» را چک کنید یا از محصولات صف جدید بسازید.
           </p>
         ) : null}
       </div>

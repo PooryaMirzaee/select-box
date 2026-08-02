@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { ArrowLeft, ChevronDown, Grid3X3 } from "@/components/icons";
+import { browseHref } from "@/lib/browse-path";
 import type { CategoryNavNode } from "@/lib/category-nav";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +145,7 @@ function DesktopPanel({
                         </div>
                       </div>
                       <Link
-                        href={`/browse/${active.path}`}
+                        href={browseHref(active.path)}
                         onClick={onClose}
                         className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-theme px-4 text-sm font-medium transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                       >
@@ -158,7 +159,7 @@ function DesktopPanel({
                         {active.children.map((child) => (
                           <li key={child.id}>
                             <Link
-                              href={`/browse/${child.path}`}
+                              href={browseHref(child.path)}
                               onClick={onClose}
                               className="flex min-h-[52px] items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-theme hover:bg-[var(--bg-elevated)]"
                             >
@@ -177,7 +178,7 @@ function DesktopPanel({
                                 {child.children.slice(0, 6).map((grand) => (
                                   <li key={grand.id}>
                                     <Link
-                                      href={`/browse/${grand.path}`}
+                                      href={browseHref(grand.path)}
                                       onClick={onClose}
                                       className="block rounded-md px-2 py-1.5 text-xs text-muted transition hover:text-[var(--accent)]"
                                     >
@@ -233,7 +234,7 @@ function MobileAccordionNode({
   if (!hasKids) {
     return (
       <Link
-        href={`/browse/${node.path}`}
+        href={browseHref(node.path)}
         onClick={onNavigate}
         className={cn(
           "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-[var(--bg-elevated)]",
@@ -271,7 +272,7 @@ function MobileAccordionNode({
           >
             <div className="space-y-0.5 border-s border-theme/50 py-1 ps-3">
               <Link
-                href={`/browse/${node.path}`}
+                href={browseHref(node.path)}
                 onClick={onNavigate}
                 className="block min-h-[40px] rounded-lg px-3 py-2 text-xs font-medium text-[var(--accent)]"
               >

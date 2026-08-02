@@ -7,6 +7,7 @@ import { ArrowLeft } from "@/components/icons";
 
 import type { CategoryCardItem } from "@/components/shop/CategoryCard";
 import { HeroCategoryTile } from "@/components/shop/HeroCategoryTile";
+import { browseHref } from "@/lib/browse-path";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +24,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
     return (
       <HeroCategoryTile
         category={categories[0]}
-        href={`/browse/${categories[0].path}`}
+        href={browseHref(categories[0].path)}
         size="featured"
         className="min-h-[300px] lg:min-h-[340px]"
       />
@@ -37,7 +38,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
           <HeroCategoryTile
             key={c.id}
             category={c}
-            href={`/browse/${c.path}`}
+            href={browseHref(c.path)}
             index={i}
             size="featured"
             className="h-full"
@@ -54,7 +55,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
       <div className="col-span-2 row-span-2">
         <HeroCategoryTile
           category={featured}
-          href={`/browse/${featured.path}`}
+          href={browseHref(featured.path)}
           index={0}
           size="featured"
           className="h-full min-h-full"
@@ -64,7 +65,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
         <HeroCategoryTile
           key={c.id}
           category={c}
-          href={`/browse/${c.path}`}
+          href={browseHref(c.path)}
           index={i + 1}
           className="h-full min-h-[150px]"
         />
@@ -75,7 +76,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
             <HeroCategoryTile
               key={c.id}
               category={c}
-              href={`/browse/${c.path}`}
+              href={browseHref(c.path)}
               index={i + 3}
               className="min-h-[140px]"
             />
@@ -85,7 +86,7 @@ function DesktopBento({ categories }: { categories: CategoryCardItem[] }) {
         <div className="col-span-2">
           <HeroCategoryTile
             category={rest[0]}
-            href={`/browse/${rest[0].path}`}
+            href={browseHref(rest[0].path)}
             index={1}
             className="h-full min-h-[150px]"
           />
@@ -178,7 +179,7 @@ export function Hero({ categories, config }: Props) {
                   >
                     <HeroCategoryTile
                       category={c}
-                      href={`/browse/${c.path}`}
+                      href={browseHref(c.path)}
                       index={i}
                       size={i === 0 ? "featured" : "default"}
                     />

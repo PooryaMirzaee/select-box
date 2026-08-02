@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronLeft } from "@/components/icons";
 
+import { browseHref } from "@/lib/browse-path";
+
 export type Crumb = { name_fa: string; path: string };
 
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
@@ -18,7 +20,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
       </span>
       {items.map((c, i) => {
         const isLast = i === items.length - 1;
-        const href = c.path.startsWith("product/") ? `/${c.path}` : `/browse/${c.path}`;
+        const href = c.path.startsWith("product/") ? `/${c.path}` : browseHref(c.path);
         return (
           <span key={`${c.path}-${i}`} className="flex items-center gap-1">
             <ChevronLeft className="h-3 w-3  opacity-50" />

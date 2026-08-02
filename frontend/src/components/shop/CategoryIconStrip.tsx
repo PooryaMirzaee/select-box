@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Grid3X3 } from "@/components/icons";
+import { browseHref } from "@/lib/browse-path";
 import type { CategoryNavNode } from "@/lib/category-nav";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +61,7 @@ export function CategoryIconStrip({ categories }: Props) {
           </Link>
 
           {categories.map((cat) => {
-            const href = `/browse/${cat.path}`;
+            const href = browseHref(cat.path);
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link

@@ -1,4 +1,5 @@
 import type { BreadcrumbItem } from "@/lib/api";
+import { browseCanonical } from "@/lib/seo";
 
 export function BreadcrumbJsonLd({ items, siteUrl }: { items: BreadcrumbItem[]; siteUrl: string }) {
   if (!items.length) return null;
@@ -8,7 +9,7 @@ export function BreadcrumbJsonLd({ items, siteUrl }: { items: BreadcrumbItem[]; 
       name: c.name_fa,
       item: c.path.startsWith("product/")
         ? `${siteUrl}/${c.path}`
-        : `${siteUrl}/browse/${c.path}`,
+        : browseCanonical(siteUrl, c.path),
     })),
   ];
   const schema = {

@@ -8,7 +8,14 @@ import { CategoryBrowseGrid } from "@/components/shop/CategoryBrowseGrid";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchBrowse, fetchCategoryNav, fetchShopSettings } from "@/lib/api";
 import { BRAND_NAME } from "@/lib/brand";
-import { appendTypeToTitle, browseCanonical, buildPageMetadata, getSiteUrl, productTypeLabel } from "@/lib/seo";
+import { browseHref, decodeBrowsePath } from "@/lib/browse-path";
+import {
+  appendTypeToTitle,
+  browseCanonical,
+  buildPageMetadata,
+  getSiteUrl,
+  productTypeLabel,
+} from "@/lib/seo";
 
 type Props = {
   params: Promise<{ path?: string[] }>;
@@ -20,7 +27,7 @@ export const revalidate = 60;
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { path: segments } = await params;
   const sp = await searchParams;
-  const pathStr = segments?.join("/") ?? "";
+  const pathStr = decodeBrowsePath(segments);
 
   let data = null;
   let fetchFailed = false;
@@ -76,7 +83,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 export default async function BrowsePage({ params, searchParams }: Props) {
   const { path: segments } = await params;
   const sp = await searchParams;
-  const pathStr = segments?.join("/") ?? "";
+  const pathStr = decodeBrowsePath(segments);
   const isRoot = !pathStr;
 
   let data = null;
@@ -107,8 +114,11 @@ export default async function BrowsePage({ params, searchParams }: Props) {
     );
   }
 
-  if (data.canonical_path && pathStr && data.canonical_path !== pathStr && !sp.type) {
-    redirect(`/browse/${data.canonical_path}`);
+  const canonical = (data.canonical_path || "").normalize("NFC");
+  const currentPath = pathStr.normalize("NFC");
+  if (canonical && currentPath && canonical !== currentPath && !sp.type) {
+    // Location header فقط ASCII/percent-encoded می‌پذیرد — مسیر فارسی خام → 500
+    redirect(browseHref(canonical));
   }
 
   const crumbs: Crumb[] = data.breadcrumbs.map((b) => ({
@@ -192,7 +202,7 @@ export default async function BrowsePage({ params, searchParams }: Props) {
               <p className="mb-3 text-xs font-semibold tracking-wide text-muted">دسته‌های اصلی</p>
               <ul className="space-y-1">
                 {categoryNav.map((root) => {
-                  const href = `/browse/${root.path}`;
+                  const href = browseHref(root.path);
                   const active = pathStr === root.path || pathStr.startsWith(`${root.path}/`);
                   return (
                     <li key={root.id}>

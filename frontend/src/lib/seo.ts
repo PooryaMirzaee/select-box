@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
 import type { ShopSettings } from "@/lib/api";
+import { encodeBrowsePath } from "@/lib/browse-path";
 import { pickContactInfo } from "@/lib/contact";
 import { instagramHref, telegramHref } from "@/lib/contact";
+
+export { decodeBrowsePath, encodeBrowsePath } from "@/lib/browse-path";
 
 /** مبدأ سایت — اولویت: تنظیمات ادمین، سپس env */
 export function getSiteUrl(settings?: Pick<ShopSettings, "site_url"> | null): string {
@@ -13,7 +16,8 @@ export function getSiteUrl(settings?: Pick<ShopSettings, "site_url"> | null): st
 }
 
 export function browseCanonical(siteUrl: string, pathStr: string): string {
-  return pathStr ? `${siteUrl}/browse/${pathStr}` : `${siteUrl}/browse`;
+  if (!pathStr) return `${siteUrl}/browse`;
+  return `${siteUrl}/browse/${encodeBrowsePath(pathStr)}`;
 }
 
 const PRODUCT_TYPE_LABELS: Record<string, string> = {};

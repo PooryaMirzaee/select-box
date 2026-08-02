@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { fetchProductSlugs, fetchSitemapPaths, fetchShopSettings } from "@/lib/api";
 import { fetchBlogCategories, fetchBlogSlugs, fetchBlogTags } from "@/lib/blog";
+import { encodeBrowsePath } from "@/lib/browse-path";
 import { getSiteUrl } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -26,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const browseRoutes: MetadataRoute.Sitemap = categoryPaths.map((p) => ({
-    url: `${siteUrl}/browse/${p}`,
+    url: `${siteUrl}/browse/${encodeBrowsePath(p)}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.75,

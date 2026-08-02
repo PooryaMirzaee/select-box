@@ -40,6 +40,8 @@ class EnrichmentJobOut(BaseModel):
     meta_draft: str | None = None
     category_draft_id: int | None = None
     category_draft_name: str | None = None
+    current_category_id: int | None = None
+    current_category_name: str | None = None
     error: str | None = None
     attempts: int
     auto_apply: bool

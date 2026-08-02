@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { SearchBar } from "@/components/shop/SearchBar";
 import { fetchCategoryNav, fetchProducts, fetchShopSettings } from "@/lib/api";
 import { BRAND_NAME } from "@/lib/brand";
+import { browseHref } from "@/lib/browse-path";
 import { buildPageMetadata, getSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +99,7 @@ export default async function CatalogPage({ searchParams }: Props) {
             دسته‌بندی‌ها
           </Link>
           {categoryNav.map((cat) => (
-            <Link key={cat.id} href={`/browse/${cat.path}`} className="chip-theme shrink-0">
+            <Link key={cat.id} href={browseHref(cat.path)} className="chip-theme shrink-0">
               {cat.name_fa}
             </Link>
           ))}

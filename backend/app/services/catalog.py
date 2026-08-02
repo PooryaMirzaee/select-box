@@ -23,6 +23,7 @@ from app.models import (
 from app.services.category_helpers import (
     category_browse_dict,
     category_image_url,
+    collect_category_subtree_ids,
     normalize_category_slug,
 )
 from app.services.storage import public_url
@@ -429,9 +430,16 @@ def list_products_in_category(
     limit: int = 48,
     offset: int = 0,
     include_draft: bool = False,
+    include_descendants: bool = True,
 ) -> list[Product]:
-    """محصولات یک دسته — هم parent_category_id و هم thematic_category_id طرح."""
+    """محصولات این دسته (و زیردسته‌ها) — از parent_category یا thematic طرح."""
     from sqlalchemy import or_
+
+    cat_ids = (
+        collect_category_subtree_ids(db, category_id)
+        if include_descendants
+        else [category_id]
+    )
 
     q = select(Product).options(
         joinedload(Product.parent_category),
@@ -441,7 +449,8 @@ def list_products_in_category(
     if not include_draft:
         q = q.where(Product.status == "published")
 
-    if parent_slug:
+    # فیلتر نوع فیزیکی قدیمی (تیشرت و …) — در فروشگاه فعلی خالی است
+    if parent_slug and parent_slug in PRODUCT_TYPE_SLUGS:
         type_cat = db.scalar(select(Category).where(Category.slug == parent_slug))
         if type_cat is None:
             return []
@@ -449,8 +458,8 @@ def list_products_in_category(
 
     q = q.outerjoin(Design, Design.id == Product.design_id).where(
         or_(
-            Product.parent_category_id == category_id,
-            Design.thematic_category_id == category_id,
+            Product.parent_category_id.in_(cat_ids),
+            Design.thematic_category_id.in_(cat_ids),
         )
     )
     q = q.order_by(Product.id.desc()).limit(limit).offset(offset)

@@ -501,6 +501,13 @@ def serialize_job(db: Session, job: ProductEnrichmentJob) -> dict:
         .where(ProductEnrichmentCandidate.job_id == job.id)
         .order_by(ProductEnrichmentCandidate.score.desc(), ProductEnrichmentCandidate.id)
     ).all()
+    current_category_name = None
+    current_category_id = None
+    if product and product.parent_category_id:
+        current_category_id = product.parent_category_id
+        cat = db.get(Category, product.parent_category_id)
+        if cat:
+            current_category_name = category_full_path(db, cat)
     return {
         "id": job.id,
         "product_id": job.product_id,
@@ -514,6 +521,8 @@ def serialize_job(db: Session, job: ProductEnrichmentJob) -> dict:
         "meta_draft": job.meta_draft,
         "category_draft_id": getattr(job, "category_draft_id", None),
         "category_draft_name": getattr(job, "category_draft_name", None),
+        "current_category_id": current_category_id,
+        "current_category_name": current_category_name,
         "error": job.error,
         "attempts": job.attempts,
         "auto_apply": job.auto_apply,
