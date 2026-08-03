@@ -22,6 +22,10 @@ export type HomepageFeaturedConfig = {
   catalog_label: string;
   catalog_href: string;
   product_count: number;
+  /** latest | manual | category */
+  mode: "latest" | "manual" | "category";
+  product_ids: number[];
+  category_id: number | null;
   parent_slug: string | null;
 };
 
@@ -58,7 +62,7 @@ export const HOMEPAGE_SECTION_META: Record<
   },
   featured: {
     label: "محصولات منتخب",
-    description: "گرید محصولات پرفروش یا جدید",
+    description: "پرفروش‌ها — انتخاب دستی، دسته، یا جدیدترین‌ها",
   },
   promo: {
     label: "بنرهای تبلیغاتی",
@@ -92,6 +96,9 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     catalog_label: "همه محصولات ←",
     catalog_href: "/catalog",
     product_count: 6,
+    mode: "latest",
+    product_ids: [],
+    category_id: null,
     parent_slug: null,
   },
   show_promo_fallback: true,

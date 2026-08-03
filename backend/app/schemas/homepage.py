@@ -26,7 +26,12 @@ class HomepageFeaturedConfig(BaseModel):
     subtitle: str = "پیشنهادهای هفته"
     catalog_label: str = "کاتالوگ ←"
     catalog_href: str = "/catalog"
-    product_count: int = Field(default=6, ge=2, le=24)
+    product_count: int = Field(default=6, ge=1, le=24)
+    # latest = جدیدترین‌ها | manual = انتخاب دستی | category = یک دسته
+    mode: str = Field(default="latest", pattern="^(latest|manual|category)$")
+    product_ids: list[int] = Field(default_factory=list, max_length=48)
+    category_id: int | None = None
+    # سازگاری با تنظیمات قدیمی
     parent_slug: str | None = None
 
 

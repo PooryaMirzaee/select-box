@@ -89,13 +89,7 @@ function DefaultPromoSections() {
 }
 
 export default async function HomePage() {
-  const [productList, browse, settings, homepage, heroBanners, promoBanners] = await Promise.all([
-    fetchProducts(undefined, undefined, { limit: 48 }).catch(() => ({
-      items: [],
-      total: 0,
-      limit: 48,
-      offset: 0,
-    })),
+  const [browse, settings, homepage, heroBanners, promoBanners] = await Promise.all([
     fetchBrowse("").catch(() => null),
     fetchShopSettings().catch(() => null),
     fetchHomepageConfig().catch(() => DEFAULT_HOMEPAGE_CONFIG),
@@ -103,20 +97,49 @@ export default async function HomePage() {
     fetchHomeBanners("promo").catch(() => []),
   ]);
 
-  const products = productList.items;
-
   const config = {
     ...DEFAULT_HOMEPAGE_CONFIG,
     ...homepage,
     sections: homepage?.sections?.length ? homepage.sections : DEFAULT_HOMEPAGE_CONFIG.sections,
     hero: { ...DEFAULT_HOMEPAGE_CONFIG.hero, ...homepage?.hero },
-    featured: { ...DEFAULT_HOMEPAGE_CONFIG.featured, ...homepage?.featured },
+    featured: {
+      ...DEFAULT_HOMEPAGE_CONFIG.featured,
+      ...homepage?.featured,
+      product_ids: homepage?.featured?.product_ids ?? DEFAULT_HOMEPAGE_CONFIG.featured.product_ids,
+      mode: homepage?.featured?.mode ?? DEFAULT_HOMEPAGE_CONFIG.featured.mode,
+      category_id:
+        homepage?.featured?.category_id !== undefined
+          ? homepage.featured.category_id
+          : DEFAULT_HOMEPAGE_CONFIG.featured.category_id,
+    },
   };
   const categories = browse?.children ?? [];
-  const filteredProducts = config.featured.parent_slug
-    ? products.filter((p) => p.parent_category_slug === config.featured.parent_slug)
-    : products;
-  const featuredProducts = filteredProducts.slice(0, config.featured.product_count);
+
+  let featuredProducts: Awaited<ReturnType<typeof fetchProducts>>["items"] = [];
+  if (isSectionEnabled(config, "featured")) {
+    const count = config.featured.product_count;
+    try {
+      if (config.featured.mode === "manual" && config.featured.product_ids.length) {
+        const ids = config.featured.product_ids.slice(0, count);
+        const res = await fetchProducts(undefined, undefined, { ids });
+        featuredProducts = res.items;
+      } else if (config.featured.mode === "category" && config.featured.category_id != null) {
+        const res = await fetchProducts(undefined, undefined, {
+          categoryId: config.featured.category_id,
+          limit: count,
+        });
+        featuredProducts = res.items;
+      } else {
+        // latest (+ سازگاری با parent_slug قدیمی)
+        const res = await fetchProducts(config.featured.parent_slug ?? undefined, undefined, {
+          limit: Math.max(count, 24),
+        });
+        featuredProducts = res.items.slice(0, count);
+      }
+    } catch {
+      featuredProducts = [];
+    }
+  }
 
   const siteUrl = getSiteUrl(settings);
   const shopName = settings?.shop_name ?? BRAND_NAME;

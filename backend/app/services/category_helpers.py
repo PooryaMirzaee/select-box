@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import re
 
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models import Category, Design, Product
 from app.models.customizer import ProductTemplate
 from app.schemas.admin import CategoryOut
 from app.services.storage import delete_upload, public_url
+
+UNCATEGORIZED_SLUG = "uncategorized"
+UNCATEGORIZED_NAME_FA = "دسته‌بندی نشده"
 
 
 def normalize_category_slug(raw: str) -> str:
@@ -81,51 +85,70 @@ def collect_category_subtree_ids(db: Session, root_id: int) -> list[int]:
     return ids
 
 
+def get_or_create_uncategorized(db: Session) -> Category:
+    """دستهٔ سیستم برای محصولات بدون دستهٔ موضوعی."""
+    existing = db.scalar(
+        select(Category).where(
+            Category.slug == UNCATEGORIZED_SLUG,
+            Category.parent_id.is_(None),
+        )
+    )
+    if existing is not None:
+        return existing
+
+    cat = Category(
+        parent_id=None,
+        slug=UNCATEGORIZED_SLUG,
+        name_fa=UNCATEGORIZED_NAME_FA,
+        sort_order=9999,
+        is_active=True,
+    )
+    db.add(cat)
+    db.flush()
+    return cat
+
+
+def _reassign_away_from_categories(db: Session, subtree_ids: list[int], target_id: int) -> None:
+    """محصولات، طرح‌ها و قالب‌های وابسته را به دستهٔ هدف منتقل کن."""
+    db.execute(
+        update(Design)
+        .where(Design.thematic_category_id.in_(subtree_ids))
+        .values(thematic_category_id=target_id)
+    )
+    db.execute(
+        update(ProductTemplate)
+        .where(ProductTemplate.category_id.in_(subtree_ids))
+        .values(category_id=target_id)
+    )
+    db.execute(
+        update(Product)
+        .where(Product.parent_category_id.in_(subtree_ids))
+        .values(parent_category_id=target_id)
+    )
+    db.flush()
+
+
 def delete_category_subtree(db: Session, category_id: int) -> None:
     """حذف دسته به‌همراه زیردسته‌ها.
 
-    طرح‌های یتیم (بدون محصول) و قالب‌های بلااستفاده پاک می‌شوند.
-    اگر هنوز محصولی به دسته وصل باشد، حذف متوقف می‌شود.
+    محصولات و طرح‌های وابسته به «دسته‌بندی نشده» منتقل می‌شوند.
     """
     c = db.get(Category, category_id)
     if c is None:
         raise ValueError("not_found")
+    if c.slug == UNCATEGORIZED_SLUG and c.parent_id is None:
+        raise ValueError("protected")
 
     subtree_ids = collect_category_subtree_ids(db, category_id)
+    uncategorized = get_or_create_uncategorized(db)
+    if uncategorized.id in subtree_ids:
+        raise ValueError("protected")
 
-    product_count = db.scalar(
-        select(func.count()).select_from(Product).where(Product.parent_category_id.in_(subtree_ids))
-    ) or 0
-    if product_count:
-        raise ValueError("has_products")
-
-    # طرح‌های یتیم (محصول قبلاً حذف شده ولی Design مانده) — حذف شوند
-    orphan_designs = list(
-        db.scalars(
-            select(Design)
-            .where(Design.thematic_category_id.in_(subtree_ids))
-            .options(joinedload(Design.products), joinedload(Design.assets))
-        ).unique().all()
-    )
-    for d in orphan_designs:
-        if d.products:
-            raise ValueError("has_designs")
-        for asset in list(d.assets or []):
-            if asset.storage_key:
-                delete_upload(asset.storage_key)
-            db.delete(asset)
-        db.delete(d)
-    db.flush()
-
-    # قالب‌های Design Lab بدون وابستگی واقعی — حذف شوند
-    templates = list(
-        db.scalars(
-            select(ProductTemplate).where(ProductTemplate.category_id.in_(subtree_ids))
-        ).all()
-    )
-    for t in templates:
-        db.delete(t)
-    db.flush()
+    try:
+        _reassign_away_from_categories(db, subtree_ids, uncategorized.id)
+    except IntegrityError as e:
+        db.rollback()
+        raise ValueError("product_conflict") from e
 
     # حذف از برگ‌ها به ریشه تا parent_id محدودیت FK را نقض نکند
     delete_order = list(reversed(subtree_ids))
@@ -136,7 +159,11 @@ def delete_category_subtree(db: Session, category_id: int) -> None:
         if node.icon_storage_key:
             delete_upload(node.icon_storage_key)
         db.delete(node)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise ValueError("product_conflict") from e
 
 
 def delete_categories_bulk(db: Session, ids: list[int]) -> dict:
@@ -148,6 +175,8 @@ def delete_categories_bulk(db: Session, ids: list[int]) -> dict:
 
     reasons = {
         "not_found": "دسته یافت نشد",
+        "protected": "دستهٔ «دسته‌بندی نشده» قابل حذف نیست",
+        "product_conflict": "جابه‌جایی بعضی محصولات به «دسته‌بندی نشده» ممکن نبود (تداخل طرح)",
         "has_products": "این دسته یا زیردسته‌اش محصول دارد",
         "has_designs": "این دسته هنوز به محصولی از طریق رکورد داخلی وصل است",
         "has_templates": "این دسته در قالب استفاده شده",
@@ -166,6 +195,10 @@ def delete_categories_bulk(db: Session, ids: list[int]) -> dict:
             deleted.append(cid)
             already_gone.update(subtree)
         except ValueError as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             failed.append({"id": cid, "reason": reasons.get(str(e), str(e))})
         except Exception as e:  # noqa: BLE001
             db.rollback()

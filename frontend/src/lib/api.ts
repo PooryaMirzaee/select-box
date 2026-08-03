@@ -26,7 +26,7 @@ export async function errorMessageFromResponse(res: Response): Promise<string> {
   }
   const trimmed = text.trimStart();
   if (trimmed.startsWith("<!") || trimmed.includes("<html")) {
-    if (res.status === 400) return "درخواست نامعتبر است — پیش‌نیازها را بررسی کنید (تنوع و تصویر)";
+    if (res.status === 400) return "درخواست نامعتبر است — جزئیات را بررسی کنید";
     if (res.status === 401) return "نشست منقضی شده — دوباره وارد شوید";
     if (res.status === 403) return "دسترسی مجاز نیست";
     if (res.status === 404) return "مورد یافت نشد";
@@ -302,7 +302,7 @@ export type ProductListResponse = {
 export function fetchProducts(
   parentSlug?: string,
   search?: string,
-  opts?: { limit?: number; offset?: number },
+  opts?: { limit?: number; offset?: number; categoryId?: number; ids?: number[] },
 ) {
   const limit = opts?.limit ?? 48;
   const offset = opts?.offset ?? 0;
@@ -310,8 +310,13 @@ export function fetchProducts(
     limit: String(limit),
     offset: String(offset),
   });
-  if (parentSlug) params.set("parent_slug", parentSlug);
-  if (search?.trim()) params.set("q", search.trim());
+  if (opts?.ids?.length) {
+    params.set("ids", opts.ids.join(","));
+  } else {
+    if (parentSlug) params.set("parent_slug", parentSlug);
+    if (search?.trim()) params.set("q", search.trim());
+    if (opts?.categoryId != null) params.set("category_id", String(opts.categoryId));
+  }
   return apiFetch<ProductListResponse>(`/api/v1/catalog/products?${params}`, {
     next: { revalidate: 60, tags: ["catalog"] },
   });

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { HomepageBannerEditor } from "@/components/admin/homepage/HomepageBannerEditor";
+import { FeaturedSectionEditor } from "@/components/admin/homepage/FeaturedSectionEditor";
 import { Button } from "@/components/ui/Button";
 import { ExternalLink, Loader2 } from "@/components/icons";
 import { adminFetch } from "@/lib/api";
@@ -36,7 +37,13 @@ export default function AdminHomepagePage() {
     setDraft({
       sections: data.sections,
       hero: data.hero,
-      featured: data.featured,
+      featured: {
+        ...DEFAULT_HOMEPAGE_CONFIG.featured,
+        ...data.featured,
+        product_ids: data.featured?.product_ids ?? [],
+        mode: data.featured?.mode ?? "latest",
+        category_id: data.featured?.category_id ?? null,
+      },
       show_promo_fallback: data.show_promo_fallback,
     });
   };
@@ -336,75 +343,17 @@ export default function AdminHomepagePage() {
           ) : null}
 
           {selected === "featured" ? (
-            <div className="grid max-w-xl gap-4">
-              <label className="grid gap-1 text-sm">
-                عنوان بخش
-                <input
-                  className={inputClass}
-                  value={draft.featured.title}
-                  onChange={(e) => setDraft({ ...draft, featured: { ...draft.featured, title: e.target.value } })}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                زیرعنوان
-                <input
-                  className={inputClass}
-                  value={draft.featured.subtitle}
-                  onChange={(e) => setDraft({ ...draft, featured: { ...draft.featured, subtitle: e.target.value } })}
-                />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1 text-sm">
-                  متن لینک همه محصولات
-                  <input
-                    className={inputClass}
-                    value={draft.featured.catalog_label}
-                    onChange={(e) =>
-                      setDraft({ ...draft, featured: { ...draft.featured, catalog_label: e.target.value } })
-                    }
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  آدرس صفحه همه محصولات
-                  <input
-                    dir="ltr"
-                    className={inputClass}
-                    value={draft.featured.catalog_href}
-                    onChange={(e) =>
-                      setDraft({ ...draft, featured: { ...draft.featured, catalog_href: e.target.value } })
-                    }
-                  />
-                </label>
-              </div>
-              <label className="grid gap-1 text-sm">
-                تعداد محصول ({draft.featured.product_count})
-                <input
-                  type="range"
-                  min={2}
-                  max={24}
-                  step={1}
-                  value={draft.featured.product_count}
-                  onChange={(e) =>
-                    setDraft({ ...draft, featured: { ...draft.featured, product_count: Number(e.target.value) } })
-                  }
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                فیلتر دسته (اختیاری — slug ریشه)
-                <input
-                  dir="ltr"
-                  placeholder="مثلاً tshirt"
-                  className={inputClass}
-                  value={draft.featured.parent_slug ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      featured: { ...draft.featured, parent_slug: e.target.value.trim() || null },
-                    })
-                  }
-                />
-              </label>
-            </div>
+            <FeaturedSectionEditor
+              value={{
+                ...DEFAULT_HOMEPAGE_CONFIG.featured,
+                ...draft.featured,
+                product_ids: draft.featured.product_ids ?? [],
+                mode: draft.featured.mode ?? "latest",
+                category_id: draft.featured.category_id ?? null,
+              }}
+              onChange={(featured) => setDraft({ ...draft, featured })}
+              token={token()}
+            />
           ) : null}
 
           {selected === "promo" && bundle ? (

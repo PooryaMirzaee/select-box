@@ -37,6 +37,9 @@ DEFAULT_CONFIG: dict[str, object] = {
         "catalog_label": "همه محصولات ←",
         "catalog_href": "/catalog",
         "product_count": 8,
+        "mode": "latest",
+        "product_ids": [],
+        "category_id": None,
         "parent_slug": None,
     },
     "show_promo_fallback": True,
@@ -91,7 +94,28 @@ def patch_config(db: Session, body: HomepageConfigPatch) -> HomepageConfig:
     if patch.get("hero") is not None:
         data["hero"] = {**data["hero"], **patch["hero"]}
     if patch.get("featured") is not None:
-        data["featured"] = {**data["featured"], **patch["featured"]}
+        featured = {**data["featured"], **patch["featured"]}
+        ids = featured.get("product_ids") or []
+        if isinstance(ids, list):
+            seen: set[int] = set()
+            cleaned: list[int] = []
+            for raw in ids:
+                try:
+                    pid = int(raw)
+                except (TypeError, ValueError):
+                    continue
+                if pid <= 0 or pid in seen:
+                    continue
+                seen.add(pid)
+                cleaned.append(pid)
+                if len(cleaned) >= 48:
+                    break
+            featured["product_ids"] = cleaned
+        mode = str(featured.get("mode") or "latest").strip().lower()
+        if mode not in ("latest", "manual", "category"):
+            mode = "latest"
+        featured["mode"] = mode
+        data["featured"] = featured
     if "show_promo_fallback" in patch:
         data["show_promo_fallback"] = patch["show_promo_fallback"]
 

@@ -80,12 +80,59 @@ def list_products(
     parent_slug: str | None = None,
     thematic_slug: str | None = None,
     q: str | None = None,
+    ids: str | None = None,
+    category_id: int | None = None,
     limit: int = 48,
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
     limit = max(1, min(limit, 100))
     offset = max(offset, 0)
+
+    def _summary(p: Product) -> ProductSummary:
+        return ProductSummary(
+            id=p.id,
+            slug=p.slug,
+            title=p.title,
+            base_price=str(p.base_price),
+            status=p.status,
+            design_id=p.design_id,
+            parent_category_slug=p.parent_category.slug if p.parent_category else None,
+            image_url=catalog_service.primary_product_image_url(p),
+        )
+
+    # انتخاب دستی با ترتیب ثابت
+    if ids and ids.strip():
+        id_list: list[int] = []
+        for part in ids.replace(" ", "").split(","):
+            if not part:
+                continue
+            try:
+                id_list.append(int(part))
+            except ValueError:
+                continue
+        items = catalog_service.list_products_by_ids(db, id_list)
+        return {
+            "items": [_summary(p) for p in items],
+            "total": len(items),
+            "limit": len(items),
+            "offset": 0,
+        }
+
+    if category_id is not None:
+        items = catalog_service.list_products_in_category(
+            db,
+            category_id=category_id,
+            limit=limit,
+            offset=offset,
+        )
+        return {
+            "items": [_summary(p) for p in items],
+            "total": offset + len(items),
+            "limit": limit,
+            "offset": offset,
+        }
+
     total = catalog_service.count_products(
         db,
         parent_slug=parent_slug,
@@ -101,19 +148,7 @@ def list_products(
         offset=offset,
     )
     return {
-        "items": [
-            ProductSummary(
-                id=p.id,
-                slug=p.slug,
-                title=p.title,
-                base_price=str(p.base_price),
-                status=p.status,
-                design_id=p.design_id,
-                parent_category_slug=p.parent_category.slug if p.parent_category else None,
-                image_url=catalog_service.primary_product_image_url(p),
-            )
-            for p in items
-        ],
+        "items": [_summary(p) for p in items],
         "total": total,
         "limit": limit,
         "offset": offset,

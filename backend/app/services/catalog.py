@@ -422,6 +422,45 @@ def list_products(
     return list(db.scalars(q).unique().all())
 
 
+def list_products_by_ids(
+    db: Session,
+    ids: list[int],
+    *,
+    include_draft: bool = False,
+) -> list[Product]:
+    """محصولات با ترتیب شناسه‌های داده‌شده (فقط موجودها)."""
+    cleaned: list[int] = []
+    seen: set[int] = set()
+    for raw in ids:
+        try:
+            pid = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if pid <= 0 or pid in seen:
+            continue
+        seen.add(pid)
+        cleaned.append(pid)
+        if len(cleaned) >= 48:
+            break
+    if not cleaned:
+        return []
+
+    q = (
+        select(Product)
+        .where(Product.id.in_(cleaned))
+        .options(
+            joinedload(Product.parent_category),
+            joinedload(Product.images),
+            joinedload(Product.design).joinedload(Design.assets),
+        )
+    )
+    if not include_draft:
+        q = q.where(Product.status == "published")
+    rows = list(db.scalars(q).unique().all())
+    by_id = {p.id: p for p in rows}
+    return [by_id[i] for i in cleaned if i in by_id]
+
+
 def list_products_in_category(
     db: Session,
     *,

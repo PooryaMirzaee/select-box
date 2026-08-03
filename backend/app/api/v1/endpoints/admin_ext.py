@@ -198,20 +198,15 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
         code = str(e)
         if code == "not_found":
             raise HTTPException(status_code=404, detail="دسته پیدا نشد") from e
-        if code == "has_products":
+        if code == "protected":
             raise HTTPException(
                 status_code=400,
-                detail="این دسته یا زیردسته‌هایش محصول دارد — ابتدا محصولات را حذف یا منتقل کنید",
+                detail="دستهٔ «دسته‌بندی نشده» سیستمی است و قابل حذف نیست",
             ) from e
-        if code == "has_designs":
+        if code == "product_conflict":
             raise HTTPException(
                 status_code=400,
-                detail="این دسته یا زیردسته‌هایش هنوز به محصول داخلی وصل است",
-            ) from e
-        if code == "has_templates":
-            raise HTTPException(
-                status_code=400,
-                detail="این دسته در قالب قدیمی استفاده شده",
+                detail="بعضی محصولات به‌خاطر تداخل طرح قابل انتقال به «دسته‌بندی نشده» نبودند",
             ) from e
         raise
     return {"ok": True}

@@ -181,6 +181,10 @@ export default function AdminCategoriesPage() {
 
   async function remove(id: number) {
     const node = findNode(tree, id);
+    if (node?.slug === "uncategorized" && node.parent_id == null) {
+      alert("دستهٔ «دسته‌بندی نشده» سیستمی است و قابل حذف نیست");
+      return;
+    }
     const childCount = node ? collectDescendantIds(node).size - 1 : 0;
     const hint =
       childCount > 0
@@ -188,7 +192,7 @@ export default function AdminCategoriesPage() {
         : "";
     if (
       !confirm(
-        `حذف این دسته؟${hint} اگر محصول وابسته باشد، حذف انجام نمی‌شود.`,
+        `حذف این دسته؟${hint} محصولات داخل آن به «دسته‌بندی نشده» منتقل می‌شوند.`,
       )
     ) {
       return;
@@ -210,7 +214,7 @@ export default function AdminCategoriesPage() {
     if (!ids.length) return;
     if (
       !confirm(
-        `حذف ${ids.length} دسته انتخاب‌شده؟ زیردسته‌ها همراه والد حذف می‌شوند. دسته‌های دارای محصول حذف نمی‌شوند.`,
+        `حذف ${ids.length} دسته انتخاب‌شده؟ زیردسته‌ها همراه والد حذف می‌شوند و محصولات به «دسته‌بندی نشده» می‌روند.`,
       )
     ) {
       return;
