@@ -18,6 +18,7 @@ import {
   LogOut,
   ExternalLink,
   User,
+  BookOpen,
 } from "@/components/icons";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -41,6 +42,7 @@ const links = [
   { href: "/admin/users", label: "کاربران", icon: User },
   { href: "/admin/blog", label: "وبلاگ", icon: Newspaper },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings },
+  { href: "/admin/help", label: "آموزش مسئول سایت", icon: BookOpen },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -64,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen">
       <aside
-        className="flex w-56 shrink-0 flex-col border-l border-theme p-6"
+        className="flex w-56 shrink-0 flex-col border-l border-theme p-6 print:hidden"
         style={{ background: "var(--sidebar-bg)" }}
       >
         <SelectBoxLogo href="/" size="sm" />

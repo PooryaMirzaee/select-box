@@ -62,6 +62,7 @@ import {
   ArrowCounterClockwise as PhArrowCounterClockwise,
   CreditCard as PhCreditCard,
   Headset as PhHeadset,
+  BookOpen as PhBookOpen,
 } from "@phosphor-icons/react";
 
 import { createIcon, type BrutalIconProps } from "./createIcon";
@@ -126,6 +127,7 @@ export const ShieldCheck = createIcon(PhShieldCheck);
 export const RotateCcw = createIcon(PhArrowCounterClockwise);
 export const CreditCard = createIcon(PhCreditCard);
 export const Headset = createIcon(PhHeadset);
+export const BookOpen = createIcon(PhBookOpen);
 
 export function Loader2({ className, size = 20, ...props }: BrutalIconProps) {
   return (

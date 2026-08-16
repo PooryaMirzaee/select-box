@@ -65,8 +65,18 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-semibold">داشبورد</h1>
-      <p className="mt-1 text-sm text-muted">صف کار روزانه و خلاصه فروشگاه</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold">داشبورد</h1>
+          <p className="mt-1 text-sm text-muted">صف کار روزانه و خلاصه فروشگاه</p>
+        </div>
+        <Link
+          href="/admin/help"
+          className="rounded-full border border-theme px-4 py-2 text-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        >
+          آموزش مسئول سایت
+        </Link>
+      </div>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {queues.map((c) => (
