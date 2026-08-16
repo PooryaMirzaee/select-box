@@ -168,6 +168,23 @@ export default function AdminSettingsPage() {
         </section>
 
         <section className="space-y-4 rounded-2xl border border-theme p-6">
+          <h2 className="font-medium">هویت حقوقی و اینماد</h2>
+          {field("نام حقوقی / شرکت", "legal_company_name")}
+          {field("شناسه ملی", "national_id")}
+          {field("مهلت بازگشت کالا (روز)", "return_days", "number")}
+          <label className="block text-sm">
+            <span className="text-muted">کد HTML اینماد / ساماندهی</span>
+            <textarea
+              rows={4}
+              dir="ltr"
+              className="mt-1 w-full rounded-xl border border-theme bg-[var(--input-bg)] px-3 py-2 font-mono text-xs"
+              value={form.enamad_html ?? ""}
+              onChange={(e) => setForm({ ...form, enamad_html: e.target.value })}
+            />
+          </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-theme p-6">
           <h2 className="font-medium">عمومی و سئو</h2>
           {field("نام فروشگاه", "shop_name")}
           {field("توضیح", "shop_description")}

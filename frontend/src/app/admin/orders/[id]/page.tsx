@@ -65,6 +65,7 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
+  const [shippingTracking, setShippingTracking] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
@@ -80,6 +81,7 @@ export default function AdminOrderDetailPage() {
       .then((o) => {
         setOrder(o);
         setStatus(o.status);
+        setShippingTracking(o.shipping_tracking || "");
       })
       .catch((e) => {
         setOrder(null);
@@ -148,7 +150,10 @@ export default function AdminOrderDetailPage() {
     try {
       await adminFetch(`/api/v1/admin/orders/${order.id}/status`, token(), {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          shipping_tracking: shippingTracking,
+        }),
       });
       setMsg("وضعیت به‌روز شد");
       load();
@@ -219,10 +224,23 @@ export default function AdminOrderDetailPage() {
               ))}
             </select>
           </label>
-          <Button disabled={saving || status === order.status} onClick={saveStatus}>
-            {saving ? "..." : "ذخیره وضعیت"}
+          <Button disabled={saving} onClick={saveStatus}>
+            {saving ? "..." : "ذخیره"}
           </Button>
+          <Link href={`/admin/orders/${order.id}/print`} target="_blank">
+            <Button variant="outline">چاپ فاکتور</Button>
+          </Link>
         </div>
+        <label className="mt-3 block text-sm">
+          <span className="text-muted">کد رهگیری پست / تیپاکس</span>
+          <input
+            className="input-theme mt-1"
+            dir="ltr"
+            placeholder="مثلاً بارکد پستی"
+            value={shippingTracking}
+            onChange={(e) => setShippingTracking(e.target.value)}
+          />
+        </label>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

@@ -360,6 +360,9 @@ class Order(Base):
     coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id", ondelete="SET NULL"))
     status: Mapped[str] = mapped_column(String(32), default="pending_payment", nullable=False)
     shipping_address: Mapped[dict | None] = mapped_column(JSON)
+    shipping_tracking: Mapped[str | None] = mapped_column(String(64))
+    stock_reserved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    admin_note: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[object] = mapped_column(

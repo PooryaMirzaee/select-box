@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Eye, Package } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { adminFetch, type OrderAdminListItem } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 import {
   ORDER_STATUSES,
   orderStatusColor,
@@ -28,6 +29,8 @@ function formatDate(iso: string | null) {
 export default function AdminOrdersPage() {
   const [items, setItems] = useState<OrderAdminListItem[]>([]);
   const [filter, setFilter] = useState<string>("");
+  const [queryInput, setQueryInput] = useState("");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +39,10 @@ export default function AdminOrdersPage() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    const q = filter ? `?status=${encodeURIComponent(filter)}` : "";
+    const params = new URLSearchParams();
+    if (filter) params.set("status", filter);
+    if (query.trim()) params.set("q", query.trim());
+    const q = params.toString() ? `?${params}` : "";
     adminFetch<OrderAdminListItem[]>(`/api/v1/admin/orders${q}`, token())
       .then(setItems)
       .catch((e) => {
@@ -44,7 +50,12 @@ export default function AdminOrdersPage() {
         setError(e instanceof Error ? e.message : "خطا در بارگذاری");
       })
       .finally(() => setLoading(false));
-  }, [filter]);
+  }, [filter, query]);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("status");
+    if (status) setFilter(status);
+  }, []);
 
   useEffect(() => {
     load();
@@ -67,6 +78,47 @@ export default function AdminOrdersPage() {
           {loading ? "..." : "بروزرسانی"}
         </Button>
       </div>
+
+      <form
+        className="mt-6 flex flex-wrap gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setQuery(queryInput);
+        }}
+      >
+        <input
+          className="input-theme min-h-[44px] min-w-[220px] flex-1"
+          placeholder="جستجو: کد رهگیری، نام، موبایل…"
+          value={queryInput}
+          onChange={(e) => setQueryInput(e.target.value)}
+        />
+        <Button type="submit" variant="outline" size="sm">
+          جستجو
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const token = localStorage.getItem("selectbox_admin_token");
+            const params = new URLSearchParams();
+            if (filter) params.set("status", filter);
+            if (query.trim()) params.set("q", query.trim());
+            const url = apiUrl(`/api/v1/admin/orders/export${params.toString() ? `?${params}` : ""}`);
+            fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+              .then((r) => r.blob())
+              .then((blob) => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "orders.csv";
+                a.click();
+              })
+              .catch(() => alert("خروجی ناموفق بود"));
+          }}
+        >
+          خروجی CSV
+        </Button>
+      </form>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {[

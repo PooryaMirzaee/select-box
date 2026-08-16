@@ -181,6 +181,7 @@ class ProductAdminOut(BaseModel):
     thumbnail_url: str | None = None
     image_count: int = 0
     variation_count: int = 0
+    stock_quantity: int = 0
     published_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -234,6 +235,8 @@ ORDER_STATUSES = (
 
 class OrderStatusPatch(BaseModel):
     status: str
+    shipping_tracking: str | None = None
+    admin_note: str | None = None
 
 
 class PaymentReviewIn(BaseModel):
@@ -281,6 +284,8 @@ class OrderAdminListItem(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
     created_at: str | None
+    shipping_tracking: str | None = None
+    has_pending_receipt: bool = False
 
 
 class OrderAdminDetail(BaseModel):
@@ -296,6 +301,8 @@ class OrderAdminDetail(BaseModel):
     items: list[OrderItemOut]
     payments: list[PaymentAdminOut]
     coupon_code: str | None = None
+    shipping_tracking: str | None = None
+    admin_note: str | None = None
     created_at: str | None
     updated_at: str | None
 
@@ -306,3 +313,8 @@ class DashboardOut(BaseModel):
     designs: int
     orders: int
     revenue_paid: str
+    pending_payment: int = 0
+    pending_receipts: int = 0
+    to_ship: int = 0
+    low_stock: int = 0
+    recent_orders: list[OrderAdminListItem] = []

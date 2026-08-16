@@ -25,6 +25,10 @@ class ShopSettingsPublic(BaseModel):
     contact_address: str = ""
     contact_hours: str = ""
     google_analytics_id: str = ""
+    legal_company_name: str = ""
+    national_id: str = ""
+    enamad_html: str = ""
+    return_days: int = 7
 
 
 class ShopSettingsAdmin(ShopSettingsPublic):
@@ -75,6 +79,10 @@ class ShopSettingsPatch(BaseModel):
     contact_instagram: str | None = None
     contact_address: str | None = None
     contact_hours: str | None = None
+    legal_company_name: str | None = None
+    national_id: str | None = None
+    enamad_html: str | None = None
+    return_days: int | None = None
     sms_enabled: bool | None = None
     sms_ir_api_key: str | None = None
     sms_ir_api_base: str | None = None

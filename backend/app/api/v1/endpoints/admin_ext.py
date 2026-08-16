@@ -534,6 +534,8 @@ def get_order_admin(order_id: int, db: Session = Depends(get_db)):
             for p in (o.payments or [])
         ],
         coupon_code=coupon_code,
+        shipping_tracking=getattr(o, "shipping_tracking", None),
+        admin_note=getattr(o, "admin_note", None),
         created_at=o.created_at.isoformat() if o.created_at else None,
         updated_at=o.updated_at.isoformat() if o.updated_at else None,
     )

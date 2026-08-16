@@ -55,6 +55,11 @@ export function Footer({ settings }: Props) {
                   حساب کاربری
                 </Link>
               </li>
+              <li>
+                <Link href="/orders" className="transition hover:text-[var(--fg)]">
+                  پیگیری سفارش
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -69,8 +74,28 @@ export function Footer({ settings }: Props) {
                 </Link>
               </li>
               <li>
-                <Link href="/catalog" className="transition hover:text-[var(--fg)]">
-                  همه محصولات
+                <Link href="/about" className="transition hover:text-[var(--fg)]">
+                  درباره ما
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="transition hover:text-[var(--fg)]">
+                  تماس
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="transition hover:text-[var(--fg)]">
+                  قوانین
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="transition hover:text-[var(--fg)]">
+                  حریم خصوصی
+                </Link>
+              </li>
+              <li>
+                <Link href="/returns" className="transition hover:text-[var(--fg)]">
+                  بازگشت کالا
                 </Link>
               </li>
             </ul>
@@ -80,6 +105,12 @@ export function Footer({ settings }: Props) {
         <p className="mt-8 text-center text-xs text-muted">
           © {new Date().getFullYear()} {shopName} — تمامی حقوق محفوظ است.
         </p>
+        {settings?.enamad_html ? (
+          <div
+            className="mt-4 flex justify-center"
+            dangerouslySetInnerHTML={{ __html: settings.enamad_html }}
+          />
+        ) : null}
       </div>
     </footer>
   );

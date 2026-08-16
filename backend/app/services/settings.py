@@ -92,6 +92,10 @@ DEFAULTS: dict[str, object] = {
     "contact_instagram": "",
     "contact_address": "تهران",
     "contact_hours": "شنبه تا پنج‌شنبه · ۱۰ تا ۱۸",
+    "legal_company_name": "",
+    "national_id": "",
+    "enamad_html": "",
+    "return_days": 7,
     "creator_commission_percent": 15,
     # sms.ir — https://sms.ir/
     "sms_enabled": False,
@@ -227,4 +231,8 @@ def public_shop_settings(db: Session) -> dict:
         "contact_address": all_s.get("contact_address", ""),
         "contact_hours": all_s.get("contact_hours", ""),
         "google_analytics_id": all_s.get("google_analytics_id", ""),
+        "legal_company_name": str(all_s.get("legal_company_name") or ""),
+        "national_id": str(all_s.get("national_id") or ""),
+        "enamad_html": str(all_s.get("enamad_html") or ""),
+        "return_days": int(all_s.get("return_days") or 7),
     }

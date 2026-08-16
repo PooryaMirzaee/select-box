@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { adminFetch, type ProductAdmin } from "@/lib/api";
 import { cn, formatToman } from "@/lib/utils";
 
-type StatusFilter = "all" | "published" | "draft";
+type StatusFilter = "all" | "published" | "draft" | "low_stock";
 
 type BulkDeleteResult = {
   deleted: number[];
@@ -49,10 +49,17 @@ export default function AdminProductsPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("stock") === "low") {
+      setFilter("low_stock");
+    }
+  }, []);
+
   const filtered = useMemo(() => {
     let rows = items;
     if (filter === "published") rows = rows.filter((p) => p.status === "published");
     if (filter === "draft") rows = rows.filter((p) => p.status === "draft");
+    if (filter === "low_stock") rows = rows.filter((p) => (p.stock_quantity ?? 0) <= 3);
     const q = search.trim().toLowerCase();
     if (q) {
       rows = rows.filter(
@@ -267,6 +274,7 @@ export default function AdminProductsPage() {
       all: items.length,
       published: items.filter((p) => p.status === "published").length,
       draft: items.filter((p) => p.status === "draft").length,
+      low_stock: items.filter((p) => (p.stock_quantity ?? 0) <= 3).length,
     }),
     [items],
   );
@@ -316,7 +324,7 @@ export default function AdminProductsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {(["all", "published", "draft"] as const).map((f) => (
+        {(["all", "published", "draft", "low_stock"] as const).map((f) => (
           <button
             key={f}
             type="button"
@@ -327,7 +335,9 @@ export default function AdminProductsPage() {
               ? `همه (${counts.all})`
               : f === "published"
                 ? `منتشر (${counts.published})`
-                : `پیش‌نویس (${counts.draft})`}
+                : f === "draft"
+                  ? `پیش‌نویس (${counts.draft})`
+                  : `کم‌موجود (${counts.low_stock})`}
           </button>
         ))}
       </div>
@@ -411,6 +421,7 @@ export default function AdminProductsPage() {
               <th className="p-4 text-right">عنوان</th>
               <th className="p-4 text-right">اسلاگ</th>
               <th className="p-4 text-right">قیمت</th>
+              <th className="p-4 text-right">موجودی</th>
               <th className="p-4 text-right">تنوع / عکس</th>
               <th className="p-4 text-right">وضعیت</th>
               <th className="p-4" />
@@ -457,6 +468,9 @@ export default function AdminProductsPage() {
                   <td className="p-4 font-medium">{p.title}</td>
                   <td className="p-4 font-mono text-xs text-muted">{p.slug}</td>
                   <td className="p-4">{formatToman(p.base_price)}</td>
+                  <td className={cn("p-4", (p.stock_quantity ?? 0) <= 3 && "font-medium text-amber-600")}>
+                    {(p.stock_quantity ?? 0).toLocaleString("fa-IR")}
+                  </td>
                   <td className="p-4 text-xs text-muted">
                     {p.variation_count ?? 0} تنوع · {p.image_count} عکس
                     {!(p.description || "").trim() ? " · بدون توضیح" : ""}

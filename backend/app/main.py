@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
     _ensure_ai_suggested_seed()
     _ensure_ai_tools_seed()
     _ensure_enrichment_columns()
+    _ensure_order_ops_columns()
     _warmup_bg_remove()
     try:
         from app.services.enrichment.runner import kick_enrichment_worker
@@ -464,6 +465,25 @@ def _ensure_enrichment_columns() -> None:
             conn.execute(
                 text("ALTER TABLE product_enrichment_jobs ADD COLUMN category_draft_name VARCHAR(512)")
             )
+
+
+def _ensure_order_ops_columns() -> None:
+    """کد رهگیری پستی و رزرو موجودی روی سفارش."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "orders" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("orders")}
+    with engine.begin() as conn:
+        if "shipping_tracking" not in cols:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN shipping_tracking VARCHAR(64)"))
+        if "stock_reserved" not in cols:
+            conn.execute(
+                text("ALTER TABLE orders ADD COLUMN stock_reserved BOOLEAN DEFAULT FALSE NOT NULL")
+            )
+        if "admin_note" not in cols:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN admin_note TEXT"))
 
 
 def _warmup_bg_remove() -> None:

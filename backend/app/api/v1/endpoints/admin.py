@@ -9,13 +9,14 @@ import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.deps_auth import require_admin
 from app.db.session import get_db
 from app.models import (
     Category,
+    Coupon,
     Design,
     DesignAsset,
     Order,
@@ -57,19 +58,65 @@ router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(requir
 
 @router.get("/dashboard", response_model=DashboardOut)
 def dashboard(db: Session = Depends(get_db)):
+    from app.services.order_ops import LOW_STOCK_THRESHOLD, PAID_LIKE
+
     pub = db.scalar(select(func.count()).select_from(Product).where(Product.status == "published")) or 0
     draft = db.scalar(select(func.count()).select_from(Product).where(Product.status == "draft")) or 0
     designs = db.scalar(select(func.count()).select_from(Design)) or 0
     orders = db.scalar(select(func.count()).select_from(Order)) or 0
     rev = db.scalar(
-        select(func.coalesce(func.sum(Order.total), 0)).where(Order.status == "paid")
+        select(func.coalesce(func.sum(Order.total), 0)).where(Order.status.in_(tuple(PAID_LIKE)))
     ) or 0
+    pending_payment = (
+        db.scalar(select(func.count()).select_from(Order).where(Order.status == "pending_payment")) or 0
+    )
+    pending_receipts = (
+        db.scalar(
+            select(func.count())
+            .select_from(Payment)
+            .where(
+                Payment.gateway == "card_transfer",
+                Payment.status == "redirected",
+                Payment.receipt_storage_key.is_not(None),
+            )
+        )
+        or 0
+    )
+    to_ship = (
+        db.scalar(
+            select(func.count()).select_from(Order).where(Order.status.in_(("paid", "processing")))
+        )
+        or 0
+    )
+    low_stock = (
+        db.scalar(
+            select(func.count())
+            .select_from(ProductVariation)
+            .where(
+                ProductVariation.is_active.is_(True),
+                ProductVariation.stock_quantity <= LOW_STOCK_THRESHOLD,
+            )
+        )
+        or 0
+    )
+    recent_rows = db.scalars(
+        select(Order)
+        .options(joinedload(Order.items), joinedload(Order.payments))
+        .order_by(Order.id.desc())
+        .limit(8)
+    ).unique().all()
+    recent = [_order_list_item(o) for o in recent_rows]
     return DashboardOut(
         products_published=pub,
         products_draft=draft,
         designs=designs,
         orders=orders,
         revenue_paid=str(rev),
+        pending_payment=pending_payment,
+        pending_receipts=pending_receipts,
+        to_ship=to_ship,
+        low_stock=low_stock,
+        recent_orders=recent,
     )
 
 
@@ -205,6 +252,7 @@ def _product_admin_out(p: Product) -> ProductAdminOut:
         thumbnail_url=primary_product_image_url(p),
         image_count=len(p.images or []),
         variation_count=var_count,
+        stock_quantity=sum(int(v.stock_quantity or 0) for v in (p.variations or [])),
         published_at=published_at,
     )
 
@@ -446,46 +494,126 @@ def _shipping_customer(shipping_address: dict | None) -> tuple[str | None, str |
     )
 
 
+def _order_list_item(o: Order) -> OrderAdminListItem:
+    customer_name, customer_phone = _shipping_customer(o.shipping_address)
+    has_pending_receipt = any(
+        p.gateway == "card_transfer" and p.status == "redirected" and p.receipt_storage_key
+        for p in (o.payments or [])
+    )
+    return OrderAdminListItem(
+        id=o.id,
+        tracking_code=o.tracking_code,
+        status=o.status,
+        total=str(o.total),
+        subtotal=str(o.subtotal),
+        item_count=len(o.items or []),
+        customer_name=customer_name,
+        customer_phone=customer_phone,
+        created_at=o.created_at.isoformat() if o.created_at else None,
+        shipping_tracking=getattr(o, "shipping_tracking", None),
+        has_pending_receipt=has_pending_receipt,
+    )
+
+
 @router.get("/orders", response_model=list[OrderAdminListItem])
 def list_orders(
     status: str | None = Query(None),
+    q: str | None = Query(None),
+    limit: int = Query(200, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
-    q = select(Order).options(joinedload(Order.items)).order_by(Order.id.desc()).limit(200)
+    query = (
+        select(Order)
+        .options(joinedload(Order.items), joinedload(Order.payments))
+        .order_by(Order.id.desc())
+        .limit(limit)
+    )
     if status:
         if status not in ORDER_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status filter")
-        q = q.where(Order.status == status)
-    rows = db.scalars(q).unique().all()
-    out: list[OrderAdminListItem] = []
-    for o in rows:
-        customer_name, customer_phone = _shipping_customer(o.shipping_address)
-        out.append(
-            OrderAdminListItem(
-                id=o.id,
-                tracking_code=o.tracking_code,
-                status=o.status,
-                total=str(o.total),
-                subtotal=str(o.subtotal),
-                item_count=len(o.items or []),
-                customer_name=customer_name,
-                customer_phone=customer_phone,
-                created_at=o.created_at.isoformat() if o.created_at else None,
+        query = query.where(Order.status == status)
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                Order.tracking_code.ilike(like),
+                Order.shipping_tracking.ilike(like),
+                cast(Order.shipping_address, String).ilike(like),
             )
         )
-    return out
+    rows = db.scalars(query).unique().all()
+    return [_order_list_item(o) for o in rows]
+
+
+@router.get("/orders/export")
+def export_orders(
+    status: str | None = Query(None),
+    q: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    import csv
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    rows = list_orders(status=status, q=q, limit=500, db=db)
+    buf = io.StringIO()
+    buf.write("\ufeff")
+    writer = csv.writer(buf)
+    writer.writerow(["کد رهگیری", "وضعیت", "نام", "تلفن", "مبلغ", "اقلام", "کد پستی/بارکد", "تاریخ"])
+    for o in rows:
+        writer.writerow(
+            [
+                o.tracking_code,
+                o.status,
+                o.customer_name or "",
+                o.customer_phone or "",
+                o.total,
+                o.item_count,
+                o.shipping_tracking or "",
+                o.created_at or "",
+            ]
+        )
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=orders.csv"},
+    )
 
 
 @router.patch("/orders/{order_id}/status")
 def update_order_status(order_id: int, body: OrderStatusPatch, db: Session = Depends(get_db)):
-    o = db.get(Order, order_id)
+    from app.services.order_ops import RESTOCK_STATUSES, fire_order_sms, restore_stock
+
+    o = db.scalar(
+        select(Order).where(Order.id == order_id).options(joinedload(Order.items))
+    )
     if o is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if body.status not in ORDER_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid order status")
+    prev = o.status
+    if body.shipping_tracking is not None:
+        o.shipping_tracking = body.shipping_tracking.strip() or None
+    if body.admin_note is not None:
+        o.admin_note = body.admin_note.strip() or None
     o.status = body.status
+    if body.status in RESTOCK_STATUSES and prev not in RESTOCK_STATUSES:
+        restore_stock(db, o)
+        if o.coupon_id:
+            coupon = db.get(Coupon, o.coupon_id)
+            if coupon is not None:
+                coupon.used_count = max(0, int(coupon.used_count or 0) - 1)
     db.commit()
-    return {"ok": True, "status": o.status}
+    if prev != body.status:
+        if body.status == "shipped":
+            fire_order_sms(o.id, "order_shipped")
+        elif body.status == "delivered":
+            fire_order_sms(o.id, "order_delivered")
+        elif body.status == "paid" and prev == "pending_payment":
+            fire_order_sms(o.id, "order_confirmed")
+    return {"ok": True, "status": o.status, "shipping_tracking": o.shipping_tracking}
 
 
 def _payment_admin_out(p: Payment) -> PaymentAdminOut:

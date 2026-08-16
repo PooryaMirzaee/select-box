@@ -14,11 +14,12 @@ from app.api.deps import SESSION_HEADER
 from app.core.deps_auth import get_current_user_optional
 from app.db.session import get_db
 from app.models import User
-from app.models import CartItem, Coupon, Order, OrderItem, Payment, ProductVariation
+from app.models import CartItem, Order, OrderItem, Payment
 from app.core.config import settings as env
 from app.services import auth_user as auth_user_service
 from app.services import catalog as catalog_service
 from app.services import settings as shop_settings
+from app.services.order_ops import apply_coupon, reserve_stock, user_id_for_phone
 
 router = APIRouter(prefix="/checkout", tags=["checkout"])
 
@@ -55,20 +56,7 @@ class CouponValidateIn(BaseModel):
 @router.post("/validate-coupon")
 def validate_coupon(body: CouponValidateIn, db: Session = Depends(get_db)):
     subtotal = Decimal(body.subtotal)
-    coupon = db.scalar(
-        select(Coupon).where(Coupon.code == body.code.upper(), Coupon.is_active.is_(True))
-    )
-    if coupon is None:
-        raise HTTPException(status_code=400, detail="Invalid coupon")
-    if coupon.min_cart_total and subtotal < coupon.min_cart_total:
-        raise HTTPException(status_code=400, detail="Minimum cart not met")
-    if coupon.max_uses is not None and coupon.used_count >= coupon.max_uses:
-        raise HTTPException(status_code=400, detail="Coupon exhausted")
-    if coupon.discount_type == "percent":
-        discount = subtotal * (coupon.discount_value / Decimal("100"))
-    else:
-        discount = coupon.discount_value
-    discount = min(discount, subtotal)
+    coupon, discount = apply_coupon(db, body.code, subtotal)
     return {"discount": str(discount), "code": coupon.code}
 
 
@@ -82,41 +70,43 @@ def create_order(
     cart = _active_cart(db, session_id, current_user)
     cart = catalog_service.cart_with_items(db, cart.id)
     if cart is None or not cart.items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
+        raise HTTPException(status_code=400, detail="سبد خرید خالی است")
+
+    addr = body.shipping_address if isinstance(body.shipping_address, dict) else {}
+    name = str(addr.get("name") or addr.get("full_name") or "").strip()
+    phone = str(addr.get("phone") or addr.get("mobile") or "").strip()
+    city = str(addr.get("city") or "").strip()
+    address = str(addr.get("address") or "").strip()
+    if not name or not phone or not city or not address:
+        raise HTTPException(status_code=400, detail="نام، موبایل، شهر و آدرس را کامل کنید")
 
     for item in cart.items:
         if item.variation.stock_quantity < item.quantity:
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient stock for {item.variation.sku}",
+                detail=f"موجودی کافی نیست: {item.variation.sku}",
             )
 
     lines = catalog_service.cart_lines_out(cart)
     subtotal = sum(Decimal(str(x["unit_price"])) * x["quantity"] for x in lines)
     discount_total = Decimal("0")
     coupon_id = None
+    coupon = None
 
     if body.coupon_code:
-        coupon = db.scalar(
-            select(Coupon).where(Coupon.code == body.coupon_code.upper(), Coupon.is_active.is_(True))
-        )
-        if coupon:
-            if coupon.discount_type == "percent":
-                discount_total = subtotal * (coupon.discount_value / Decimal("100"))
-            else:
-                discount_total = coupon.discount_value
-            discount_total = min(discount_total, subtotal)
-            coupon_id = coupon.id
-            coupon.used_count += 1
+        coupon, discount_total = apply_coupon(db, body.coupon_code, subtotal)
+        coupon_id = coupon.id
+        coupon.used_count += 1
 
     ship_flat = shop_settings.shipping_flat_toman(db)
     shipping_total = Decimal(str(ship_flat)) if subtotal > 0 else Decimal("0")
     total = subtotal - discount_total + shipping_total
     tracking = secrets.token_hex(4).upper()
 
+    guest_user_id = user_id_for_phone(db, phone) if current_user is None else None
     order = Order(
         tracking_code=tracking,
-        user_id=current_user.id if current_user else None,
+        user_id=current_user.id if current_user else guest_user_id,
         cart_snapshot={"lines": lines, "session_id": session_id},
         subtotal=subtotal,
         discount_total=discount_total,
@@ -125,6 +115,7 @@ def create_order(
         coupon_id=coupon_id,
         status="pending_payment",
         shipping_address=body.shipping_address,
+        stock_reserved=False,
     )
     db.add(order)
     db.flush()
@@ -144,6 +135,15 @@ def create_order(
                 customization_json=item.customization_json,
             )
         )
+    db.flush()
+    db.refresh(order)
+
+    from sqlalchemy.orm import joinedload
+
+    order = db.scalar(
+        select(Order).where(Order.id == order.id).options(joinedload(Order.items))
+    )
+    reserve_stock(db, order)
 
     db.execute(delete(CartItem).where(CartItem.cart_id == cart.id))
     db.commit()
@@ -191,5 +191,6 @@ def get_order(tracking_code: str, db: Session = Depends(get_db)):
         "created_at": order.created_at.isoformat(),
         "snapshot": order.cart_snapshot,
         "shipping_address": order.shipping_address,
+        "shipping_tracking": getattr(order, "shipping_tracking", None),
         "card_transfer_url": card_transfer_url,
     }

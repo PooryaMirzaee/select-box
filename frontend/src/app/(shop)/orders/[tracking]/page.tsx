@@ -49,6 +49,23 @@ function OrderContent() {
           وضعیت: {orderStatusLabel(String(order.status))}
         </p>
         <p className="mt-4 text-lg font-semibold">{formatToman(String(order.total))}</p>
+        {order.shipping_tracking ? (
+          <p className="mt-2 text-sm text-muted">
+            کد پستی/بارکد:{" "}
+            <span className="font-mono text-[var(--fg)]">{String(order.shipping_tracking)}</span>
+          </p>
+        ) : null}
+        {Array.isArray((order.snapshot as { lines?: unknown[] } | undefined)?.lines) ? (
+          <ul className="mt-6 space-y-2 text-start text-sm text-muted">
+            {((order.snapshot as { lines: { title?: string; quantity?: number }[] }).lines || []).map(
+              (line, i) => (
+                <li key={i}>
+                  {line.title} × {line.quantity}
+                </li>
+              ),
+            )}
+          </ul>
+        ) : null}
         {order.status === "pending_payment" && order.card_transfer_url ? (
           <Link href={String(order.card_transfer_url)} className="mt-6 inline-block">
             <Button variant="outline">ادامه پرداخت کارت‌به‌کارت</Button>

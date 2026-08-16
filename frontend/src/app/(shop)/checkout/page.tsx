@@ -24,7 +24,14 @@ export default function CheckoutPage() {
   const [shop, setShop] = useState<ShopSettings | null>(null);
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [form, setForm] = useState({ name: "", phone: "", city: "", address: "" });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    province: "",
+    city: "",
+    postal_code: "",
+    address: "",
+  });
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
@@ -56,8 +63,8 @@ export default function CheckoutPage() {
   }
 
   async function pay() {
-    if (!form.name || !form.phone || !form.address) {
-      alert("لطفاً آدرس را کامل کنید");
+    if (!form.name || !form.phone || !form.city || !form.address) {
+      alert("لطفاً نام، موبایل، شهر و آدرس را کامل کنید");
       return;
     }
     setLoading(true);
@@ -145,6 +152,16 @@ export default function CheckoutPage() {
             />
           </label>
           <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">استان</span>
+            <input
+              autoComplete="address-level1"
+              placeholder="مثلاً تهران"
+              className="input-theme min-h-[48px]"
+              value={form.province}
+              onChange={(e) => setForm({ ...form, province: e.target.value })}
+            />
+          </label>
+          <label className="block">
             <span className="mb-1.5 block text-xs text-muted">شهر</span>
             <input
               autoComplete="address-level2"
@@ -152,6 +169,18 @@ export default function CheckoutPage() {
               className="input-theme min-h-[48px]"
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">کد پستی</span>
+            <input
+              inputMode="numeric"
+              dir="ltr"
+              autoComplete="postal-code"
+              placeholder="۱۰ رقم"
+              className="input-theme min-h-[48px] text-right"
+              value={form.postal_code}
+              onChange={(e) => setForm({ ...form, postal_code: e.target.value })}
             />
           </label>
           <label className="block">

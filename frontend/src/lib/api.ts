@@ -157,6 +157,7 @@ export type ProductAdmin = {
   thumbnail_url: string | null;
   image_count: number;
   variation_count: number;
+  stock_quantity?: number;
   published_at?: string | null;
 };
 
@@ -170,6 +171,8 @@ export type OrderAdminListItem = {
   customer_name: string | null;
   customer_phone: string | null;
   created_at: string | null;
+  shipping_tracking?: string | null;
+  has_pending_receipt?: boolean;
 };
 
 export type OrderItemAdmin = {
@@ -211,6 +214,8 @@ export type OrderAdminDetail = {
   items: OrderItemAdmin[];
   payments: PaymentAdmin[];
   coupon_code: string | null;
+  shipping_tracking?: string | null;
+  admin_note?: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -395,6 +400,10 @@ export type ShopSettings = {
   contact_address: string;
   contact_hours: string;
   google_analytics_id: string;
+  legal_company_name?: string;
+  national_id?: string;
+  enamad_html?: string;
+  return_days?: number;
 };
 
 export type SmsTemplateParam = {

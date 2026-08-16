@@ -19,6 +19,7 @@ from app.services import customizer as customizer_service
 from app.services import settings as shop_settings
 from app.services import zarinpal
 from app.services.order_access import verify_order_access
+from app.services.order_ops import fire_order_sms, reserve_stock
 from app.services.storage import public_url, save_upload_secure
 
 router = APIRouter(prefix="/payments", tags=["payments"])
@@ -36,15 +37,14 @@ def _session_id_optional(
 
 
 def _mark_order_paid(db: Session, order: Order) -> None:
-    if order.status == "paid":
+    if order.status in ("paid", "processing", "shipped", "delivered"):
         return
-    for oi in order.items:
-        v = db.get(ProductVariation, oi.variation_id)
-        if v is None or v.stock_quantity < oi.quantity:
-            raise HTTPException(status_code=400, detail="Stock error")
-        v.stock_quantity -= oi.quantity
+    # سفارش‌های قدیمی بدون رزرو در چک‌اوت — موجودی همین‌جا کم می‌شود
+    if not getattr(order, "stock_reserved", False):
+        reserve_stock(db, order)
     order.status = "paid"
     customizer_service.process_creator_commissions(db, order)
+    fire_order_sms(order.id, "order_confirmed")
 
 
 def _card_transfer_settings(cfg: dict) -> dict:
