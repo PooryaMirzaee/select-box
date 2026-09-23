@@ -476,7 +476,7 @@ export default function AdminProductsPage() {
   ];
 
   return (
-    <div className="pb-8">
+    <div className={cn("pb-24 md:pb-8", selected.size > 0 && "pb-32 md:pb-8")}>
       <input
         ref={fileInputRef}
         type="file"
@@ -487,8 +487,8 @@ export default function AdminProductsPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold sm:text-3xl">محصولات</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="hidden text-2xl font-semibold md:block md:text-3xl">محصولات</h1>
+          <p className="hidden text-sm text-muted md:mt-1 md:block">
             ویرایش سریع قیمت، موجودی و عکس — بدون ورود به فرم کامل
             {categoryLabel ? (
               <>
@@ -497,87 +497,90 @@ export default function AdminProductsPage() {
               </>
             ) : null}
           </p>
+          {categoryLabel ? (
+            <p className="text-xs text-muted md:hidden">
+              فیلتر دسته: <span className="text-[var(--fg)]">{categoryLabel}</span>
+            </p>
+          ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/enrichment">
-            <Button variant="ghost" size="sm">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Link href="/admin/enrichment" className="flex-1 sm:flex-none">
+            <Button variant="ghost" size="sm" className="w-full min-h-11 sm:min-h-0 sm:w-auto">
               غنی‌سازی
             </Button>
           </Link>
-          <Link href="/admin/products/new">
-            <Button size="sm">محصول جدید</Button>
+          <Link href="/admin/products/new" className="flex-1 sm:flex-none">
+            <Button size="sm" className="w-full min-h-11 sm:min-h-0 sm:w-auto">
+              محصول جدید
+            </Button>
           </Link>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <input
-          className="input-theme w-full sm:max-w-xs"
-          placeholder="جستجو عنوان، اسلاگ، دسته..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          className="input-theme w-full sm:max-w-[220px]"
-          value={categoryId ?? ""}
-          onChange={(e) =>
-            setCategoryFilter(e.target.value ? Number(e.target.value) : null)
-          }
-        >
-          <option value="">همه دسته‌ها</option>
-          {flatCategories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name_fa}
-              {typeof c.product_count_subtree === "number"
-                ? ` (${c.product_count_subtree})`
-                : ""}
-            </option>
-          ))}
-        </select>
-        {categoryId != null ? (
-          <Button size="sm" variant="ghost" onClick={() => setCategoryFilter(null)}>
-            حذف فیلتر دسته
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {filterChips.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            className={cn("chip-theme shrink-0 whitespace-nowrap", filter === f.key && "is-active")}
-            onClick={() => setFilter(f.key)}
+      <div className="sticky top-[3.25rem] z-20 -mx-3 space-y-2 border-b border-theme bg-[var(--bg)]/95 px-3 py-2 backdrop-blur md:static md:top-auto md:mx-0 md:mt-5 md:space-y-3 md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <input
+            className="input-theme min-h-11 w-full text-base sm:max-w-xs sm:min-h-0 sm:text-sm"
+            placeholder="جستجو..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="input-theme min-h-11 w-full text-base sm:max-w-[220px] sm:min-h-0 sm:text-sm"
+            value={categoryId ?? ""}
+            onChange={(e) =>
+              setCategoryFilter(e.target.value ? Number(e.target.value) : null)
+            }
           >
-            {f.label}
-          </button>
-        ))}
+            <option value="">همه دسته‌ها</option>
+            {flatCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_fa}
+                {typeof c.product_count_subtree === "number"
+                  ? ` (${c.product_count_subtree})`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {filterChips.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              className={cn(
+                "chip-theme min-h-9 shrink-0 whitespace-nowrap px-3 text-xs",
+                filter === f.key && "is-active",
+              )}
+              onClick={() => setFilter(f.key)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {selected.size > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-theme bg-card p-3 text-sm">
-          <span className="font-medium">{selected.size.toLocaleString("fa-IR")} انتخاب</span>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => markSelectedChecked(true)}>
-            علامت چک
-          </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => markSelectedChecked(false)}>
-            برداشتن چک
-          </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => enrichSelected("images")}>
-            عکس وب
-          </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => enrichSelected("description")}>
-            توضیح وب
-          </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={removeSelected}>
-            حذف
-          </Button>
-          <Button size="sm" variant="ghost" onClick={clearSelection}>
-            لغو
-          </Button>
-          <Button size="sm" variant="ghost" className="ms-auto hidden sm:inline-flex" onClick={selectAllFiltered}>
-            همهٔ فیلتر ({filtered.length.toLocaleString("fa-IR")})
-          </Button>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-theme bg-card/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.12)] backdrop-blur md:static md:mt-4 md:rounded-2xl md:border md:shadow-none md:backdrop-blur-none">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 text-sm">
+            <span className="font-medium">{selected.size.toLocaleString("fa-IR")} انتخاب</span>
+            <Button size="sm" variant="outline" className="min-h-10" disabled={busy} onClick={() => markSelectedChecked(true)}>
+              چک
+            </Button>
+            <Button size="sm" variant="outline" className="min-h-10" disabled={busy} onClick={() => enrichSelected("images")}>
+              عکس وب
+            </Button>
+            <Button size="sm" variant="outline" className="min-h-10" disabled={busy} onClick={removeSelected}>
+              حذف
+            </Button>
+            <Button size="sm" variant="ghost" className="min-h-10" onClick={clearSelection}>
+              لغو
+            </Button>
+            <Button size="sm" variant="ghost" className="ms-auto hidden min-h-10 sm:inline-flex" onClick={selectAllFiltered}>
+              همهٔ فیلتر ({filtered.length.toLocaleString("fa-IR")})
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -585,18 +588,36 @@ export default function AdminProductsPage() {
       {loading ? <p className="mt-8 text-muted">در حال بارگذاری...</p> : null}
 
       {!loading && filtered.length > 0 ? (
-        <PaginationBar
-          page={safePage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          total={filtered.length}
-          onPage={setPage}
-          onPageSize={changePageSize}
-        />
+        <div className="mt-3 md:hidden">
+          <PaginationBar
+            page={safePage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPage={setPage}
+            onPageSize={changePageSize}
+            compact
+          />
+        </div>
       ) : null}
 
       {/* موبایل: کارت */}
-      <div className="mt-5 space-y-3 md:hidden">
+      <div className="mt-3 space-y-3 md:hidden">
+        {pageSlice.length > 0 ? (
+          <div className="flex items-center justify-between gap-2 text-xs text-muted">
+            <button
+              type="button"
+              className="min-h-9 rounded-lg border border-theme px-3 py-1.5 text-[var(--fg)]"
+              onClick={toggleAllOnPage}
+              disabled={!pageSlice.length}
+            >
+              {allFilteredSelected || pageSlice.every((p) => selected.has(p.id))
+                ? "لغو انتخاب صفحه"
+                : "انتخاب این صفحه"}
+            </button>
+            <span>{pageSlice.length.toLocaleString("fa-IR")} مورد</span>
+          </div>
+        ) : null}
         {pageSlice.map((p, index) => (
           <ProductMobileCard
             key={p.id}
@@ -825,14 +846,30 @@ export default function AdminProductsPage() {
       </div>
 
       {!loading && filtered.length > 0 ? (
-        <PaginationBar
-          page={safePage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          total={filtered.length}
-          onPage={setPage}
-          onPageSize={changePageSize}
-        />
+        <div className="hidden md:block">
+          <PaginationBar
+            page={safePage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPage={setPage}
+            onPageSize={changePageSize}
+          />
+        </div>
+      ) : null}
+
+      {!loading && filtered.length > 0 ? (
+        <div className="mt-4 md:hidden">
+          <PaginationBar
+            page={safePage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPage={setPage}
+            onPageSize={changePageSize}
+            compact
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -845,6 +882,7 @@ function PaginationBar({
   total,
   onPage,
   onPageSize,
+  compact,
 }: {
   page: number;
   totalPages: number;
@@ -852,22 +890,29 @@ function PaginationBar({
   total: number;
   onPage: (n: number) => void;
   onPageSize: (n: number) => void;
+  compact?: boolean;
 }) {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-theme bg-card px-3 py-2.5 text-sm">
-      <p className="text-muted">
+    <div
+      className={cn(
+        "mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-theme bg-card px-3 py-2.5 text-sm",
+        compact && "mt-0 gap-2 py-2",
+      )}
+    >
+      <p className={cn("text-muted", compact && "text-xs")}>
         {from.toLocaleString("fa-IR")}–{to.toLocaleString("fa-IR")} از{" "}
         {total.toLocaleString("fa-IR")}
       </p>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         <label className="flex items-center gap-1.5 text-xs text-muted">
-          در هر صفحه
+          <span className={compact ? "sr-only sm:not-sr-only" : ""}>در هر صفحه</span>
           <select
-            className="input-theme px-2 py-1 text-sm"
+            className="input-theme min-h-9 px-2 py-1 text-sm"
             value={pageSize}
             onChange={(e) => onPageSize(Number(e.target.value))}
+            aria-label="تعداد در صفحه"
           >
             {PAGE_SIZE_OPTIONS.map((n) => (
               <option key={n} value={n}>
@@ -876,31 +921,44 @@ function PaginationBar({
             ))}
           </select>
         </label>
-        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(1)}>
-          اول
-        </Button>
-        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="min-h-9 min-w-9 px-2"
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+          aria-label="قبلی"
+        >
           قبلی
         </Button>
-        <span className="min-w-[5.5rem] text-center tabular-nums">
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums sm:min-w-[5.5rem] sm:text-sm">
           {page.toLocaleString("fa-IR")} / {totalPages.toLocaleString("fa-IR")}
         </span>
         <Button
           size="sm"
           variant="outline"
+          className="min-h-9 min-w-9 px-2"
           disabled={page >= totalPages}
           onClick={() => onPage(page + 1)}
+          aria-label="بعدی"
         >
           بعدی
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={page >= totalPages}
-          onClick={() => onPage(totalPages)}
-        >
-          آخر
-        </Button>
+        {!compact ? (
+          <>
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(1)}>
+              اول
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => onPage(totalPages)}
+            >
+              آخر
+            </Button>
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -932,7 +990,7 @@ function PriceInput({
 
   return (
     <input
-      className="input-theme w-full max-w-[8.5rem] px-2 py-1.5 text-sm tabular-nums"
+      className="input-theme w-full max-w-[8.5rem] px-2 py-1.5 text-base tabular-nums md:text-sm"
       inputMode="numeric"
       disabled={disabled}
       value={draft}
@@ -977,7 +1035,7 @@ function StockInput({
   return (
     <input
       className={cn(
-        "input-theme w-16 px-2 py-1.5 text-center text-sm tabular-nums",
+        "input-theme w-20 px-2 py-1.5 text-center text-base tabular-nums md:w-16 md:text-sm",
         oos && "border-red-500/40 text-red-600",
       )}
       inputMode="numeric"
@@ -1022,23 +1080,38 @@ function ProductMobileCard({
   return (
     <article
       className={cn(
-        "rounded-2xl border border-theme bg-card p-3",
+        "rounded-2xl border border-theme bg-card p-3 shadow-sm",
         selected && "border-[var(--accent)]/50 bg-[var(--accent-soft)]",
         oos && "border-red-500/25",
         p.image_mismatch && "border-amber-500/30",
       )}
     >
       <div className="flex gap-3">
-        <input
-          type="checkbox"
-          className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
-          checked={selected}
-          onChange={onToggleSelect}
-          aria-label={`انتخاب ${p.title}`}
-        />
         <button
           type="button"
-          className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-theme bg-surface"
+          className={cn(
+            "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-theme",
+            selected && "border-[var(--accent)] bg-[var(--accent-soft)]",
+          )}
+          onClick={onToggleSelect}
+          aria-pressed={selected}
+          aria-label={`انتخاب ${p.title}`}
+        >
+          <span
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded border text-[10px]",
+              selected
+                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                : "border-theme text-transparent",
+            )}
+          >
+            ✓
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border border-theme bg-surface"
           onClick={onPickImage}
           disabled={saving}
           title="تعویض عکس"
@@ -1048,73 +1121,65 @@ function ProductMobileCard({
             <img src={p.thumbnail_url} alt="" className="h-full w-full object-cover" />
           ) : (
             <span className="flex h-full items-center justify-center text-muted">
-              <ImagePlus className="h-5 w-5" />
+              <ImagePlus className="h-6 w-6" />
             </span>
           )}
+          <span className="absolute inset-x-0 bottom-0 bg-black/50 py-0.5 text-center text-[10px] text-white">
+            عکس
+          </span>
         </button>
+
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-medium leading-snug">{p.title}</p>
-          <div className="mt-2">
-            <CategorySearchSelect
-              value={p.parent_category_id}
-              label={p.category_name_fa}
-              options={categoryOptions}
-              disabled={saving}
-              onChange={(id) => onQuickSave(p.id, { parent_category_id: id })}
-            />
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className={cn(
-                "inline-flex h-8 w-8 items-center justify-center rounded-full border",
-                p.is_checked
-                  ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-600"
-                  : "border-theme text-muted",
-              )}
-              disabled={saving}
-              onClick={() => onQuickSave(p.id, { is_checked: !p.is_checked })}
-              aria-label="چک"
-            >
-              <Check className="h-4 w-4" />
-            </button>
-            <label className="inline-flex items-center gap-1.5 text-xs text-muted">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-amber-600"
-                checked={!!p.image_mismatch}
-                disabled={saving}
-                onChange={() =>
-                  onQuickSave(p.id, { image_mismatch: !p.image_mismatch })
-                }
-              />
-              مغایرت عکس
-            </label>
+          <p className="line-clamp-2 text-[15px] font-medium leading-snug">{p.title}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
-                "text-xs",
-                p.status === "published" ? "text-green-600" : "text-amber-600",
+                "rounded-md px-1.5 py-0.5 text-[11px]",
+                p.status === "published"
+                  ? "bg-emerald-500/10 text-emerald-700"
+                  : "bg-amber-500/10 text-amber-700",
               )}
             >
               {p.status === "published" ? "منتشر" : "پیش‌نویس"}
-              {oos ? " · ناموجود" : ""}
             </span>
+            {oos ? (
+              <span className="rounded-md bg-red-500/10 px-1.5 py-0.5 text-[11px] text-red-600">
+                ناموجود
+              </span>
+            ) : null}
+            {p.image_mismatch ? (
+              <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[11px] text-amber-700">
+                مغایرت عکس
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
 
+      <div className="mt-3">
+        <CategorySearchSelect
+          value={p.parent_category_id}
+          label={p.category_name_fa}
+          options={categoryOptions}
+          disabled={saving}
+          onChange={(id) => onQuickSave(p.id, { parent_category_id: id })}
+        />
+      </div>
+
       <div className="mt-3 grid grid-cols-2 gap-2">
         <label className="block text-[11px] text-muted">
-          قیمت
-          <PriceInput
-            value={p.base_price}
-            disabled={saving}
-            onCommit={(n) => onQuickSave(p.id, { base_price: n })}
-          />
+          قیمت (تومان)
+          <div className="mt-1">
+            <PriceInput
+              value={p.base_price}
+              disabled={saving}
+              onCommit={(n) => onQuickSave(p.id, { base_price: n })}
+            />
+          </div>
         </label>
         <label className="block text-[11px] text-muted">
           موجودی
-          <div className="mt-0 flex items-center gap-1">
+          <div className="mt-1 flex items-center gap-1">
             <StockInput
               value={stock}
               disabled={saving}
@@ -1124,7 +1189,7 @@ function ProductMobileCard({
             <button
               type="button"
               className={cn(
-                "rounded-lg border px-2 py-1.5 text-[11px]",
+                "min-h-10 shrink-0 rounded-xl border px-2.5 text-xs",
                 oos
                   ? "border-red-500/40 bg-red-500/10 text-red-600"
                   : "border-theme text-muted",
@@ -1132,29 +1197,71 @@ function ProductMobileCard({
               disabled={saving || oos}
               onClick={() => onQuickSave(p.id, { mark_out_of_stock: true })}
             >
-              ناموجود
+              ۰
             </button>
           </div>
         </label>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <Link href={`/admin/products/${p.id}/edit`} className="flex-1">
-          <Button size="sm" variant="outline" className="w-full">
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className={cn(
+            "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm",
+            p.is_checked
+              ? "border-emerald-500/50 bg-emerald-500/15 font-medium text-emerald-700"
+              : "border-theme text-muted",
+          )}
+          disabled={saving}
+          onClick={() => onQuickSave(p.id, { is_checked: !p.is_checked })}
+        >
+          <Check className="h-4 w-4" />
+          {p.is_checked ? "چک شد" : "علامت چک"}
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm",
+            p.image_mismatch
+              ? "border-amber-500/50 bg-amber-500/15 font-medium text-amber-800"
+              : "border-theme text-muted",
+          )}
+          disabled={saving}
+          onClick={() => onQuickSave(p.id, { image_mismatch: !p.image_mismatch })}
+        >
+          مغایرت عکس
+        </button>
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <Link href={`/admin/products/${p.id}/edit`} className="min-w-0 flex-1">
+          <Button size="sm" variant="outline" className="min-h-11 w-full">
             جزئیات
           </Button>
         </Link>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="min-h-11 shrink-0 px-3"
+          disabled={p.status !== "published" && p.image_count < 1}
+          onClick={onToggleStatus}
+        >
+          {p.status === "published" ? "پیش‌نویس" : "انتشار"}
+        </Button>
         {p.status === "published" ? (
           <Link href={`/product/${p.slug}`} target="_blank" rel="noreferrer">
-            <Button size="sm" variant="ghost">
-              <ExternalLink size={14} />
+            <Button size="sm" variant="ghost" className="min-h-11 min-w-11 px-0">
+              <ExternalLink size={16} />
             </Button>
           </Link>
         ) : null}
-        <Button size="sm" variant="ghost" onClick={onToggleStatus}>
-          {p.status === "published" ? "پیش‌نویس" : "انتشار"}
-        </Button>
-        <Button size="sm" variant="ghost" disabled={busy} onClick={onRemove}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="min-h-11 shrink-0 px-3 text-red-600"
+          disabled={busy}
+          onClick={onRemove}
+        >
           حذف
         </Button>
       </div>
