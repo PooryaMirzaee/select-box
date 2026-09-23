@@ -160,6 +160,7 @@ export type ProductAdmin = {
   stock_quantity?: number;
   is_checked?: boolean;
   checked_at?: string | null;
+  image_mismatch?: boolean;
   published_at?: string | null;
   category_name_fa?: string | null;
 };

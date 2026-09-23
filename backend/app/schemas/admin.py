@@ -127,6 +127,7 @@ class ProductUpdateIn(BaseModel):
     description: str | None = None
     size_guide_json: SizeGuideIn | None = None
     is_checked: bool | None = None
+    image_mismatch: bool | None = None
 
 
 class ProductQuickUpdateIn(BaseModel):
@@ -135,6 +136,7 @@ class ProductQuickUpdateIn(BaseModel):
     base_price: float | None = Field(default=None, ge=0)
     stock_quantity: int | None = Field(default=None, ge=0, le=1_000_000)
     is_checked: bool | None = None
+    image_mismatch: bool | None = None
     mark_out_of_stock: bool | None = None
 
 
@@ -196,6 +198,7 @@ class ProductAdminOut(BaseModel):
     stock_quantity: int = 0
     is_checked: bool = False
     checked_at: str | None = None
+    image_mismatch: bool = False
     published_at: str | None = None
     category_name_fa: str | None = None
 

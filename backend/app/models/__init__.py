@@ -193,6 +193,8 @@ class Product(Base):
     # چک اولیه اپراتور: صحت محصول در فروشگاه/سایت پس از غنی‌سازی
     is_checked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     checked_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    # عکس محصول با واقعیت/کاتالوگ مغایرت دارد
+    image_mismatch: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[object] = mapped_column(
@@ -216,6 +218,7 @@ class Product(Base):
         Index("idx_products_parent_cat", "parent_category_id"),
         Index("idx_products_status", "status"),
         Index("idx_products_is_checked", "is_checked"),
+        Index("idx_products_image_mismatch", "image_mismatch"),
     )
 
 

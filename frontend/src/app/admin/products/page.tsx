@@ -21,7 +21,16 @@ type StatusFilter =
   | "low_stock"
   | "out_of_stock"
   | "unchecked"
-  | "checked";
+  | "checked"
+  | "image_mismatch";
+
+type QuickBody = {
+  base_price?: number;
+  stock_quantity?: number;
+  is_checked?: boolean;
+  image_mismatch?: boolean;
+  mark_out_of_stock?: boolean;
+};
 
 type BulkDeleteResult = {
   deleted: number[];
@@ -106,6 +115,7 @@ export default function AdminProductsPage() {
     if (filter === "out_of_stock") rows = rows.filter((p) => (p.stock_quantity ?? 0) < 1);
     if (filter === "unchecked") rows = rows.filter((p) => !p.is_checked);
     if (filter === "checked") rows = rows.filter((p) => !!p.is_checked);
+    if (filter === "image_mismatch") rows = rows.filter((p) => !!p.image_mismatch);
     const q = search.trim().toLowerCase();
     if (q) {
       rows = rows.filter(
@@ -136,15 +146,7 @@ export default function AdminProductsPage() {
     setItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   }
 
-  async function quickSave(
-    id: number,
-    body: {
-      base_price?: number;
-      stock_quantity?: number;
-      is_checked?: boolean;
-      mark_out_of_stock?: boolean;
-    },
-  ) {
+  async function quickSave(id: number, body: QuickBody) {
     setSavingId(id);
     try {
       const updated = await adminFetch<ProductAdmin>(
@@ -393,6 +395,7 @@ export default function AdminProductsPage() {
       out_of_stock: items.filter((p) => (p.stock_quantity ?? 0) < 1).length,
       unchecked: items.filter((p) => !p.is_checked).length,
       checked: items.filter((p) => !!p.is_checked).length,
+      image_mismatch: items.filter((p) => !!p.image_mismatch).length,
     }),
     [items],
   );
@@ -401,6 +404,7 @@ export default function AdminProductsPage() {
     { key: "all", label: `همه (${counts.all})` },
     { key: "unchecked", label: `چک‌نشده (${counts.unchecked})` },
     { key: "checked", label: `چک‌شده (${counts.checked})` },
+    { key: "image_mismatch", label: `مغایرت عکس (${counts.image_mismatch})` },
     { key: "out_of_stock", label: `ناموجود (${counts.out_of_stock})` },
     { key: "low_stock", label: `کم‌موجود (${counts.low_stock})` },
     { key: "published", label: `منتشر (${counts.published})` },
@@ -558,6 +562,7 @@ export default function AdminProductsPage() {
               <th className="w-36 p-3 text-right">قیمت</th>
               <th className="w-40 p-3 text-right">موجودی</th>
               <th className="w-24 p-3 text-center">چک</th>
+              <th className="w-28 p-3 text-center">مغایرت عکس</th>
               <th className="w-24 p-3 text-right">وضعیت</th>
               <th className="w-44 p-3" />
             </tr>
@@ -574,6 +579,7 @@ export default function AdminProductsPage() {
                     "border-b border-theme transition-colors",
                     isOn ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--bg-elevated)]",
                     oos && !isOn && "bg-red-500/[0.03]",
+                    p.image_mismatch && !isOn && "bg-amber-500/[0.04]",
                   )}
                 >
                   <td className="p-3">
@@ -666,12 +672,32 @@ export default function AdminProductsPage() {
                       <Check className="h-4 w-4" />
                     </button>
                   </td>
+                  <td className="p-3 text-center">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-amber-600"
+                        checked={!!p.image_mismatch}
+                        disabled={savingId === p.id}
+                        onChange={() =>
+                          quickSave(p.id, { image_mismatch: !p.image_mismatch })
+                        }
+                        aria-label="مغایرت عکس"
+                      />
+                      <span className={p.image_mismatch ? "font-medium text-amber-700" : "text-muted"}>
+                        {p.image_mismatch ? "بله" : "—"}
+                      </span>
+                    </label>
+                  </td>
                   <td className="p-3">
                     <span className={p.status === "published" ? "text-green-600" : "text-amber-600"}>
                       {p.status === "published" ? "منتشر" : "پیش‌نویس"}
                     </span>
                     {oos ? (
                       <p className="text-[10px] font-medium text-red-500">ناموجود</p>
+                    ) : null}
+                    {p.image_mismatch ? (
+                      <p className="text-[10px] font-medium text-amber-700">مغایرت عکس</p>
                     ) : null}
                   </td>
                   <td className="p-3">
@@ -816,15 +842,7 @@ function ProductMobileCard({
   selected: boolean;
   saving: boolean;
   onToggleSelect: () => void;
-  onQuickSave: (
-    id: number,
-    body: {
-      base_price?: number;
-      stock_quantity?: number;
-      is_checked?: boolean;
-      mark_out_of_stock?: boolean;
-    },
-  ) => void;
+  onQuickSave: (id: number, body: QuickBody) => void;
   onPickImage: () => void;
   onToggleStatus: () => void;
   onRemove: () => void;
@@ -839,6 +857,7 @@ function ProductMobileCard({
         "rounded-2xl border border-theme bg-card p-3",
         selected && "border-[var(--accent)]/50 bg-[var(--accent-soft)]",
         oos && "border-red-500/25",
+        p.image_mismatch && "border-amber-500/30",
       )}
     >
       <div className="flex gap-3">
@@ -870,8 +889,9 @@ function ProductMobileCard({
           <p className="mt-0.5 text-[11px] text-muted">
             {p.category_name_fa || "بدون دسته"}
             {oos ? " · ناموجود" : ""}
+            {p.image_mismatch ? " · مغایرت عکس" : ""}
           </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
               className={cn(
@@ -886,6 +906,18 @@ function ProductMobileCard({
             >
               <Check className="h-4 w-4" />
             </button>
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-amber-600"
+                checked={!!p.image_mismatch}
+                disabled={saving}
+                onChange={() =>
+                  onQuickSave(p.id, { image_mismatch: !p.image_mismatch })
+                }
+              />
+              مغایرت عکس
+            </label>
             <span
               className={cn(
                 "text-xs",

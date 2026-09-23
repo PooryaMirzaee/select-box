@@ -274,6 +274,7 @@ def _product_admin_out(p: Product) -> ProductAdminOut:
         stock_quantity=sum(int(v.stock_quantity or 0) for v in (p.variations or [])),
         is_checked=bool(getattr(p, "is_checked", False)),
         checked_at=checked_at,
+        image_mismatch=bool(getattr(p, "image_mismatch", False)),
         published_at=published_at,
         category_name_fa=cat.name_fa if cat else None,
     )
@@ -367,10 +368,13 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
     data = body.model_dump(exclude_unset=True)
     new_status = data.pop("status", None)
     is_checked = data.pop("is_checked", None)
+    image_mismatch = data.pop("image_mismatch", None)
     for k, v in data.items():
         setattr(p, k, v)
     if is_checked is not None:
         _apply_checked(p, is_checked)
+    if image_mismatch is not None:
+        p.image_mismatch = bool(image_mismatch)
     if new_status is not None:
         if new_status not in ("draft", "published"):
             raise HTTPException(status_code=400, detail="Invalid status")
@@ -403,6 +407,8 @@ def quick_update_product(
         set_product_stock_total(db, p, int(data["stock_quantity"]))
     if "is_checked" in data and data["is_checked"] is not None:
         _apply_checked(p, bool(data["is_checked"]))
+    if "image_mismatch" in data and data["image_mismatch"] is not None:
+        p.image_mismatch = bool(data["image_mismatch"])
     db.commit()
     p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     return _product_admin_out(p)

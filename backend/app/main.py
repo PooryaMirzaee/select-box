@@ -562,6 +562,13 @@ def _ensure_product_check_columns() -> None:
         if "checked_at" not in cols:
             ts = "TIMESTAMP WITH TIME ZONE" if dialect != "sqlite" else "DATETIME"
             conn.execute(text(f"ALTER TABLE products ADD COLUMN checked_at {ts}"))
+        if "image_mismatch" not in cols:
+            default = "FALSE" if dialect != "sqlite" else "0"
+            conn.execute(
+                text(
+                    f"ALTER TABLE products ADD COLUMN image_mismatch BOOLEAN DEFAULT {default} NOT NULL"
+                )
+            )
 
 
 def _ensure_payment_receipt_columns() -> None:
