@@ -336,6 +336,7 @@ async def upload_product_image(
     product_id: int,
     file: UploadFile = File(...),
     alt_text: str | None = Form(None),
+    as_primary: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     p = db.get(Product, product_id)
@@ -346,10 +347,19 @@ async def upload_product_image(
         f"products/{product_id}",
         max_bytes=8 * 1024 * 1024,
     )
-    max_order = db.scalar(
-        select(func.max(ProductImage.sort_order)).where(ProductImage.product_id == product_id)
-    )
-    sort_order = int(max_order or 0) + 1
+    if as_primary:
+        # تصویر جدید اول گالری شود
+        existing = db.scalars(
+            select(ProductImage).where(ProductImage.product_id == product_id)
+        ).all()
+        for row in existing:
+            row.sort_order = int(row.sort_order or 0) + 1
+        sort_order = 0
+    else:
+        max_order = db.scalar(
+            select(func.max(ProductImage.sort_order)).where(ProductImage.product_id == product_id)
+        )
+        sort_order = int(max_order or 0) + 1
     img = ProductImage(
         product_id=product_id,
         storage_key=key,

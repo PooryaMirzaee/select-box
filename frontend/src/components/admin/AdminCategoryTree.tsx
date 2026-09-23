@@ -19,6 +19,7 @@ type Props = {
   onDelete: (id: number) => void;
   onAddChild: (parentId: number) => void;
   onCheckToggle?: (id: number) => void;
+  onViewProducts?: (node: CategoryTreeNode) => void;
 };
 
 export function AdminCategoryTree({
@@ -31,6 +32,7 @@ export function AdminCategoryTree({
   onDelete,
   onAddChild,
   onCheckToggle,
+  onViewProducts,
 }: Props) {
   if (!tree.length) {
     return (
@@ -55,6 +57,7 @@ export function AdminCategoryTree({
           onDelete={onDelete}
           onAddChild={onAddChild}
           onCheckToggle={onCheckToggle}
+          onViewProducts={onViewProducts}
         />
       ))}
     </ul>
@@ -72,6 +75,7 @@ function TreeNode({
   onDelete,
   onAddChild,
   onCheckToggle,
+  onViewProducts,
 }: {
   node: CategoryTreeNode;
   depth: number;
@@ -83,11 +87,13 @@ function TreeNode({
   onDelete: (id: number) => void;
   onAddChild: (parentId: number) => void;
   onCheckToggle?: (id: number) => void;
+  onViewProducts?: (node: CategoryTreeNode) => void;
 }) {
   const hasKids = node.children.length > 0;
   const open = expandedIds.has(node.id);
   const selected = selectedId === node.id;
   const checked = checkedIds?.has(node.id) ?? false;
+  const count = node.product_count_subtree ?? node.product_count ?? 0;
 
   return (
     <li role="treeitem" aria-selected={selected} aria-expanded={hasKids ? open : undefined}>
@@ -133,7 +139,28 @@ function TreeNode({
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="font-medium leading-snug">{node.name_fa}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium leading-snug">{node.name_fa}</p>
+            {onViewProducts ? (
+              <button
+                type="button"
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[11px] tabular-nums transition",
+                  count > 0
+                    ? "border-[var(--accent)]/35 bg-[var(--accent-soft)] text-[var(--fg)] hover:border-[var(--accent)]"
+                    : "border-theme text-muted",
+                )}
+                title="نمایش محصولات این دسته"
+                onClick={() => onViewProducts(node)}
+              >
+                {count.toLocaleString("fa-IR")} محصول
+              </button>
+            ) : (
+              <span className="text-[11px] tabular-nums text-muted">
+                {count.toLocaleString("fa-IR")} محصول
+              </span>
+            )}
+          </div>
           <p className="font-mono text-xs text-muted">{node.slug}</p>
         </div>
 
@@ -172,6 +199,7 @@ function TreeNode({
               onDelete={onDelete}
               onAddChild={onAddChild}
               onCheckToggle={onCheckToggle}
+              onViewProducts={onViewProducts}
             />
           ))}
         </ul>

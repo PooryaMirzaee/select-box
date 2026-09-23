@@ -158,7 +158,10 @@ export type ProductAdmin = {
   image_count: number;
   variation_count: number;
   stock_quantity?: number;
+  is_checked?: boolean;
+  checked_at?: string | null;
   published_at?: string | null;
+  category_name_fa?: string | null;
 };
 
 export type OrderAdminListItem = {
@@ -242,6 +245,8 @@ export type CategoryAdmin = {
   sort_order?: number;
   is_active: boolean;
   icon_url?: string | null;
+  product_count?: number;
+  product_count_subtree?: number;
 };
 
 export type { CategoryNavNode } from "@/lib/category-nav";

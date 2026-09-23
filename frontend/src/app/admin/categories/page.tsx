@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -28,6 +29,7 @@ const empty = {
 };
 
 export default function AdminCategoriesPage() {
+  const router = useRouter();
   const [tree, setTree] = useState<CategoryTreeNode[]>([]);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState<number | null>(null);
@@ -392,6 +394,9 @@ export default function AdminCategoriesPage() {
             onDelete={remove}
             onAddChild={startAddChild}
             onCheckToggle={toggleCheck}
+            onViewProducts={(node) => {
+              router.push(`/admin/products?category=${node.id}`);
+            }}
           />
         </section>
 

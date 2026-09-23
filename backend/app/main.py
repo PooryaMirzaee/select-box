@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
     _ensure_category_icon_column()
     _ensure_product_media_columns()
     _ensure_product_size_guide_column()
+    _ensure_product_check_columns()
     _ensure_payment_receipt_columns()
     _ensure_customizer_columns()
     _ensure_user_studio_columns()
@@ -541,6 +542,26 @@ def _ensure_product_size_guide_column() -> None:
     if "size_guide_json" not in cols:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE products ADD COLUMN size_guide_json JSON"))
+
+
+def _ensure_product_check_columns() -> None:
+    """چک اولیه اپراتور روی محصول پس از غنی‌سازی."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "products" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("products")}
+    dialect = engine.dialect.name
+    with engine.begin() as conn:
+        if "is_checked" not in cols:
+            default = "FALSE" if dialect != "sqlite" else "0"
+            conn.execute(
+                text(f"ALTER TABLE products ADD COLUMN is_checked BOOLEAN DEFAULT {default} NOT NULL")
+            )
+        if "checked_at" not in cols:
+            ts = "TIMESTAMP WITH TIME ZONE" if dialect != "sqlite" else "DATETIME"
+            conn.execute(text(f"ALTER TABLE products ADD COLUMN checked_at {ts}"))
 
 
 def _ensure_payment_receipt_columns() -> None:

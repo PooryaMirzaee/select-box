@@ -190,6 +190,9 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(Text)
     size_guide_json: Mapped[dict | None] = mapped_column(JSON)
     published_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    # چک اولیه اپراتور: صحت محصول در فروشگاه/سایت پس از غنی‌سازی
+    is_checked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    checked_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
 
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[object] = mapped_column(
@@ -212,6 +215,7 @@ class Product(Base):
         Index("idx_products_design", "design_id"),
         Index("idx_products_parent_cat", "parent_category_id"),
         Index("idx_products_status", "status"),
+        Index("idx_products_is_checked", "is_checked"),
     )
 
 

@@ -67,6 +67,52 @@ def ensure_default_variation(
     return variations[0]
 
 
+def set_product_stock_total(
+    db: Session,
+    product: Product,
+    desired: int,
+) -> int:
+    """تنظیم مجموع موجودی محصول از روی لیست ادمین.
+
+    - بدون تنوع → ساخت تنوع پیش‌فرض
+    - یک تنوع → همان مقدار
+    - چند تنوع + ۰ → همه صفر (ناموجود)
+    - چند تنوع + مقدار → اختلاف روی اولین تنوع اعمال می‌شود تا مجموع برابر هدف شود
+    """
+    desired = max(0, int(desired))
+    variations = list(product.variations or [])
+    if not variations:
+        v = ensure_default_variation(db, product, stock_quantity=desired)
+        return int(v.stock_quantity or 0)
+
+    if desired == 0:
+        for v in variations:
+            v.stock_quantity = 0
+        db.flush()
+        return 0
+
+    if len(variations) == 1:
+        variations[0].stock_quantity = desired
+        db.flush()
+        return desired
+
+    current = sum(int(v.stock_quantity or 0) for v in variations)
+    delta = desired - current
+    if delta > 0:
+        variations[0].stock_quantity = int(variations[0].stock_quantity or 0) + delta
+    elif delta < 0:
+        remaining = -delta
+        for v in variations:
+            if remaining <= 0:
+                break
+            have = int(v.stock_quantity or 0)
+            take = min(have, remaining)
+            v.stock_quantity = have - take
+            remaining -= take
+    db.flush()
+    return sum(int(v.stock_quantity or 0) for v in variations)
+
+
 def delete_product_safe(db: Session, product_id: int) -> None:
     """
     حذف محصول و وابستگی‌ها.

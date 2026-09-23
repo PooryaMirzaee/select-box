@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ExternalLink } from "@/components/icons";
+import { Check, ExternalLink, ImagePlus, Upload } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
-import { adminFetch, type ProductAdmin } from "@/lib/api";
+import {
+  adminFetch,
+  errorMessageFromResponse,
+  type ProductAdmin,
+} from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
+import { findNode, flattenTree, type CategoryTreeNode } from "@/lib/category-tree";
 import { cn, formatToman } from "@/lib/utils";
 
-type StatusFilter = "all" | "published" | "draft" | "low_stock";
+type StatusFilter =
+  | "all"
+  | "published"
+  | "draft"
+  | "low_stock"
+  | "out_of_stock"
+  | "unchecked"
+  | "checked";
 
 type BulkDeleteResult = {
   deleted: number[];
@@ -18,23 +31,38 @@ type BulkDeleteResult = {
 
 export default function AdminProductsPage() {
   const [items, setItems] = useState<ProductAdmin[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [savingId, setSavingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const lastClickedIndex = useRef<number | null>(null);
   const headerCheckRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetId = useRef<number | null>(null);
 
   const token = () => localStorage.getItem("selectbox_admin_token")!;
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    adminFetch<ProductAdmin[]>("/api/v1/admin/products", token())
-      .then((rows) => {
+    const q =
+      categoryId != null
+        ? `?category_id=${categoryId}&include_subtree=true`
+        : "";
+    Promise.all([
+      adminFetch<ProductAdmin[]>(`/api/v1/admin/products${q}`, token()),
+      adminFetch<CategoryTreeNode[]>("/api/v1/admin/categories/tree", token()).catch(
+        () => [] as CategoryTreeNode[],
+      ),
+    ])
+      .then(([rows, tree]) => {
         setItems(rows);
+        setCategories(tree);
         setSelected(new Set());
         lastClickedIndex.current = null;
       })
@@ -43,29 +71,48 @@ export default function AdminProductsPage() {
         setError(e instanceof Error ? e.message : "خطا");
       })
       .finally(() => setLoading(false));
-  };
+  }, [categoryId]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("stock") === "low") {
-      setFilter("low_stock");
-    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("stock") === "low") setFilter("low_stock");
+    if (params.get("filter") === "unchecked") setFilter("unchecked");
+    if (params.get("filter") === "out_of_stock") setFilter("out_of_stock");
+    const cat = params.get("category");
+    if (cat && /^\d+$/.test(cat)) setCategoryId(Number(cat));
   }, []);
+
+  const categoryLabel = useMemo(() => {
+    if (categoryId == null) return null;
+    return findNode(categories, categoryId)?.name_fa ?? `#${categoryId}`;
+  }, [categories, categoryId]);
+
+  const flatCategories = useMemo(() => flattenTree(categories), [categories]);
 
   const filtered = useMemo(() => {
     let rows = items;
     if (filter === "published") rows = rows.filter((p) => p.status === "published");
     if (filter === "draft") rows = rows.filter((p) => p.status === "draft");
-    if (filter === "low_stock") rows = rows.filter((p) => (p.stock_quantity ?? 0) <= 3);
+    if (filter === "low_stock") {
+      rows = rows.filter((p) => {
+        const s = p.stock_quantity ?? 0;
+        return s > 0 && s <= 3;
+      });
+    }
+    if (filter === "out_of_stock") rows = rows.filter((p) => (p.stock_quantity ?? 0) < 1);
+    if (filter === "unchecked") rows = rows.filter((p) => !p.is_checked);
+    if (filter === "checked") rows = rows.filter((p) => !!p.is_checked);
     const q = search.trim().toLowerCase();
     if (q) {
       rows = rows.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
-          p.slug.toLowerCase().includes(q),
+          p.slug.toLowerCase().includes(q) ||
+          (p.category_name_fa || "").toLowerCase().includes(q),
       );
     }
     return rows;
@@ -84,6 +131,35 @@ export default function AdminProductsPage() {
       headerCheckRef.current.indeterminate = someFilteredSelected;
     }
   }, [someFilteredSelected]);
+
+  function patchLocal(updated: ProductAdmin) {
+    setItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  }
+
+  async function quickSave(
+    id: number,
+    body: {
+      base_price?: number;
+      stock_quantity?: number;
+      is_checked?: boolean;
+      mark_out_of_stock?: boolean;
+    },
+  ) {
+    setSavingId(id);
+    try {
+      const updated = await adminFetch<ProductAdmin>(
+        `/api/v1/admin/products/${id}/quick`,
+        token(),
+        { method: "PATCH", body: JSON.stringify(body) },
+      );
+      patchLocal(updated);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "ذخیره ناموفق بود");
+      load();
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   function selectIds(ids: number[], mode: "add" | "set" | "toggle" = "add") {
     setSelected((prev) => {
@@ -105,8 +181,7 @@ export default function AdminProductsPage() {
     if (shiftKey && lastClickedIndex.current != null) {
       const from = Math.min(lastClickedIndex.current, index);
       const to = Math.max(lastClickedIndex.current, index);
-      const rangeIds = filtered.slice(from, to + 1).map((p) => p.id);
-      selectIds(rangeIds, "add");
+      selectIds(filtered.slice(from, to + 1).map((p) => p.id), "add");
     } else {
       selectIds([id], "toggle");
       lastClickedIndex.current = index;
@@ -128,37 +203,50 @@ export default function AdminProductsPage() {
     }
   }
 
-  function selectFirstN(n: number) {
-    selectIds(
-      filtered.slice(0, n).map((p) => p.id),
-      "set",
-    );
-    lastClickedIndex.current = Math.min(n, filtered.length) - 1;
-  }
-
   function clearSelection() {
     setSelected(new Set());
     lastClickedIndex.current = null;
   }
 
-  function selectMissing(kind: "image" | "description") {
-    const ids = filtered
-      .filter((p) =>
-        kind === "image"
-          ? (p.image_count ?? 0) < 1
-          : !(p.description || "").trim(),
-      )
-      .map((p) => p.id);
-    if (!ids.length) {
-      alert(
-        kind === "image"
-          ? "محصول بدون عکس در این لیست نیست."
-          : "محصول بدون توضیح در این لیست نیست.",
+  function pickImage(productId: number) {
+    uploadTargetId.current = productId;
+    fileInputRef.current?.click();
+  }
+
+  async function onImagePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const productId = uploadTargetId.current;
+    e.target.value = "";
+    if (!file || productId == null) return;
+    setSavingId(productId);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("as_primary", "true");
+    try {
+      const res = await fetch(apiUrl(`/api/v1/admin/products/${productId}/images`), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token()}` },
+        body: fd,
+      });
+      if (!res.ok) throw new Error(await errorMessageFromResponse(res));
+      const img = (await res.json()) as { url: string };
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                thumbnail_url: img.url,
+                image_count: Math.max(1, (p.image_count || 0) + 1),
+              }
+            : p,
+        ),
       );
-      return;
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "آپلود ناموفق بود");
+    } finally {
+      setSavingId(null);
+      uploadTargetId.current = null;
     }
-    selectIds(ids, "set");
-    lastClickedIndex.current = null;
   }
 
   async function remove(id: number) {
@@ -208,20 +296,19 @@ export default function AdminProductsPage() {
     if (!ids.length) return;
     const labels = {
       images: "جستجوی عکس از وب",
-      description: "کرال توضیح از وب (دیجی‌کالا/ترب + AvalAI)",
+      description: "کرال توضیح از وب",
       both: "جستجوی عکس و توضیح از وب",
-      category: "دسته‌بندی خودکار بر اساس نام (در صورت نیاز دسته جدید ساخته می‌شود)",
+      category: "دسته‌بندی خودکار",
     } as const;
     if (
       !confirm(
-        `برای ${ids.length} محصول انتخاب‌شده، ${labels[mode]} در صف سرور قرار بگیرد؟\nپنل گیر نمی‌کند؛ نتیجه در «غنی‌سازی» و روی خود محصول می‌آید.`,
+        `برای ${ids.length} محصول، ${labels[mode]} در صف قرار بگیرد؟`,
       )
     ) {
       return;
     }
     setBusy(true);
     try {
-      // صف را تکه‌تکه می‌فرستیم تا سقف API گیر نکند
       const chunkSize = 200;
       let queued = 0;
       let skipped = 0;
@@ -238,7 +325,7 @@ export default function AdminProductsPage() {
         queued += res.queued;
         skipped += res.skipped;
       }
-      alert(`${queued} در صف · ${skipped} رد شد (قبلاً در صف بود یا نامعتبر)`);
+      alert(`${queued} در صف · ${skipped} رد شد`);
       window.location.href = "/admin/enrichment";
     } catch (e) {
       alert(e instanceof Error ? e.message : "صف‌کردن ناموفق بود");
@@ -247,13 +334,30 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function markSelectedChecked(value: boolean) {
+    const ids = [...selected];
+    if (!ids.length) return;
+    setBusy(true);
+    try {
+      for (const id of ids) {
+        await adminFetch(`/api/v1/admin/products/${id}/quick`, token(), {
+          method: "PATCH",
+          body: JSON.stringify({ is_checked: value }),
+        });
+      }
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "خطا");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggleStatus(p: ProductAdmin) {
     const next = p.status === "published" ? "draft" : "published";
-    if (next === "published") {
-      if (p.image_count < 1) {
-        alert("برای انتشار، ابتدا از ویرایش محصول حداقل یک تصویر آپلود کنید.");
-        return;
-      }
+    if (next === "published" && p.image_count < 1) {
+      alert("برای انتشار حداقل یک تصویر لازم است.");
+      return;
     }
     try {
       await adminFetch(`/api/v1/admin/products/${p.id}/status`, token(), {
@@ -269,144 +373,176 @@ export default function AdminProductsPage() {
     }
   }
 
+  function setCategoryFilter(id: number | null) {
+    setCategoryId(id);
+    const url = new URL(window.location.href);
+    if (id == null) url.searchParams.delete("category");
+    else url.searchParams.set("category", String(id));
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }
+
   const counts = useMemo(
     () => ({
       all: items.length,
       published: items.filter((p) => p.status === "published").length,
       draft: items.filter((p) => p.status === "draft").length,
-      low_stock: items.filter((p) => (p.stock_quantity ?? 0) <= 3).length,
+      low_stock: items.filter((p) => {
+        const s = p.stock_quantity ?? 0;
+        return s > 0 && s <= 3;
+      }).length,
+      out_of_stock: items.filter((p) => (p.stock_quantity ?? 0) < 1).length,
+      unchecked: items.filter((p) => !p.is_checked).length,
+      checked: items.filter((p) => !!p.is_checked).length,
     }),
     [items],
   );
 
+  const filterChips: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: `همه (${counts.all})` },
+    { key: "unchecked", label: `چک‌نشده (${counts.unchecked})` },
+    { key: "checked", label: `چک‌شده (${counts.checked})` },
+    { key: "out_of_stock", label: `ناموجود (${counts.out_of_stock})` },
+    { key: "low_stock", label: `کم‌موجود (${counts.low_stock})` },
+    { key: "published", label: `منتشر (${counts.published})` },
+    { key: "draft", label: `پیش‌نویس (${counts.draft})` },
+  ];
+
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold">محصولات</h1>
-          <p className="mt-2 text-sm text-muted">
-            {counts.published} منتشر · {counts.draft} پیش‌نویس
+    <div className="pb-8">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onImagePicked}
+      />
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold sm:text-3xl">محصولات</h1>
+          <p className="mt-1 text-sm text-muted">
+            ویرایش سریع قیمت، موجودی و عکس — بدون ورود به فرم کامل
+            {categoryLabel ? (
+              <>
+                {" "}
+                · دسته: <span className="text-[var(--fg)]">{categoryLabel}</span>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {selected.size > 0 ? (
-            <>
-              <Button variant="outline" disabled={busy} onClick={() => enrichSelected("images")}>
-                دریافت عکس از وب ({selected.size})
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={() => enrichSelected("description")}>
-                کرال توضیح از وب ({selected.size})
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={() => enrichSelected("both")}>
-                عکس + توضیح ({selected.size})
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={() => enrichSelected("category")}>
-                دسته‌بندی خودکار ({selected.size})
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={removeSelected}>
-                حذف انتخاب‌شده ({selected.size})
-              </Button>
-            </>
-          ) : null}
           <Link href="/admin/enrichment">
-            <Button variant="ghost">صف غنی‌سازی</Button>
+            <Button variant="ghost" size="sm">
+              غنی‌سازی
+            </Button>
           </Link>
           <Link href="/admin/products/new">
-            <Button>محصول جدید</Button>
+            <Button size="sm">محصول جدید</Button>
           </Link>
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <input
-          className="input-theme max-w-xs"
-          placeholder="جستجو عنوان یا اسلاگ..."
+          className="input-theme w-full sm:max-w-xs"
+          placeholder="جستجو عنوان، اسلاگ، دسته..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {(["all", "published", "draft", "low_stock"] as const).map((f) => (
+        <select
+          className="input-theme w-full sm:max-w-[220px]"
+          value={categoryId ?? ""}
+          onChange={(e) =>
+            setCategoryFilter(e.target.value ? Number(e.target.value) : null)
+          }
+        >
+          <option value="">همه دسته‌ها</option>
+          {flatCategories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name_fa}
+              {typeof c.product_count_subtree === "number"
+                ? ` (${c.product_count_subtree})`
+                : ""}
+            </option>
+          ))}
+        </select>
+        {categoryId != null ? (
+          <Button size="sm" variant="ghost" onClick={() => setCategoryFilter(null)}>
+            حذف فیلتر دسته
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {filterChips.map((f) => (
           <button
-            key={f}
+            key={f.key}
             type="button"
-            className={cn("chip-theme", filter === f && "is-active")}
-            onClick={() => setFilter(f)}
+            className={cn("chip-theme shrink-0 whitespace-nowrap", filter === f.key && "is-active")}
+            onClick={() => setFilter(f.key)}
           >
-            {f === "all"
-              ? `همه (${counts.all})`
-              : f === "published"
-                ? `منتشر (${counts.published})`
-                : f === "draft"
-                  ? `پیش‌نویس (${counts.draft})`
-                  : `کم‌موجود (${counts.low_stock})`}
+            {f.label}
           </button>
         ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-theme bg-card p-3 text-sm">
-        <span className="text-muted">
-          انتخاب:{" "}
-          <span className="font-medium text-[var(--fg)]">
-            {selected.size.toLocaleString("fa-IR")}
-          </span>
-          {filtered.length ? (
-            <span className="text-muted">
-              {" "}
-              از {filtered.length.toLocaleString("fa-IR")} ردیف
-            </span>
-          ) : null}
-        </span>
-        <span className="hidden text-muted sm:inline">·</span>
-        <Button size="sm" variant="outline" disabled={!filtered.length} onClick={toggleAllFiltered}>
-          {allFilteredSelected ? "لغو همهٔ لیست" : "همهٔ لیست فعلی"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={filtered.length < 1}
-          onClick={() => selectFirstN(50)}
-        >
-          ۵۰ اول
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={filtered.length < 1}
-          onClick={() => selectFirstN(100)}
-        >
-          ۱۰۰ اول
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!filtered.length}
-          onClick={() => selectMissing("image")}
-        >
-          بدون عکس
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!filtered.length}
-          onClick={() => selectMissing("description")}
-        >
-          بدون توضیح
-        </Button>
-        <Button size="sm" variant="ghost" disabled={selected.size === 0} onClick={clearSelection}>
-          پاک کردن
-        </Button>
-        <p className="w-full text-[11px] text-muted sm:w-auto sm:ms-auto">
-          Shift + کلیک روی ردیف = انتخاب بازه
-        </p>
-      </div>
+      {selected.size > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-theme bg-card p-3 text-sm">
+          <span className="font-medium">{selected.size.toLocaleString("fa-IR")} انتخاب</span>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => markSelectedChecked(true)}>
+            علامت چک
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => markSelectedChecked(false)}>
+            برداشتن چک
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => enrichSelected("images")}>
+            عکس وب
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => enrichSelected("description")}>
+            توضیح وب
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={removeSelected}>
+            حذف
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearSelection}>
+            لغو
+          </Button>
+          <Button size="sm" variant="ghost" className="ms-auto hidden sm:inline-flex" onClick={toggleAllFiltered}>
+            {allFilteredSelected ? "لغو همه" : "همه لیست"}
+          </Button>
+        </div>
+      ) : null}
 
       {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
       {loading ? <p className="mt-8 text-muted">در حال بارگذاری...</p> : null}
 
-      <div className="card-theme mt-6 overflow-x-auto">
-        <table className="w-full min-w-[960px] text-sm">
+      {/* موبایل: کارت */}
+      <div className="mt-5 space-y-3 md:hidden">
+        {filtered.map((p, index) => (
+          <ProductMobileCard
+            key={p.id}
+            p={p}
+            selected={selected.has(p.id)}
+            saving={savingId === p.id}
+            onToggleSelect={() => toggleOne(p.id, index, false)}
+            onQuickSave={quickSave}
+            onPickImage={() => pickImage(p.id)}
+            onToggleStatus={() => toggleStatus(p)}
+            onRemove={() => remove(p.id)}
+            busy={busy}
+          />
+        ))}
+        {!loading && filtered.length === 0 ? (
+          <p className="py-10 text-center text-muted">محصولی یافت نشد</p>
+        ) : null}
+      </div>
+
+      {/* دسکتاپ: جدول */}
+      <div className="card-theme mt-6 hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[920px] text-sm">
           <thead className="border-b border-theme text-muted">
             <tr>
-              <th className="w-12 p-4 text-right">
+              <th className="w-10 p-3 text-right">
                 <input
                   ref={headerCheckRef}
                   type="checkbox"
@@ -417,103 +553,150 @@ export default function AdminProductsPage() {
                   disabled={!filtered.length}
                 />
               </th>
-              <th className="p-4 text-right">تصویر</th>
-              <th className="p-4 text-right">عنوان</th>
-              <th className="p-4 text-right">اسلاگ</th>
-              <th className="p-4 text-right">قیمت</th>
-              <th className="p-4 text-right">موجودی</th>
-              <th className="p-4 text-right">تنوع / عکس</th>
-              <th className="p-4 text-right">وضعیت</th>
-              <th className="p-4" />
+              <th className="w-14 p-3 text-right">عکس</th>
+              <th className="p-3 text-right">محصول</th>
+              <th className="w-36 p-3 text-right">قیمت</th>
+              <th className="w-40 p-3 text-right">موجودی</th>
+              <th className="w-24 p-3 text-center">چک</th>
+              <th className="w-24 p-3 text-right">وضعیت</th>
+              <th className="w-44 p-3" />
             </tr>
           </thead>
           <tbody>
             {filtered.map((p, index) => {
               const isOn = selected.has(p.id);
+              const stock = p.stock_quantity ?? 0;
+              const oos = stock < 1;
               return (
                 <tr
                   key={p.id}
                   className={cn(
                     "border-b border-theme transition-colors",
                     isOn ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--bg-elevated)]",
+                    oos && !isOn && "bg-red-500/[0.03]",
                   )}
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest("a, button, input, label")) return;
-                    toggleOne(p.id, index, e.shiftKey);
-                  }}
                 >
-                  <td className="p-4">
+                  <td className="p-3">
                     <input
                       type="checkbox"
                       className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
                       checked={isOn}
-                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) =>
                         toggleOne(p.id, index, (e.nativeEvent as MouseEvent).shiftKey)
                       }
                       aria-label={`انتخاب ${p.title}`}
                     />
                   </td>
-                  <td className="p-4">
-                    {p.thumbnail_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.thumbnail_url} alt="" className="h-12 w-10 object-cover" />
-                    ) : (
-                      <div className="flex h-12 w-10 items-center justify-center bg-surface text-xs text-muted">
-                        —
-                      </div>
-                    )}
+                  <td className="p-3">
+                    <button
+                      type="button"
+                      className="group relative h-14 w-14 overflow-hidden rounded-lg border border-theme bg-surface"
+                      title="تعویض عکس اصلی"
+                      disabled={savingId === p.id}
+                      onClick={() => pickImage(p.id)}
+                    >
+                      {p.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex h-full items-center justify-center text-muted">
+                          <ImagePlus className="h-5 w-5" />
+                        </span>
+                      )}
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition group-hover:opacity-100">
+                        <Upload className="h-4 w-4 text-white" />
+                      </span>
+                    </button>
                   </td>
-                  <td className="p-4 font-medium">{p.title}</td>
-                  <td className="p-4 font-mono text-xs text-muted">{p.slug}</td>
-                  <td className="p-4">{formatToman(p.base_price)}</td>
-                  <td className={cn("p-4", (p.stock_quantity ?? 0) <= 3 && "font-medium text-amber-600")}>
-                    {(p.stock_quantity ?? 0).toLocaleString("fa-IR")}
+                  <td className="p-3">
+                    <p className="max-w-[280px] truncate font-medium" title={p.title}>
+                      {p.title}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted">
+                      {p.category_name_fa || "بدون دسته"}
+                      {p.image_count < 1 ? " · بدون عکس" : ""}
+                      {!(p.description || "").trim() ? " · بدون توضیح" : ""}
+                    </p>
                   </td>
-                  <td className="p-4 text-xs text-muted">
-                    {p.variation_count ?? 0} تنوع · {p.image_count} عکس
-                    {!(p.description || "").trim() ? " · بدون توضیح" : ""}
+                  <td className="p-3">
+                    <PriceInput
+                      value={p.base_price}
+                      disabled={savingId === p.id}
+                      onCommit={(n) => quickSave(p.id, { base_price: n })}
+                    />
+                    <p className="mt-0.5 text-[10px] text-muted">{formatToman(p.base_price)}</p>
                   </td>
-                  <td className="p-4">
-                    <span className={p.status === "published" ? "text-green-500" : "text-amber-500"}>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1.5">
+                      <StockInput
+                        value={stock}
+                        disabled={savingId === p.id}
+                        oos={oos}
+                        onCommit={(n) => quickSave(p.id, { stock_quantity: n })}
+                      />
+                      <button
+                        type="button"
+                        className={cn(
+                          "rounded-lg border px-2 py-1.5 text-[11px] transition",
+                          oos
+                            ? "border-red-500/40 bg-red-500/10 text-red-600"
+                            : "border-theme text-muted hover:border-red-500/40 hover:text-red-600",
+                        )}
+                        disabled={savingId === p.id || oos}
+                        title="ناموجود کردن"
+                        onClick={() => quickSave(p.id, { mark_out_of_stock: true })}
+                      >
+                        ناموجود
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
+                      type="button"
+                      className={cn(
+                        "inline-flex h-9 w-9 items-center justify-center rounded-full border transition",
+                        p.is_checked
+                          ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-600"
+                          : "border-theme text-muted hover:border-[var(--accent)]/40 hover:text-[var(--fg)]",
+                      )}
+                      title={p.is_checked ? "برداشتن چک" : "تأیید چک اولیه"}
+                      disabled={savingId === p.id}
+                      onClick={() => quickSave(p.id, { is_checked: !p.is_checked })}
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  </td>
+                  <td className="p-3">
+                    <span className={p.status === "published" ? "text-green-600" : "text-amber-600"}>
                       {p.status === "published" ? "منتشر" : "پیش‌نویس"}
                     </span>
-                    {p.published_at ? (
-                      <p className="text-[10px] text-muted">
-                        {new Intl.DateTimeFormat("fa-IR").format(new Date(p.published_at))}
-                      </p>
+                    {oos ? (
+                      <p className="text-[10px] font-medium text-red-500">ناموجود</p>
                     ) : null}
                   </td>
-                  <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-wrap gap-2">
+                  <td className="p-3">
+                    <div className="flex flex-wrap justify-end gap-1.5">
                       <Link href={`/admin/products/${p.id}/edit`}>
                         <Button size="sm" variant="outline">
-                          ویرایش
+                          جزئیات
                         </Button>
                       </Link>
                       {p.status === "published" ? (
                         <Link href={`/product/${p.slug}`} target="_blank" rel="noreferrer">
                           <Button size="sm" variant="ghost">
-                            <ExternalLink size={14} className="me-1" />
-                            فروشگاه
+                            <ExternalLink size={14} />
                           </Button>
                         </Link>
                       ) : null}
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         disabled={p.status !== "published" && p.image_count < 1}
-                        title={
-                          p.status !== "published" && p.image_count < 1
-                            ? "ابتدا تصویر اضافه کنید"
-                            : undefined
-                        }
                         onClick={() => toggleStatus(p)}
                       >
                         {p.status === "published" ? "پیش‌نویس" : "انتشار"}
                       </Button>
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => remove(p.id)}>
+                      <Button size="sm" variant="ghost" disabled={busy} onClick={() => remove(p.id)}>
                         حذف
                       </Button>
                     </div>
@@ -528,5 +711,248 @@ export default function AdminProductsPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function PriceInput({
+  value,
+  disabled,
+  onCommit,
+}: {
+  value: string;
+  disabled?: boolean;
+  onCommit: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(Math.round(Number(value) || 0)));
+  useEffect(() => {
+    setDraft(String(Math.round(Number(value) || 0)));
+  }, [value]);
+
+  function commit() {
+    const n = Number(draft.replace(/[^\d.]/g, ""));
+    if (!Number.isFinite(n) || n < 0) {
+      setDraft(String(Math.round(Number(value) || 0)));
+      return;
+    }
+    if (n === Number(value)) return;
+    onCommit(n);
+  }
+
+  return (
+    <input
+      className="input-theme w-full max-w-[8.5rem] px-2 py-1.5 text-sm tabular-nums"
+      inputMode="numeric"
+      disabled={disabled}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.currentTarget.blur();
+        }
+      }}
+      aria-label="قیمت"
+    />
+  );
+}
+
+function StockInput({
+  value,
+  disabled,
+  oos,
+  onCommit,
+}: {
+  value: number;
+  disabled?: boolean;
+  oos?: boolean;
+  onCommit: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  function commit() {
+    const n = Number.parseInt(draft.replace(/[^\d]/g, ""), 10);
+    if (!Number.isFinite(n) || n < 0) {
+      setDraft(String(value));
+      return;
+    }
+    if (n === value) return;
+    onCommit(n);
+  }
+
+  return (
+    <input
+      className={cn(
+        "input-theme w-16 px-2 py-1.5 text-center text-sm tabular-nums",
+        oos && "border-red-500/40 text-red-600",
+      )}
+      inputMode="numeric"
+      disabled={disabled}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+      aria-label="موجودی"
+    />
+  );
+}
+
+function ProductMobileCard({
+  p,
+  selected,
+  saving,
+  onToggleSelect,
+  onQuickSave,
+  onPickImage,
+  onToggleStatus,
+  onRemove,
+  busy,
+}: {
+  p: ProductAdmin;
+  selected: boolean;
+  saving: boolean;
+  onToggleSelect: () => void;
+  onQuickSave: (
+    id: number,
+    body: {
+      base_price?: number;
+      stock_quantity?: number;
+      is_checked?: boolean;
+      mark_out_of_stock?: boolean;
+    },
+  ) => void;
+  onPickImage: () => void;
+  onToggleStatus: () => void;
+  onRemove: () => void;
+  busy: boolean;
+}) {
+  const stock = p.stock_quantity ?? 0;
+  const oos = stock < 1;
+
+  return (
+    <article
+      className={cn(
+        "rounded-2xl border border-theme bg-card p-3",
+        selected && "border-[var(--accent)]/50 bg-[var(--accent-soft)]",
+        oos && "border-red-500/25",
+      )}
+    >
+      <div className="flex gap-3">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
+          checked={selected}
+          onChange={onToggleSelect}
+          aria-label={`انتخاب ${p.title}`}
+        />
+        <button
+          type="button"
+          className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-theme bg-surface"
+          onClick={onPickImage}
+          disabled={saving}
+          title="تعویض عکس"
+        >
+          {p.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.thumbnail_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-muted">
+              <ImagePlus className="h-5 w-5" />
+            </span>
+          )}
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-sm font-medium leading-snug">{p.title}</p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            {p.category_name_fa || "بدون دسته"}
+            {oos ? " · ناموجود" : ""}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-full border",
+                p.is_checked
+                  ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-600"
+                  : "border-theme text-muted",
+              )}
+              disabled={saving}
+              onClick={() => onQuickSave(p.id, { is_checked: !p.is_checked })}
+              aria-label="چک"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <span
+              className={cn(
+                "text-xs",
+                p.status === "published" ? "text-green-600" : "text-amber-600",
+              )}
+            >
+              {p.status === "published" ? "منتشر" : "پیش‌نویس"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label className="block text-[11px] text-muted">
+          قیمت
+          <PriceInput
+            value={p.base_price}
+            disabled={saving}
+            onCommit={(n) => onQuickSave(p.id, { base_price: n })}
+          />
+        </label>
+        <label className="block text-[11px] text-muted">
+          موجودی
+          <div className="mt-0 flex items-center gap-1">
+            <StockInput
+              value={stock}
+              disabled={saving}
+              oos={oos}
+              onCommit={(n) => onQuickSave(p.id, { stock_quantity: n })}
+            />
+            <button
+              type="button"
+              className={cn(
+                "rounded-lg border px-2 py-1.5 text-[11px]",
+                oos
+                  ? "border-red-500/40 bg-red-500/10 text-red-600"
+                  : "border-theme text-muted",
+              )}
+              disabled={saving || oos}
+              onClick={() => onQuickSave(p.id, { mark_out_of_stock: true })}
+            >
+              ناموجود
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <Link href={`/admin/products/${p.id}/edit`} className="flex-1">
+          <Button size="sm" variant="outline" className="w-full">
+            جزئیات
+          </Button>
+        </Link>
+        {p.status === "published" ? (
+          <Link href={`/product/${p.slug}`} target="_blank" rel="noreferrer">
+            <Button size="sm" variant="ghost">
+              <ExternalLink size={14} />
+            </Button>
+          </Link>
+        ) : null}
+        <Button size="sm" variant="ghost" onClick={onToggleStatus}>
+          {p.status === "published" ? "پیش‌نویس" : "انتشار"}
+        </Button>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onRemove}>
+          حذف
+        </Button>
+      </div>
+    </article>
   );
 }

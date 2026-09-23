@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -45,18 +45,54 @@ def category_browse_dict(cat: Category, path: str, *, child_count: int = 0) -> d
     }
 
 
-def category_admin_out(cat: Category) -> CategoryOut:
+def category_product_counts(db: Session) -> dict[int, int]:
+    """تعداد مستقیم محصول هر دسته (parent_category_id)."""
+    rows = db.execute(
+        select(Product.parent_category_id, func.count())
+        .select_from(Product)
+        .group_by(Product.parent_category_id)
+    ).all()
+    return {int(cid): int(cnt) for cid, cnt in rows if cid is not None}
+
+
+def category_admin_out(
+    cat: Category,
+    *,
+    product_count: int = 0,
+    product_count_subtree: int = 0,
+) -> CategoryOut:
     base = CategoryOut.model_validate(cat)
-    return base.model_copy(update={"icon_url": category_image_url(cat)})
+    return base.model_copy(
+        update={
+            "icon_url": category_image_url(cat),
+            "product_count": product_count,
+            "product_count_subtree": product_count_subtree,
+        }
+    )
 
 
-def category_admin_node(cat: Category, children: list[dict] | None = None) -> dict:
-    out = category_admin_out(cat)
+def category_admin_node(
+    cat: Category,
+    children: list[dict] | None = None,
+    *,
+    product_count: int = 0,
+    product_count_subtree: int = 0,
+) -> dict:
+    out = category_admin_out(
+        cat,
+        product_count=product_count,
+        product_count_subtree=product_count_subtree,
+    )
     return {**out.model_dump(), "children": children or []}
 
 
-def build_admin_category_tree(categories: list[Category]) -> list[dict]:
-    """درخت تو در تو برای پنل ادمین."""
+def build_admin_category_tree(
+    categories: list[Category],
+    *,
+    product_counts: dict[int, int] | None = None,
+) -> list[dict]:
+    """درخت تو در تو برای پنل ادمین — با شمارش محصول مستقیم و زیرشاخه."""
+    counts = product_counts or {}
     by_parent: dict[int | None, list[Category]] = {}
     for c in categories:
         by_parent.setdefault(c.parent_id, []).append(c)
@@ -65,7 +101,15 @@ def build_admin_category_tree(categories: list[Category]) -> list[dict]:
 
     def attach(cat: Category) -> dict:
         kids = by_parent.get(cat.id, [])
-        return category_admin_node(cat, [attach(ch) for ch in kids])
+        child_nodes = [attach(ch) for ch in kids]
+        direct = int(counts.get(cat.id, 0))
+        subtree = direct + sum(int(ch.get("product_count_subtree") or 0) for ch in child_nodes)
+        return category_admin_node(
+            cat,
+            child_nodes,
+            product_count=direct,
+            product_count_subtree=subtree,
+        )
 
     roots = by_parent.get(None, [])
     return [attach(r) for r in roots]

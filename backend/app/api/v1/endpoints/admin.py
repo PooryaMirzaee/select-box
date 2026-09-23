@@ -37,6 +37,7 @@ from app.schemas.admin import (
     PaymentReviewIn,
     ProductAdminOut,
     ProductIn,
+    ProductQuickUpdateIn,
     ProductUpdateIn,
     StatusPatch,
     VariationBulkIn,
@@ -47,9 +48,11 @@ from app.services.catalog import primary_product_image_url
 from app.services.category_helpers import (
     build_admin_category_tree,
     category_admin_out,
+    category_product_counts,
+    collect_category_subtree_ids,
     normalize_category_slug,
 )
-from app.services.product_admin import ensure_default_variation
+from app.services.product_admin import ensure_default_variation, set_product_stock_total
 from app.services.storage import public_url
 from app.services.upload_security import secure_image_upload
 
@@ -123,13 +126,22 @@ def dashboard(db: Session = Depends(get_db)):
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     rows = db.scalars(select(Category).order_by(Category.sort_order, Category.id)).all()
-    return [category_admin_out(c) for c in rows]
+    counts = category_product_counts(db)
+    # برای لیست تخت، subtree = direct (بدون درخت)
+    return [
+        category_admin_out(
+            c,
+            product_count=counts.get(c.id, 0),
+            product_count_subtree=counts.get(c.id, 0),
+        )
+        for c in rows
+    ]
 
 
 @router.get("/categories/tree")
 def list_categories_tree(db: Session = Depends(get_db)):
     rows = db.scalars(select(Category).order_by(Category.sort_order, Category.id)).all()
-    return build_admin_category_tree(rows)
+    return build_admin_category_tree(rows, product_counts=category_product_counts(db))
 
 
 def _normalize_category_slug(raw: str) -> str:
@@ -222,6 +234,7 @@ def _product_query():
         joinedload(Product.images),
         joinedload(Product.variations),
         joinedload(Product.design).joinedload(Design.assets),
+        joinedload(Product.parent_category),
     )
 
 
@@ -232,6 +245,12 @@ def _product_admin_out(p: Product) -> ProductAdminOut:
     published_at = None
     if p.published_at is not None:
         published_at = p.published_at.isoformat() if hasattr(p.published_at, "isoformat") else str(p.published_at)
+    checked_at = None
+    if getattr(p, "checked_at", None) is not None:
+        checked_at = (
+            p.checked_at.isoformat() if hasattr(p.checked_at, "isoformat") else str(p.checked_at)
+        )
+    cat = p.parent_category
     return ProductAdminOut(
         id=p.id,
         design_id=p.design_id,
@@ -253,7 +272,10 @@ def _product_admin_out(p: Product) -> ProductAdminOut:
         image_count=len(p.images or []),
         variation_count=var_count,
         stock_quantity=sum(int(v.stock_quantity or 0) for v in (p.variations or [])),
+        is_checked=bool(getattr(p, "is_checked", False)),
+        checked_at=checked_at,
         published_at=published_at,
+        category_name_fa=cat.name_fa if cat else None,
     )
 
 
@@ -265,9 +287,25 @@ def _set_product_published(p: Product, status: str) -> None:
         p.published_at = None
 
 
+def _apply_checked(p: Product, is_checked: bool) -> None:
+    p.is_checked = bool(is_checked)
+    p.checked_at = datetime.now(timezone.utc) if is_checked else None
+
+
 @router.get("/products", response_model=list[ProductAdminOut])
-def list_products_admin(db: Session = Depends(get_db)):
-    rows = db.scalars(_product_query().order_by(Product.id.desc())).unique().all()
+def list_products_admin(
+    db: Session = Depends(get_db),
+    category_id: int | None = Query(default=None),
+    include_subtree: bool = Query(default=True),
+):
+    q = _product_query()
+    if category_id is not None:
+        if include_subtree:
+            ids = collect_category_subtree_ids(db, category_id)
+            q = q.where(Product.parent_category_id.in_(ids))
+        else:
+            q = q.where(Product.parent_category_id == category_id)
+    rows = db.scalars(q.order_by(Product.id.desc())).unique().all()
     return [_product_admin_out(p) for p in rows]
 
 
@@ -328,8 +366,11 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
         raise HTTPException(status_code=404, detail="Product not found")
     data = body.model_dump(exclude_unset=True)
     new_status = data.pop("status", None)
+    is_checked = data.pop("is_checked", None)
     for k, v in data.items():
         setattr(p, k, v)
+    if is_checked is not None:
+        _apply_checked(p, is_checked)
     if new_status is not None:
         if new_status not in ("draft", "published"):
             raise HTTPException(status_code=400, detail="Invalid status")
@@ -338,6 +379,30 @@ def update_product(product_id: int, body: ProductUpdateIn, db: Session = Depends
             db.refresh(p, attribute_names=["variations", "images"])
             _require_publishable(p)
         _set_product_published(p, new_status)
+    db.commit()
+    p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
+    return _product_admin_out(p)
+
+
+@router.patch("/products/{product_id}/quick", response_model=ProductAdminOut)
+def quick_update_product(
+    product_id: int,
+    body: ProductQuickUpdateIn,
+    db: Session = Depends(get_db),
+):
+    """ویرایش سریع قیمت / موجودی / چک از جدول محصولات."""
+    p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
+    if p is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    data = body.model_dump(exclude_unset=True)
+    if "base_price" in data and data["base_price"] is not None:
+        p.base_price = Decimal(str(data["base_price"]))
+    if data.get("mark_out_of_stock"):
+        set_product_stock_total(db, p, 0)
+    elif "stock_quantity" in data and data["stock_quantity"] is not None:
+        set_product_stock_total(db, p, int(data["stock_quantity"]))
+    if "is_checked" in data and data["is_checked"] is not None:
+        _apply_checked(p, bool(data["is_checked"]))
     db.commit()
     p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     return _product_admin_out(p)
