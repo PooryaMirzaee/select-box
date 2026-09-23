@@ -9,6 +9,7 @@ import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -394,7 +395,7 @@ def quick_update_product(
     body: ProductQuickUpdateIn,
     db: Session = Depends(get_db),
 ):
-    """ویرایش سریع قیمت / موجودی / چک از جدول محصولات."""
+    """ویرایش سریع قیمت / موجودی / دسته / چک از جدول محصولات."""
     p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     if p is None:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -405,11 +406,23 @@ def quick_update_product(
         set_product_stock_total(db, p, 0)
     elif "stock_quantity" in data and data["stock_quantity"] is not None:
         set_product_stock_total(db, p, int(data["stock_quantity"]))
+    if "parent_category_id" in data and data["parent_category_id"] is not None:
+        new_cat_id = int(data["parent_category_id"])
+        if db.get(Category, new_cat_id) is None:
+            raise HTTPException(status_code=400, detail="دسته نامعتبر است")
+        p.parent_category_id = new_cat_id
     if "is_checked" in data and data["is_checked"] is not None:
         _apply_checked(p, bool(data["is_checked"]))
     if "image_mismatch" in data and data["image_mismatch"] is not None:
         p.image_mismatch = bool(data["image_mismatch"])
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="تغییر دسته ممکن نبود — ممکن است همین طرح در این دسته قبلاً ثبت شده باشد",
+        ) from e
     p = db.scalars(_product_query().where(Product.id == product_id)).unique().first()
     return _product_admin_out(p)
 

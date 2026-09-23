@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { CategorySearchSelect } from "@/components/admin/CategorySearchSelect";
 import { Check, ExternalLink, ImagePlus, Upload } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import {
@@ -11,7 +12,12 @@ import {
   type ProductAdmin,
 } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
-import { findNode, flattenTree, type CategoryTreeNode } from "@/lib/category-tree";
+import {
+  findNode,
+  flattenTree,
+  parentSelectOptions,
+  type CategoryTreeNode,
+} from "@/lib/category-tree";
 import { cn, formatToman } from "@/lib/utils";
 
 type StatusFilter =
@@ -27,10 +33,20 @@ type StatusFilter =
 type QuickBody = {
   base_price?: number;
   stock_quantity?: number;
+  parent_category_id?: number;
   is_checked?: boolean;
   image_mismatch?: boolean;
   mark_out_of_stock?: boolean;
 };
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200] as const;
+const PAGE_SIZE_KEY = "selectbox_admin_products_page_size";
+
+function readPageSize(): number {
+  if (typeof window === "undefined") return 50;
+  const raw = Number(localStorage.getItem(PAGE_SIZE_KEY));
+  return PAGE_SIZE_OPTIONS.includes(raw as (typeof PAGE_SIZE_OPTIONS)[number]) ? raw : 50;
+}
 
 type BulkDeleteResult = {
   deleted: number[];
@@ -49,6 +65,8 @@ export default function AdminProductsPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const lastClickedIndex = useRef<number | null>(null);
   const headerCheckRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,10 +105,15 @@ export default function AdminProductsPage() {
   }, [load]);
 
   useEffect(() => {
+    setPageSize(readPageSize());
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("stock") === "low") setFilter("low_stock");
     if (params.get("filter") === "unchecked") setFilter("unchecked");
     if (params.get("filter") === "out_of_stock") setFilter("out_of_stock");
+    if (params.get("filter") === "image_mismatch") setFilter("image_mismatch");
     const cat = params.get("category");
     if (cat && /^\d+$/.test(cat)) setCategoryId(Number(cat));
   }, []);
@@ -101,6 +124,20 @@ export default function AdminProductsPage() {
   }, [categories, categoryId]);
 
   const flatCategories = useMemo(() => flattenTree(categories), [categories]);
+
+  const categoryOptions = useMemo(
+    () =>
+      parentSelectOptions(categories, new Set()).map((o) => {
+        const node = findNode(categories, o.id);
+        return {
+          id: o.id,
+          label: o.label,
+          name_fa: node?.name_fa,
+          slug: node?.slug,
+        };
+      }),
+    [categories],
+  );
 
   const filtered = useMemo(() => {
     let rows = items;
@@ -128,12 +165,32 @@ export default function AdminProductsPage() {
     return rows;
   }, [items, filter, search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [filter, search, categoryId, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageSlice = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
+  function changePageSize(n: number) {
+    setPageSize(n);
+    localStorage.setItem(PAGE_SIZE_KEY, String(n));
+  }
+
   const selectedInView = useMemo(
-    () => filtered.filter((p) => selected.has(p.id)).length,
-    [filtered, selected],
+    () => pageSlice.filter((p) => selected.has(p.id)).length,
+    [pageSlice, selected],
   );
   const allFilteredSelected =
-    filtered.length > 0 && selectedInView === filtered.length;
+    pageSlice.length > 0 && selectedInView === pageSlice.length;
   const someFilteredSelected = selectedInView > 0 && !allFilteredSelected;
 
   useEffect(() => {
@@ -183,26 +240,33 @@ export default function AdminProductsPage() {
     if (shiftKey && lastClickedIndex.current != null) {
       const from = Math.min(lastClickedIndex.current, index);
       const to = Math.max(lastClickedIndex.current, index);
-      selectIds(filtered.slice(from, to + 1).map((p) => p.id), "add");
+      selectIds(pageSlice.slice(from, to + 1).map((p) => p.id), "add");
     } else {
       selectIds([id], "toggle");
       lastClickedIndex.current = index;
     }
   }
 
-  function toggleAllFiltered() {
+  function toggleAllOnPage() {
     if (allFilteredSelected) {
       setSelected((prev) => {
         const next = new Set(prev);
-        filtered.forEach((p) => next.delete(p.id));
+        pageSlice.forEach((p) => next.delete(p.id));
         return next;
       });
     } else {
       selectIds(
-        filtered.map((p) => p.id),
+        pageSlice.map((p) => p.id),
         "add",
       );
     }
+  }
+
+  function selectAllFiltered() {
+    selectIds(
+      filtered.map((p) => p.id),
+      "set",
+    );
   }
 
   function clearSelection() {
@@ -511,8 +575,8 @@ export default function AdminProductsPage() {
           <Button size="sm" variant="ghost" onClick={clearSelection}>
             لغو
           </Button>
-          <Button size="sm" variant="ghost" className="ms-auto hidden sm:inline-flex" onClick={toggleAllFiltered}>
-            {allFilteredSelected ? "لغو همه" : "همه لیست"}
+          <Button size="sm" variant="ghost" className="ms-auto hidden sm:inline-flex" onClick={selectAllFiltered}>
+            همهٔ فیلتر ({filtered.length.toLocaleString("fa-IR")})
           </Button>
         </div>
       ) : null}
@@ -520,14 +584,26 @@ export default function AdminProductsPage() {
       {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
       {loading ? <p className="mt-8 text-muted">در حال بارگذاری...</p> : null}
 
+      {!loading && filtered.length > 0 ? (
+        <PaginationBar
+          page={safePage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          total={filtered.length}
+          onPage={setPage}
+          onPageSize={changePageSize}
+        />
+      ) : null}
+
       {/* موبایل: کارت */}
       <div className="mt-5 space-y-3 md:hidden">
-        {filtered.map((p, index) => (
+        {pageSlice.map((p, index) => (
           <ProductMobileCard
             key={p.id}
             p={p}
             selected={selected.has(p.id)}
             saving={savingId === p.id}
+            categoryOptions={categoryOptions}
             onToggleSelect={() => toggleOne(p.id, index, false)}
             onQuickSave={quickSave}
             onPickImage={() => pickImage(p.id)}
@@ -542,8 +618,9 @@ export default function AdminProductsPage() {
       </div>
 
       {/* دسکتاپ: جدول */}
-      <div className="card-theme mt-6 hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[920px] text-sm">
+      <div className="card-theme mt-6 hidden overflow-visible md:block">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[1100px] text-sm">
           <thead className="border-b border-theme text-muted">
             <tr>
               <th className="w-10 p-3 text-right">
@@ -552,23 +629,24 @@ export default function AdminProductsPage() {
                   type="checkbox"
                   className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
                   checked={allFilteredSelected}
-                  onChange={toggleAllFiltered}
-                  aria-label="انتخاب همه"
-                  disabled={!filtered.length}
+                  onChange={toggleAllOnPage}
+                  aria-label="انتخاب صفحه"
+                  disabled={!pageSlice.length}
                 />
               </th>
               <th className="w-14 p-3 text-right">عکس</th>
               <th className="p-3 text-right">محصول</th>
+              <th className="w-52 p-3 text-right">دسته</th>
               <th className="w-36 p-3 text-right">قیمت</th>
               <th className="w-40 p-3 text-right">موجودی</th>
-              <th className="w-24 p-3 text-center">چک</th>
+              <th className="w-20 p-3 text-center">چک</th>
               <th className="w-28 p-3 text-center">مغایرت عکس</th>
               <th className="w-24 p-3 text-right">وضعیت</th>
               <th className="w-44 p-3" />
             </tr>
           </thead>
           <tbody>
-            {filtered.map((p, index) => {
+            {pageSlice.map((p, index) => {
               const isOn = selected.has(p.id);
               const stock = p.stock_quantity ?? 0;
               const oos = stock < 1;
@@ -615,14 +693,22 @@ export default function AdminProductsPage() {
                     </button>
                   </td>
                   <td className="p-3">
-                    <p className="max-w-[280px] truncate font-medium" title={p.title}>
+                    <p className="max-w-[240px] truncate font-medium" title={p.title}>
                       {p.title}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted">
-                      {p.category_name_fa || "بدون دسته"}
-                      {p.image_count < 1 ? " · بدون عکس" : ""}
+                      {p.image_count < 1 ? "بدون عکس" : `${p.image_count} عکس`}
                       {!(p.description || "").trim() ? " · بدون توضیح" : ""}
                     </p>
+                  </td>
+                  <td className="p-3">
+                    <CategorySearchSelect
+                      value={p.parent_category_id}
+                      label={p.category_name_fa}
+                      options={categoryOptions}
+                      disabled={savingId === p.id}
+                      onChange={(id) => quickSave(p.id, { parent_category_id: id })}
+                    />
                   </td>
                   <td className="p-3">
                     <PriceInput
@@ -732,9 +818,89 @@ export default function AdminProductsPage() {
             })}
           </tbody>
         </table>
+        </div>
         {!loading && filtered.length === 0 ? (
           <p className="p-8 text-center text-muted">محصولی یافت نشد</p>
         ) : null}
+      </div>
+
+      {!loading && filtered.length > 0 ? (
+        <PaginationBar
+          page={safePage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          total={filtered.length}
+          onPage={setPage}
+          onPageSize={changePageSize}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PaginationBar({
+  page,
+  totalPages,
+  pageSize,
+  total,
+  onPage,
+  onPageSize,
+}: {
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  total: number;
+  onPage: (n: number) => void;
+  onPageSize: (n: number) => void;
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-theme bg-card px-3 py-2.5 text-sm">
+      <p className="text-muted">
+        {from.toLocaleString("fa-IR")}–{to.toLocaleString("fa-IR")} از{" "}
+        {total.toLocaleString("fa-IR")}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          در هر صفحه
+          <select
+            className="input-theme px-2 py-1 text-sm"
+            value={pageSize}
+            onChange={(e) => onPageSize(Number(e.target.value))}
+          >
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n.toLocaleString("fa-IR")}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(1)}>
+          اول
+        </Button>
+        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          قبلی
+        </Button>
+        <span className="min-w-[5.5rem] text-center tabular-nums">
+          {page.toLocaleString("fa-IR")} / {totalPages.toLocaleString("fa-IR")}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= totalPages}
+          onClick={() => onPage(page + 1)}
+        >
+          بعدی
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= totalPages}
+          onClick={() => onPage(totalPages)}
+        >
+          آخر
+        </Button>
       </div>
     </div>
   );
@@ -831,6 +997,7 @@ function ProductMobileCard({
   p,
   selected,
   saving,
+  categoryOptions,
   onToggleSelect,
   onQuickSave,
   onPickImage,
@@ -841,6 +1008,7 @@ function ProductMobileCard({
   p: ProductAdmin;
   selected: boolean;
   saving: boolean;
+  categoryOptions: { id: number; label: string; name_fa?: string; slug?: string }[];
   onToggleSelect: () => void;
   onQuickSave: (id: number, body: QuickBody) => void;
   onPickImage: () => void;
@@ -886,11 +1054,15 @@ function ProductMobileCard({
         </button>
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-medium leading-snug">{p.title}</p>
-          <p className="mt-0.5 text-[11px] text-muted">
-            {p.category_name_fa || "بدون دسته"}
-            {oos ? " · ناموجود" : ""}
-            {p.image_mismatch ? " · مغایرت عکس" : ""}
-          </p>
+          <div className="mt-2">
+            <CategorySearchSelect
+              value={p.parent_category_id}
+              label={p.category_name_fa}
+              options={categoryOptions}
+              disabled={saving}
+              onChange={(id) => onQuickSave(p.id, { parent_category_id: id })}
+            />
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -925,6 +1097,7 @@ function ProductMobileCard({
               )}
             >
               {p.status === "published" ? "منتشر" : "پیش‌نویس"}
+              {oos ? " · ناموجود" : ""}
             </span>
           </div>
         </div>

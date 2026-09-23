@@ -135,6 +135,7 @@ class ProductQuickUpdateIn(BaseModel):
 
     base_price: float | None = Field(default=None, ge=0)
     stock_quantity: int | None = Field(default=None, ge=0, le=1_000_000)
+    parent_category_id: int | None = Field(default=None, ge=1)
     is_checked: bool | None = None
     image_mismatch: bool | None = None
     mark_out_of_stock: bool | None = None
