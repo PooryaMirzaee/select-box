@@ -10,7 +10,7 @@ cd "$ROOT"
 source "$ROOT/scripts/compose.sh"
 
 PORT="${HTTP_PORT:-8090}"
-DOMAIN="selectbox.ir"
+DOMAIN="dashtestan-store.ir"
 SITE_URL="https://${DOMAIN}"
 
 if [[ -f .env ]]; then

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# تنظیم خودکار تولید SelectBox برای selectbox.ir
+# تنظیم خودکار تولید برای dashtestan-store.ir
 # -----------------------------------------------------------------------------
 # روی سرور:
 #   cd /opt/1panel/docker/compose/selectbox
@@ -15,10 +15,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-DOMAIN="selectbox.ir"
-SITE_URL="https://${DOMAIN}"
-WWW_SITE_URL="https://www.${DOMAIN}"
-HTTP_PORT="${HTTP_PORT:-8090}"
+DOMAIN="dashtestan-store.ir"
+SITE_URL="http://${DOMAIN}"
+WWW_SITE_URL="http://www.${DOMAIN}"
+HTTP_PORT="${HTTP_PORT:-8092}"
 RESET_DB=false
 
 for arg in "$@"; do
@@ -89,15 +89,15 @@ bash scripts/check-deploy.sh || true
 
 echo ""
 echo "=============================================="
-echo "✅ تنظیمات selectbox.ir اعمال شد"
+echo "✅ تنظیمات dashtestan-store.ir اعمال شد"
 echo ""
 echo "۱) در 1Panel → Website → Reverse Proxy:"
-echo "   Domain: selectbox.ir , www.selectbox.ir"
+echo "   Domain: dashtestan-store.ir , www.dashtestan-store.ir"
 echo "   Proxy:  http://127.0.0.1:${HTTP_PORT}"
 echo ""
-echo "۲) در CDN:"
+echo "۲) در CDN / DNS:"
 echo "   A record → IP سرور"
-echo "   SSL فعال | /api و /admin کش نشود"
+echo "   /api و /admin کش نشود"
 echo ""
 echo "۳) ورود ادمین:"
 echo "   ${SITE_URL}/admin/login"

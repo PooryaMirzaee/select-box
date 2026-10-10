@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 PORT="${HTTP_PORT:-8090}"
-DOMAIN="selectbox.ir"
+DOMAIN="dashtestan-store.ir"
 ADMIN_PHONE="${ADMIN_PHONE:-09120000000}"
 ADMIN_PASS="${ADMIN_PASS:-admin123}"
 

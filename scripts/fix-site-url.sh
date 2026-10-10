@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# اصلاح site_url در دیتابیس — باید https://selectbox.ir باشد نه selectbox.ir
+# اصلاح site_url در دیتابیس — هم‌تراز با PUBLIC_SITE_URL
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -7,12 +7,14 @@ cd "$ROOT"
 source "$ROOT/scripts/compose.sh"
 ensure_prod_compose
 
-SITE_URL="https://selectbox.ir"
+SITE_URL="http://dashtestan-store.ir"
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   source .env 2>/dev/null || true
   SITE_URL="${PUBLIC_SITE_URL:-$SITE_URL}"
 fi
+
+DOMAIN="$(echo "$SITE_URL" | sed -E 's#^https?://##; s#/.*##')"
 
 echo "=== site_url → $SITE_URL ==="
 dc exec -T api python -c "
@@ -32,6 +34,6 @@ finally:
 "
 
 echo ""
-echo "=== API shop (باید site_url با https باشد) ==="
-curl -sf -H "Host: selectbox.ir" "http://127.0.0.1:${HTTP_PORT:-8090}/api/v1/catalog/shop" \
+echo "=== API shop ==="
+curl -sf -H "Host: ${DOMAIN}" "http://127.0.0.1:${HTTP_PORT:-8092}/api/v1/catalog/shop" \
   | grep -o '"site_url":"[^"]*"' || true

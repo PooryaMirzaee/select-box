@@ -41,8 +41,8 @@ echo "=== health ==="
 curl -sf "http://127.0.0.1:${PORT}/health" && echo "" || echo "❌ /health fail"
 
 echo ""
-echo "=== API shop (Host: selectbox.ir) ==="
-curl -sf -H "Host: selectbox.ir" "http://127.0.0.1:${PORT}/api/v1/catalog/shop" | head -c 120
+echo "=== API shop (Host: dashtestan-store.ir) ==="
+curl -sf -H "Host: dashtestan-store.ir" "http://127.0.0.1:${PORT}/api/v1/catalog/shop" | head -c 120
 echo ""
 
 echo ""

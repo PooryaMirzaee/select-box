@@ -14,7 +14,7 @@ API_KEY_MASK = "••••••••"
 
 
 def normalize_site_url(url: str, *, default_scheme: str = "https") -> str:
-    """دامنهٔ خام (selectbox.ir) → https://selectbox.ir"""
+    """دامنهٔ خام (dashtestan-store.ir) → https://dashtestan-store.ir"""
     raw = (url or "").strip().rstrip("/")
     if not raw:
         return raw
@@ -86,7 +86,7 @@ DEFAULTS: dict[str, object] = {
     "zarinpal_callback_url": "",
     "google_analytics_id": "",
     "contact_phone": "021-91001234",
-    "contact_email": "support@selectbox.ir",
+    "contact_email": "support@dashtestan-store.ir",
     "contact_whatsapp": "",
     "contact_telegram": "",
     "contact_instagram": "",

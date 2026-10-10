@@ -1,6 +1,6 @@
 # راهنمای دیپلوی SelectBox روی 1Panel (گام‌به‌گام)
 
-فروشگاه **SelectBox** (`selectbox.ir`) — Next.js + FastAPI + PostgreSQL + Nginx داخلی.
+فروشگاه **SelectBox** (`dashtestan-store.ir`) — Next.js + FastAPI + PostgreSQL + Nginx داخلی.
 
 مخزن: **https://github.com/PooryaMirzaee/select-box**
 
@@ -95,7 +95,7 @@ openssl rand -hex 16   # POSTGRES_PASSWORD
 ویرایش `.env` (فقط `KEY=VALUE` — بدون کامنت اضافه):
 
 ```ini
-PUBLIC_SITE_URL=https://selectbox.ir
+PUBLIC_SITE_URL=http://dashtestan-store.ir
 NEXT_PUBLIC_API_URL=
 HTTP_PORT=8092
 
@@ -104,8 +104,8 @@ POSTGRES_PASSWORD=<خروجی openssl>
 POSTGRES_DB=selectbox
 
 JWT_SECRET=<خروجی openssl rand -hex 32>
-TRUSTED_HOSTS=selectbox.ir,www.selectbox.ir,nginx,api,localhost,127.0.0.1
-CORS_ORIGINS=https://selectbox.ir,https://www.selectbox.ir
+TRUSTED_HOSTS=dashtestan-store.ir,www.dashtestan-store.ir,nginx,api,localhost,127.0.0.1
+CORS_ORIGINS=http://dashtestan-store.ir,http://www.dashtestan-store.ir
 
 PAYMENT_GATEWAY=mock
 ZARINPAL_MERCHANT_ID=
@@ -170,7 +170,7 @@ docker compose cp backend/scripts/seed_demo_products.py api:/app/seed_demo_produ
 docker compose exec -T api python seed_demo_products.py
 ```
 
-ورود: `https://selectbox.ir/admin/login`  
+ورود: `http://dashtestan-store.ir/admin/login`  
 پس از اولین ورود، از بخش کاربران رمز پیش‌فرض را عوض کنید — هرگز رمز را در UI یا پیام خطا نمایش ندهید.
 
 تنظیم کارت‌به‌کارت: **ادمین → تنظیمات → کارت‌به‌کارت**
@@ -180,7 +180,7 @@ docker compose exec -T api python seed_demo_products.py
 ## گام ۶ — Reverse Proxy در 1Panel
 
 1. **Websites → Create Website → Reverse Proxy**
-2. دامنه: `selectbox.ir` و `www.selectbox.ir`
+2. دامنه: `dashtestan-store.ir` و `www.dashtestan-store.ir`
 3. آدرس پراکسی: `http://127.0.0.1:8092` (همان `HTTP_PORT`)
 4. تب **HTTPS** → Let's Encrypt → Apply
 5. **Force HTTPS** را فعال کن
@@ -217,10 +217,10 @@ bash scripts/check-deploy.sh
 
 | آدرس | انتظار |
 |------|--------|
-| `https://selectbox.ir` | صفحه فروشگاه |
-| `https://selectbox.ir/health` | `{"status":"ok"}` |
-| `https://selectbox.ir/admin/login` | پنل ادمین |
-| `https://selectbox.ir/checkout` | تسویه + کارت‌به‌کارت |
+| `http://dashtestan-store.ir` | صفحه فروشگاه |
+| `http://dashtestan-store.ir/health` | `{"status":"ok"}` |
+| `http://dashtestan-store.ir/admin/login` | پنل ادمین |
+| `http://dashtestan-store.ir/checkout` | تسویه + کارت‌به‌کارت |
 
 ---
 

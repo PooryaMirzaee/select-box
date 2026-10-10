@@ -10,7 +10,7 @@ cd "$ROOT"
 source "$ROOT/scripts/compose.sh"
 
 PORT="${HTTP_PORT:-8090}"
-DOMAIN="selectbox.ir"
+DOMAIN="dashtestan-store.ir"
 
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
@@ -49,8 +49,8 @@ else
 fi
 
 echo ""
-echo "=== homepage HTML (Host: ${DOMAIN:-selectbox.ir}) ==="
-HOME_CODE=$(curl -s -o /tmp/selectbox-home.html -w "%{http_code}" -H "Host: ${DOMAIN:-selectbox.ir}" "http://127.0.0.1:${PORT}/")
+echo "=== homepage HTML (Host: ${DOMAIN:-dashtestan-store.ir}) ==="
+HOME_CODE=$(curl -s -o /tmp/selectbox-home.html -w "%{http_code}" -H "Host: ${DOMAIN:-dashtestan-store.ir}" "http://127.0.0.1:${PORT}/")
 echo "HTTP $HOME_CODE"
 if [[ "$HOME_CODE" == "200" ]]; then
   grep -o '<title>[^<]*</title>' /tmp/selectbox-home.html 2>/dev/null | head -1 || true
@@ -82,7 +82,7 @@ head -c 80 /tmp/selectbox-api-ip.txt 2>/dev/null; echo ""
 
 echo ""
 echo "=== site_url in API ==="
-curl -sf -H "Host: ${DOMAIN:-selectbox.ir}" "http://127.0.0.1:${PORT}/api/v1/catalog/shop" 2>/dev/null \
+curl -sf -H "Host: ${DOMAIN:-dashtestan-store.ir}" "http://127.0.0.1:${PORT}/api/v1/catalog/shop" 2>/dev/null \
   | grep -o '"site_url":"[^"]*"' || echo "(not found)"
 
 echo ""
