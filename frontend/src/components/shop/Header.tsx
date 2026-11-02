@@ -91,68 +91,72 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-theme bg-header backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-theme bg-header shadow-[0_1px_4px_rgba(0,0,0,0.04)] backdrop-blur-md">
+        <div className="shop-container flex items-center gap-3 py-2.5 sm:gap-4 sm:py-3">
+          <button
+            type="button"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted md:hidden"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="منو"
+            aria-expanded={menuOpen}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
           <SelectBoxLogo size="sm" className="sm:hidden" priority />
-          <SelectBoxLogo size="md" className="hidden sm:inline-flex" priority />
+          <SelectBoxLogo size="md" className="hidden shrink-0 sm:inline-flex" priority />
 
-          <SearchBar className="hidden w-full max-w-xs md:block lg:max-w-sm" />
+          <SearchBar className="hidden min-w-0 flex-1 md:block" />
 
-          <nav className="hidden items-center gap-4 text-sm text-muted md:flex lg:gap-5">
-            <CategoryMegaMenuDesktop categories={categoryNav} />
-            {headerNav.map((link) => (
-              <NavLinkItem
-                key={link.id}
-                link={link}
-                className="transition hover:text-[var(--fg)]"
-              />
-            ))}
+          <div className="ms-auto flex items-center gap-0.5 sm:gap-1">
+            <nav className="hidden items-center gap-1 text-sm lg:flex">
+              <CategoryMegaMenuDesktop categories={categoryNav} />
+              {headerNav.slice(0, 3).map((link) => (
+                <NavLinkItem
+                  key={link.id}
+                  link={link}
+                  className="rounded-lg px-2.5 py-2 text-muted transition hover:bg-[var(--bg)] hover:text-[var(--fg)]"
+                />
+              ))}
+            </nav>
+            <ThemeToggle />
             {me ? (
-              <Link href="/account" className="inline-flex items-center gap-1 transition hover:text-[var(--fg)]">
-                <User className="h-3.5 w-3.5" />
-                {accountLabel}
+              <Link
+                href="/account"
+                className="hidden min-h-[44px] items-center gap-1.5 rounded-xl px-2.5 text-sm text-muted transition hover:bg-[var(--bg)] hover:text-[var(--fg)] md:inline-flex"
+              >
+                <User className="h-4 w-4" />
+                <span className="max-w-[7rem] truncate">{accountLabel}</span>
               </Link>
             ) : (
               <button
                 type="button"
-                className="transition hover:text-[var(--fg)]"
+                className="hidden min-h-[44px] items-center gap-1.5 rounded-xl px-2.5 text-sm text-muted transition hover:bg-[var(--bg)] hover:text-[var(--fg)] md:inline-flex"
                 onClick={() => setLoginOpen(true)}
               >
+                <User className="h-4 w-4" />
                 ورود
               </button>
             )}
-          </nav>
-
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
             <Link
               href="/account"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-muted transition hover:text-[var(--fg)] md:hidden"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted transition hover:bg-[var(--bg)] hover:text-[var(--fg)] md:hidden"
               aria-label="حساب"
             >
               <User className="h-5 w-5" />
             </Link>
             <button
               type="button"
-              className="min-h-[44px] min-w-[44px] rounded-full p-2 text-muted md:hidden"
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label="منو"
-              aria-expanded={menuOpen}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
               onClick={openCart}
               className={cn(
-                "relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-muted transition hover:text-[var(--fg)]",
+                "relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted transition hover:bg-[var(--bg)] hover:text-[var(--fg)]",
                 itemCount > 0 && "text-[var(--fg)]",
               )}
               aria-label="سبد خرید"
             >
               <ShoppingBag className="h-5 w-5" />
               {itemCount > 0 ? (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-bold text-[var(--accent-fg)]">
+                <span className="absolute end-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-bold text-[var(--accent-fg)]">
                   {itemCount}
                 </span>
               ) : null}
@@ -160,7 +164,7 @@ export function Header({ categoryNav = [], headerNav = [], contact }: Props) {
           </div>
         </div>
 
-        <div className="px-4 pb-3 md:hidden">
+        <div className="shop-container pb-2.5 md:hidden">
           <SearchBar />
         </div>
 

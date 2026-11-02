@@ -119,9 +119,9 @@ export function HomeBannerCarousel({ banners }: Props) {
   if (count === 0) return null;
 
   return (
-    <section className="border-b border-theme bg-[var(--bg)]">
-      <div className="relative mx-auto max-w-6xl px-0 sm:px-4 sm:py-4">
-        <div className="relative overflow-hidden" dir="ltr">
+    <section className="bg-[var(--bg)]">
+      <div className="shop-container relative px-0 pt-0 sm:px-6 sm:pt-4">
+        <div className="relative overflow-hidden sm:rounded-2xl" dir="ltr">
           <div
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${index * 100}%)` }}

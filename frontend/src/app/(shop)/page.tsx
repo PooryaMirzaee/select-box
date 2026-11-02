@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { WebSiteJsonLd } from "@/components/seo/WebSiteJsonLd";
+import { AmazingDeals } from "@/components/shop/AmazingDeals";
 import { HomeBannerCarousel } from "@/components/shop/HomeBannerCarousel";
+import { HomeCategoryCircles } from "@/components/shop/HomeCategoryCircles";
 import { HomePromoBanner } from "@/components/shop/HomePromoBanner";
-import { Hero } from "@/components/shop/Hero";
-import { ProductCard } from "@/components/shop/ProductCard";
+import { ProductRail } from "@/components/shop/ProductRail";
 import { TrustStrip } from "@/components/shop/TrustStrip";
 import {
   fetchBrowse,
@@ -37,23 +37,23 @@ export async function generateMetadata(): Promise<Metadata> {
 function DefaultPromoSections() {
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
-        <div className="card-theme relative overflow-hidden p-8 sm:p-10">
+      <section className="shop-container pb-4 sm:pb-6">
+        <div className="relative overflow-hidden rounded-2xl border border-theme bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
           <div
             className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-[var(--accent-soft)] blur-3xl"
             aria-hidden
           />
-          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">سفارش عمده</p>
-              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">تأمین لوازم خانگی برای پروژه‌ها</h2>
+              <p className="text-xs font-semibold tracking-wide text-[var(--accent)]">سفارش عمده</p>
+              <h2 className="mt-1.5 text-xl font-bold sm:text-2xl">تأمین لوازم خانگی برای پروژه‌ها</h2>
               <p className="mt-2 max-w-md text-sm text-muted">
                 برای ساختمان، هتل و سازمان‌ها — قیمت پلکانی، گارانتی اصلی و پیش‌فاکتور رسمی.
               </p>
             </div>
             <Link
               href="/business"
-              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full border border-theme px-8 text-sm font-medium transition hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--border))] hover:bg-[var(--bg-elevated)]"
+              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-theme px-8 text-sm font-semibold transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               سفارش عمده
             </Link>
@@ -61,23 +61,24 @@ function DefaultPromoSections() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-        <div className="card-theme relative overflow-hidden p-8 sm:p-10">
-          <div
-            className="pointer-events-none absolute -start-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl"
-            aria-hidden
-          />
-          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <section className="shop-container pb-10 sm:pb-14">
+        <div
+          className="relative overflow-hidden rounded-2xl p-6 text-white sm:p-8"
+          style={{
+            background: "linear-gradient(120deg, var(--amazing-from), var(--amazing-to))",
+          }}
+        >
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium tracking-wide text-[var(--accent)]">گارانتی اصلی</p>
-              <h2 className="mt-2 text-xl font-semibold sm:text-2xl">خرید مطمئن از فروشگاه دشتستان</h2>
-              <p className="mt-2 max-w-md text-sm text-muted">
-                تمام محصولات با گارانتی معتبر، ارسال سریع و پشتیبانی تخصصی — از یخچال تا لوازم روزمره.
+              <p className="text-xs font-semibold tracking-wide text-white/85">گارانتی اصلی</p>
+              <h2 className="mt-1.5 text-xl font-bold sm:text-2xl">خرید مطمئن از فروشگاه دشتستان</h2>
+              <p className="mt-2 max-w-md text-sm text-white/85">
+                تمام محصولات با گارانتی معتبر، ارسال سریع و پشتیبانی تخصصی.
               </p>
             </div>
             <Link
               href="/catalog"
-              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-sm font-medium text-[var(--accent-fg)] transition hover:opacity-90"
+              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl bg-white px-8 text-sm font-bold text-[var(--accent)] transition hover:bg-white/95"
             >
               مشاهده همه محصولات
             </Link>
@@ -116,29 +117,36 @@ export default async function HomePage() {
   const categories = browse?.children ?? [];
 
   let featuredProducts: Awaited<ReturnType<typeof fetchProducts>>["items"] = [];
-  if (isSectionEnabled(config, "featured")) {
-    const count = config.featured.product_count;
-    try {
-      if (config.featured.mode === "manual" && config.featured.product_ids.length) {
-        const ids = config.featured.product_ids.slice(0, count);
-        const res = await fetchProducts(undefined, undefined, { ids });
-        featuredProducts = res.items;
-      } else if (config.featured.mode === "category" && config.featured.category_id != null) {
-        const res = await fetchProducts(undefined, undefined, {
-          categoryId: config.featured.category_id,
-          limit: count,
-        });
-        featuredProducts = res.items;
-      } else {
-        // latest (+ سازگاری با parent_slug قدیمی)
-        const res = await fetchProducts(config.featured.parent_slug ?? undefined, undefined, {
-          limit: Math.max(count, 24),
-        });
-        featuredProducts = res.items.slice(0, count);
-      }
-    } catch {
-      featuredProducts = [];
+  let amazingProducts: Awaited<ReturnType<typeof fetchProducts>>["items"] = [];
+
+  try {
+    const count = Math.max(config.featured.product_count, 12);
+    let pool: Awaited<ReturnType<typeof fetchProducts>>["items"] = [];
+    if (config.featured.mode === "manual" && config.featured.product_ids.length) {
+      const res = await fetchProducts(undefined, undefined, {
+        ids: config.featured.product_ids.slice(0, count),
+      });
+      pool = res.items;
+    } else if (config.featured.mode === "category" && config.featured.category_id != null) {
+      const res = await fetchProducts(undefined, undefined, {
+        categoryId: config.featured.category_id,
+        limit: count,
+      });
+      pool = res.items;
+    } else {
+      const res = await fetchProducts(config.featured.parent_slug ?? undefined, undefined, {
+        limit: Math.max(count, 24),
+      });
+      pool = res.items;
     }
+    amazingProducts = pool.slice(0, Math.min(10, pool.length));
+    featuredProducts = pool.slice(0, config.featured.product_count || 12);
+    if (featuredProducts.length < 6 && pool.length) {
+      featuredProducts = pool.slice(0, Math.min(12, pool.length));
+    }
+  } catch {
+    featuredProducts = [];
+    amazingProducts = [];
   }
 
   const siteUrl = getSiteUrl(settings);
@@ -148,60 +156,64 @@ export default async function HomePage() {
     settings?.shop_description ??
     "خرید آنلاین لوازم خانگی و سبک زندگی با گارانتی اصلی.";
 
-  const sectionBlocks: Record<string, ReactNode> = {
-    carousel: isSectionEnabled(config, "carousel") ? <HomeBannerCarousel banners={heroBanners} /> : null,
-    hero: isSectionEnabled(config, "hero") ? <Hero categories={categories} config={config.hero} /> : null,
-    featured: isSectionEnabled(config, "featured") ? (
-      <section className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <h2 className="text-xl font-semibold sm:text-2xl">{config.featured.title}</h2>
-            {config.featured.subtitle ? (
-              <p className="mt-1 text-sm text-muted">{config.featured.subtitle}</p>
-            ) : null}
-          </div>
-          {config.featured.catalog_href ? (
-            <Link
-              href={config.featured.catalog_href}
-              className="text-sm text-muted transition hover:text-[var(--fg)]"
-            >
-              {config.featured.catalog_label}
-            </Link>
-          ) : null}
-        </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {featuredProducts.map((p, i) => (
-            <ProductCard key={p.id} product={p} index={i} />
-          ))}
-        </div>
-        {featuredProducts.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-muted">محصولی یافت نشد.</p>
-        ) : null}
-      </section>
-    ) : null,
-    promo: isSectionEnabled(config, "promo") ? (
-      promoBanners.length > 0 ? (
-        <>
-          {promoBanners.map((banner) => (
-            <HomePromoBanner key={banner.id} banner={banner} />
-          ))}
-        </>
-      ) : config.show_promo_fallback ? (
-        <DefaultPromoSections />
-      ) : null
-    ) : null,
-  };
-
-  const [firstSection, ...restSections] = config.sections;
+  const showCarousel = isSectionEnabled(config, "carousel") && heroBanners.length > 0;
+  const showHeroCats = isSectionEnabled(config, "hero");
+  const showFeatured = isSectionEnabled(config, "featured");
+  const showPromo = isSectionEnabled(config, "promo");
 
   return (
     <>
       <WebSiteJsonLd siteUrl={siteUrl} name={shopName} description={description} />
-      {firstSection ? <div key={firstSection.id}>{sectionBlocks[firstSection.id]}</div> : null}
+
+      {/* ۱) اسلایدر بنر */}
+      {showCarousel ? <HomeBannerCarousel banners={heroBanners} /> : null}
+
+      {/* ۲) اعتماد */}
       <TrustStrip />
-      {restSections.map((section) => (
-        <div key={section.id}>{sectionBlocks[section.id]}</div>
-      ))}
+
+      {/* ۳) پیشنهاد شگفت‌انگیز */}
+      {showFeatured && amazingProducts.length > 0 ? (
+        <AmazingDeals products={amazingProducts} href={config.featured.catalog_href || "/catalog"} />
+      ) : null}
+
+      {/* ۴) دسته‌بندی دایره‌ای */}
+      {showHeroCats ? <HomeCategoryCircles categories={categories} limit={config.hero.category_limit || 12} /> : null}
+
+      {/* ۵) ریل محصولات */}
+      {showFeatured ? (
+        <ProductRail
+          title={config.featured.title || "پرفروش‌ترین‌ها"}
+          subtitle={config.featured.subtitle}
+          products={featuredProducts}
+          href={config.featured.catalog_href || "/catalog"}
+          hrefLabel={config.featured.catalog_label || "مشاهده همه"}
+        />
+      ) : null}
+
+      {/* ۶) بنرهای تبلیغاتی */}
+      {showPromo ? (
+        promoBanners.length > 0 ? (
+          <>
+            {promoBanners.map((banner) => (
+              <HomePromoBanner key={banner.id} banner={banner} />
+            ))}
+          </>
+        ) : config.show_promo_fallback ? (
+          <DefaultPromoSections />
+        ) : null
+      ) : null}
+
+      {/* اگر هیچ بنری نبود ولی محصولات هست — CTA پایین */}
+      {!showCarousel && !showPromo && featuredProducts.length > 0 ? (
+        <section className="shop-container pb-12">
+          <Link
+            href="/catalog"
+            className="flex min-h-12 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] transition hover:opacity-90"
+          >
+            ورود به فروشگاه
+          </Link>
+        </section>
+      ) : null}
     </>
   );
 }

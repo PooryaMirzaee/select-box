@@ -2,55 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* فونت‌ها با next/font (preload) — متغیرها از layout: --font-iran / --font-capsule */
-/* پالت سیاه/سفید + طلایی خاص */
+/* فونت‌ها با next/font — پالت فروشگاهی نارنجی (حس مارکت‌پلیس) */
 :root {
   color-scheme: light;
   --font-sans: var(--font-iran), Tahoma, "Segoe UI", system-ui, sans-serif;
   --font-display: var(--font-capsule), var(--font-iran), Tahoma, sans-serif;
 
-  --bg: #ffffff;
-  --bg-elevated: #f4f4f5;
-  --fg: #0a0a0a;
-  --fg-muted: #71717a;
-  --border: #e4e4e7;
-  --accent: #b8860b;
-  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-fg: #0a0a0a;
-  --success: #15803d;
-  --danger: #dc2626;
+  --bg: #f5f5f5;
+  --bg-elevated: #ffffff;
+  --fg: #212121;
+  --fg-muted: #81858b;
+  --border: #e0e0e2;
+  --accent: #ff6a00;
+  --accent-hot: #ef4056;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-fg: #ffffff;
+  --success: #00a049;
+  --danger: #ef4056;
   --card: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.92);
-  --sidebar-bg: #f4f4f5;
-  --sidebar-fg: #52525b;
-  --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 16%, var(--bg-elevated));
-  --sidebar-active-fg: #8a6508;
-  --shadow-soft: 0 10px 40px color-mix(in srgb, var(--fg) 6%, transparent);
+  --header-bg: rgba(255, 255, 255, 0.96);
+  --sidebar-bg: #ffffff;
+  --sidebar-fg: #62666d;
+  --sidebar-hover: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  --sidebar-active: color-mix(in srgb, var(--accent) 14%, #fff);
+  --sidebar-active-fg: #d45500;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
   --input-bg: #ffffff;
+  --amazing-from: #ff6a00;
+  --amazing-to: #ff3d00;
+  --shop-max: 1336px;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0a0a0a;
-  --bg-elevated: #141414;
-  --fg: #fafafa;
+  --bg: #0f0f0f;
+  --bg-elevated: #1a1a1a;
+  --fg: #f5f5f5;
   --fg-muted: #a1a1aa;
-  --border: #27272a;
-  --accent: #d4af37;
-  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
-  --accent-fg: #0a0a0a;
+  --border: #2a2a2a;
+  --accent: #ff7a1a;
+  --accent-hot: #ff5a6e;
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-fg: #ffffff;
   --success: #4ade80;
   --danger: #f87171;
-  --card: #121212;
-  --header-bg: rgba(10, 10, 10, 0.92);
-  --sidebar-bg: #050505;
+  --card: #171717;
+  --header-bg: rgba(15, 15, 15, 0.94);
+  --sidebar-bg: #121212;
   --sidebar-fg: #a1a1aa;
-  --sidebar-hover: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
-  --sidebar-active: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
+  --sidebar-hover: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
+  --sidebar-active: color-mix(in srgb, var(--accent) 20%, var(--bg-elevated));
   --sidebar-active-fg: var(--accent);
   --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.55);
-  --input-bg: #141414;
+  --shadow-card: 0 1px 6px rgba(0, 0, 0, 0.35);
+  --input-bg: #1a1a1a;
+  --amazing-from: #ff6a00;
+  --amazing-to: #c2410c;
 }
 
 html {
@@ -59,15 +67,26 @@ html {
 
 body {
   background-color: var(--bg);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 100% 0%, var(--accent-soft), transparent 50%),
-    linear-gradient(180deg, color-mix(in srgb, var(--fg) 2.5%, transparent), transparent 280px);
+  background-image: none;
   color: var(--fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
+}
+
+.shop-container {
+  width: 100%;
+  max-width: var(--shop-max);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .shop-container {
+    padding-inline: 1.5rem;
+  }
 }
 
 h1,
@@ -198,7 +217,7 @@ a,
 @layer components {
   .card-theme {
     @apply rounded-2xl border border-theme bg-card;
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-card);
   }
 
   .input-theme {

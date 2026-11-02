@@ -86,7 +86,7 @@ export function HomePromoBanner({ banner }: Props) {
 
     if (banner.cta_href && !banner.cta_label) {
       return (
-        <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
+        <section className="shop-container pb-6 sm:pb-8">
           <Link href={banner.cta_href} className="block">
             {content}
           </Link>
@@ -94,11 +94,11 @@ export function HomePromoBanner({ banner }: Props) {
       );
     }
 
-    return <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">{content}</section>;
+    return <section className="shop-container pb-6 sm:pb-8">{content}</section>;
   }
 
   return (
-    <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
+    <section className="shop-container pb-6 sm:pb-8">
       <div className="card-theme relative overflow-hidden p-8 sm:p-10">
         <div
           className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-[var(--accent-soft)] blur-3xl"

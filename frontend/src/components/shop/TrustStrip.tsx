@@ -9,18 +9,15 @@ const ITEMS = [
 
 export function TrustStrip() {
   return (
-    <section aria-label="مزایای خرید" className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <section aria-label="مزایای خرید" className="shop-container py-4 sm:py-6">
+      <ul className="grid grid-cols-2 gap-2 rounded-2xl border border-theme bg-card p-2 shadow-[var(--shadow-card)] sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-[var(--border)] sm:p-1">
         {ITEMS.map(({ icon: Icon, title, desc }) => (
-          <li
-            key={title}
-            className="flex items-center gap-3 rounded-2xl border border-theme bg-card px-4 py-3"
-          >
+          <li key={title} className="flex items-center gap-3 px-3 py-3 sm:justify-center sm:px-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)]">
               <Icon className="h-5 w-5 text-[var(--accent)]" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{title}</p>
+              <p className="truncate text-sm font-semibold">{title}</p>
               <p className="truncate text-[11px] text-muted">{desc}</p>
             </div>
           </li>

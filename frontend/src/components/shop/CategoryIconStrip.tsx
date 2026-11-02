@@ -37,11 +37,11 @@ export function CategoryIconStrip({ categories }: Props) {
   if (!categories.length) return null;
 
   return (
-    <div className="border-t border-theme/70 bg-[var(--bg)]/80">
-      <div className="mx-auto max-w-6xl">
+    <div className="border-t border-theme/60 bg-card">
+      <div className="shop-container px-0 sm:px-6">
         <nav
           aria-label="دسته‌بندی‌ها"
-          className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2.5 sm:gap-2 sm:px-6"
+          className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2 sm:gap-2 sm:px-0"
         >
           <Link
             href="/browse"

@@ -95,7 +95,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     subtitle: "محصولات منتخب",
     catalog_label: "همه محصولات ←",
     catalog_href: "/catalog",
-    product_count: 6,
+    product_count: 12,
     mode: "latest",
     product_ids: [],
     category_id: null,
