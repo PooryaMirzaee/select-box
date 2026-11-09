@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   banners: HomeBanner[];
+  autoplay?: boolean;
+  intervalMs?: number;
 };
 
 function BannerSlide({ banner }: { banner: HomeBanner }) {
@@ -102,19 +104,20 @@ function BannerSlide({ banner }: { banner: HomeBanner }) {
   return inner;
 }
 
-export function HomeBannerCarousel({ banners }: Props) {
+export function HomeBannerCarousel({ banners, autoplay = true, intervalMs = 6000 }: Props) {
   const [index, setIndex] = useState(0);
   const count = banners.length;
+  const delay = Math.min(15000, Math.max(2000, intervalMs || 6000));
 
   const next = useCallback(() => {
     setIndex((i) => (i + 1) % count);
   }, [count]);
 
   useEffect(() => {
-    if (count <= 1) return;
-    const timer = setInterval(next, 6000);
+    if (!autoplay || count <= 1) return;
+    const timer = setInterval(next, delay);
     return () => clearInterval(timer);
-  }, [count, next]);
+  }, [autoplay, count, delay, next]);
 
   if (count === 0) return null;
 

@@ -15,10 +15,12 @@ from app.schemas.settings import ShopSettingsPublic
 from app.schemas.header_nav import HeaderNavLinkOut
 from app.schemas.home_banner import HomeBannerOut
 from app.schemas.homepage import HomepagePublic
+from app.schemas.page_builder import PageBuilderPublic, ThemeAppearance
 from app.services import catalog as catalog_service
 from app.services import header_nav as header_nav_service
 from app.services import home_banner as home_banner_service
 from app.services import homepage as homepage_service
+from app.services import page_builder as page_builder_service
 from app.services import settings as shop_settings
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -56,6 +58,18 @@ def home_banners(placement: str | None = None, db: Session = Depends(get_db)):
 def homepage_config(db: Session = Depends(get_db)):
     """تنظیمات عمومی صفحهٔ اصلی."""
     return homepage_service.get_public(db)
+
+
+@router.get("/page-builder/{slug}", response_model=PageBuilderPublic, response_model_exclude_none=True)
+def page_builder_public(slug: str, db: Session = Depends(get_db)):
+    """چیدمان صفحهٔ‌ساز + ظاهر برای رندر فروشگاه."""
+    return page_builder_service.get_public(db, slug)
+
+
+@router.get("/theme-appearance", response_model=ThemeAppearance)
+def theme_appearance(db: Session = Depends(get_db)):
+    """توکن‌های ظاهری فروشگاه (رنگ، شعاع، عرض)."""
+    return page_builder_service.get_appearance(db)
 
 
 @router.get("/sitemap-paths")

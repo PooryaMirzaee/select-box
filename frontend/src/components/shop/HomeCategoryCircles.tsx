@@ -9,6 +9,7 @@ type Props = {
   categories: CategoryCardItem[];
   title?: string;
   limit?: number;
+  href?: string;
 };
 
 /** شبکه دایره‌ای دسته‌ها — الگوی فروشگاه‌های بزرگ */
@@ -16,16 +17,18 @@ export function HomeCategoryCircles({
   categories,
   title = "دسته‌بندی‌ها",
   limit = 12,
+  href = "/browse",
 }: Props) {
   const items = categories.slice(0, limit);
   if (!items.length) return null;
+  const allHref = href || "/browse";
 
   return (
     <section className="shop-container py-5 sm:py-7">
       <div className="mb-4 flex items-end justify-between">
         <h2 className="text-lg font-bold sm:text-xl">{title}</h2>
         <Link
-          href="/browse"
+          href={allHref}
           className="inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)]"
         >
           همه
@@ -58,7 +61,7 @@ export function HomeCategoryCircles({
           );
         })}
         <Link
-          href="/browse"
+          href={allHref}
           className="group flex flex-col items-center gap-2 rounded-xl p-1.5 transition hover:bg-[var(--bg-elevated)]"
         >
           <span className="flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full border border-dashed border-[var(--accent)]/50 bg-[var(--accent-soft)] text-[var(--accent)] sm:h-[5rem] sm:w-[5rem]">

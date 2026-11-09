@@ -50,6 +50,7 @@ async def lifespan(app: FastAPI):
     _ensure_chat_canned_seed()
     _ensure_header_nav_seed()
     _ensure_homepage_default()
+    _ensure_page_builder_default()
     _ensure_brand_rebrand()
     _ensure_site_url_from_env()
     _ensure_ai_columns()
@@ -267,6 +268,17 @@ def _ensure_homepage_default() -> None:
     db = SessionLocal()
     try:
         homepage_service.ensure_default(db)
+    finally:
+        db.close()
+
+
+def _ensure_page_builder_default() -> None:
+    from app.db.session import SessionLocal
+    from app.services import page_builder as page_builder_service
+
+    db = SessionLocal()
+    try:
+        page_builder_service.ensure_defaults(db)
     finally:
         db.close()
 

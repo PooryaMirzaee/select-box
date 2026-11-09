@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     admin_banners,
     admin_header,
     admin_homepage,
+    admin_page_builder,
     admin_users,
     analytics,
     auth,
@@ -44,6 +45,7 @@ api_router.include_router(admin_ext.router)
 api_router.include_router(admin_enrichment.router)
 api_router.include_router(admin_header.router)
 api_router.include_router(admin_homepage.router)
+api_router.include_router(admin_page_builder.router)
 api_router.include_router(admin_banners.router)
 api_router.include_router(admin_business.router)
 api_router.include_router(admin_blog.router)

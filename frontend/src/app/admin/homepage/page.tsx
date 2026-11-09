@@ -115,11 +115,23 @@ export default function AdminHomepagePage() {
     <div className="mx-auto max-w-6xl">
       <div className="sticky top-0 z-10 -mx-2 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-theme bg-[var(--bg)]/95 px-2 py-4 backdrop-blur">
         <div>
-          <h1 className="text-2xl font-semibold">صفحهٔ اصلی</h1>
-          <p className="mt-1 text-sm text-muted">مدیریت بخش‌ها، متن‌ها و بنرهای فروشگاه</p>
+          <h1 className="text-2xl font-semibold">بنرها و منبع محصول</h1>
+          <p className="mt-1 text-sm text-muted">
+            چیدمان صفحه از{" "}
+            <Link href="/admin/builder" className="text-[var(--accent)] underline-offset-2 hover:underline">
+              صفحه‌ساز
+            </Link>{" "}
+            کنترل می‌شود — اینجا بنرها و انتخاب محصولات را مدیریت کنید.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {msg ? <span className="text-sm text-muted">{msg}</span> : null}
+          <Link
+            href="/admin/builder"
+            className="inline-flex items-center gap-1.5 rounded-full border border-theme px-4 py-2 text-sm transition hover:bg-[var(--bg-elevated)]"
+          >
+            باز کردن صفحه‌ساز
+          </Link>
           <Link
             href="/"
             target="_blank"

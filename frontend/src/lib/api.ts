@@ -378,6 +378,20 @@ export function fetchHomepageConfig() {
   });
 }
 
+export function fetchPageBuilder(slug = "home") {
+  return apiFetch<import("@/puck/types").PageBuilderPublic>(
+    `/api/v1/catalog/page-builder/${slug}`,
+    { next: { revalidate: 30, tags: ["page-builder", `page-builder-${slug}`] } },
+  );
+}
+
+export function fetchThemeAppearance() {
+  return apiFetch<import("@/puck/appearance").ThemeAppearance>(
+    "/api/v1/catalog/theme-appearance",
+    { next: { revalidate: 60, tags: ["theme-appearance"] } },
+  );
+}
+
 export function fetchSitemapPaths() {
   return apiFetch<{ paths: string[] }>("/api/v1/catalog/sitemap-paths", {
     next: { revalidate: 300, tags: ["sitemap"] },

@@ -7,6 +7,7 @@ import {
   FolderTree,
   LayoutDashboard,
   ImagePlus,
+  Grid3X3,
   Menu,
   Package,
   MessageCircle,
@@ -32,7 +33,8 @@ const links = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
   { href: "/admin/categories", label: "دسته‌ها", icon: FolderTree },
   { href: "/admin/header", label: "هدر", icon: Menu },
-  { href: "/admin/homepage", label: "صفحه اصلی", icon: ImagePlus },
+  { href: "/admin/builder", label: "صفحه‌ساز", icon: Grid3X3 },
+  { href: "/admin/homepage", label: "بنرها", icon: ImagePlus },
   { href: "/admin/products", label: "محصولات", icon: Package },
   { href: "/admin/enrichment", label: "غنی‌سازی", icon: ImagePlus },
   { href: "/admin/business", label: "سفارش عمده", icon: ShoppingCart },
@@ -77,6 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (path === "/admin/login") return <>{children}</>;
   if (!ready) return null;
+  if (path.startsWith("/admin/builder")) return <>{children}</>;
 
   const pageTitle =
     links.find(
