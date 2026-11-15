@@ -6,14 +6,21 @@ import { useRouter } from "next/navigation";
 import { PuckEditorClient } from "@/components/admin/builder/PuckEditorClient";
 import { fetchBrowse, fetchHomeBanners, fetchProducts } from "@/lib/api";
 import { setAdminToken } from "@/lib/cart-session";
-import { adminToken, fetchBuilderPage, isAuthError } from "@/lib/page-builder";
+import {
+  adminToken,
+  fetchBuilderPage,
+  fetchBuilderPages,
+  isAuthError,
+} from "@/lib/page-builder";
 import { DEFAULT_APPEARANCE } from "@/puck/appearance";
 import { DEFAULT_HOME_PUCK_DATA } from "@/puck/default-data";
-import type { PageBuilderPublic, PuckMetadata } from "@/puck/types";
+import { migratePuckData } from "@/puck/style";
+import type { PageBuilderListItem, PageBuilderPublic, PuckMetadata } from "@/puck/types";
 
 export default function AdminBuilderPage() {
   const router = useRouter();
   const [bundle, setBundle] = useState<PageBuilderPublic | null>(null);
+  const [pages, setPages] = useState<PageBuilderListItem[]>([]);
   const [metadata, setMetadata] = useState<PuckMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +33,9 @@ export default function AdminBuilderPage() {
 
     (async () => {
       try {
-        const [page, browse, hero, promo, products] = await Promise.all([
-          fetchBuilderPage(token),
+        const [page, pageList, browse, hero, promo, products] = await Promise.all([
+          fetchBuilderPage(token, "home"),
+          fetchBuilderPages(token).catch(() => [] as PageBuilderListItem[]),
           fetchBrowse("").catch(() => null),
           fetchHomeBanners("hero").catch(() => []),
           fetchHomeBanners("promo").catch(() => []),
@@ -36,9 +44,16 @@ export default function AdminBuilderPage() {
         const items = products.items || [];
         setBundle({
           ...page,
-          data: (page.data as PageBuilderPublic["data"]) || DEFAULT_HOME_PUCK_DATA,
+          data: migratePuckData(
+            (page.data as PageBuilderPublic["data"]) || DEFAULT_HOME_PUCK_DATA,
+          ) as PageBuilderPublic["data"],
           appearance: page.appearance || DEFAULT_APPEARANCE,
         });
+        setPages(
+          pageList.length
+            ? pageList
+            : [{ slug: "home", title: "صفحه اصلی", published: true }],
+        );
         setMetadata({
           heroBanners: hero,
           promoBanners: promo,
@@ -80,5 +95,5 @@ export default function AdminBuilderPage() {
     );
   }
 
-  return <PuckEditorClient initial={bundle} metadata={metadata} />;
+  return <PuckEditorClient initial={bundle} metadata={metadata} initialPages={pages} />;
 }

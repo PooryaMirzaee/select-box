@@ -44,9 +44,13 @@ jobs:
             fi
             echo "=== HEAD ==="
             git log -1 --oneline
-            docker compose -f docker-compose.prod.yml --env-file .env.production build web
-            docker compose -f docker-compose.prod.yml --env-file .env.production up -d --no-deps --force-recreate web
-            sleep 8
+            docker compose -f docker-compose.prod.yml --env-file .env.production build api web
+            docker compose -f docker-compose.prod.yml --env-file .env.production up -d --no-deps --force-recreate api web
+            sleep 10
+            # OpenResty گاهی IP قدیمی کانتینر را نگه می‌دارد
+            docker compose -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate nginx 2>/dev/null || true
+            sleep 3
             docker compose -f docker-compose.prod.yml --env-file .env.production ps
             curl -sS -o /dev/null -w "local8092 %{http_code}\n" --max-time 25 -H 'Host: dashtestan-store.ir' http://127.0.0.1:8092/
+            curl -sS -o /dev/null -w "pb-home %{http_code}\n" --max-time 25 -H 'Host: dashtestan-store.ir' http://127.0.0.1:8092/api/v1/catalog/page-builder/home || true
             echo DEPLOY_OK

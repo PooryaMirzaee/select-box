@@ -63,6 +63,19 @@ class PageBuilderPut(BaseModel):
 
 class PageBuilderPublic(BaseModel):
     slug: str
+    title: str | None = None
     data: PageBuilderData
     published: bool
     appearance: ThemeAppearance
+
+
+class PageBuilderListItem(BaseModel):
+    slug: str
+    title: str
+    published: bool = True
+
+
+class PageBuilderCreate(BaseModel):
+    slug: str = Field(..., min_length=1, max_length=64)
+    title: str = Field(..., min_length=1, max_length=120)
+    published: bool = True

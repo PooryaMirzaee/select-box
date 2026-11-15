@@ -96,6 +96,7 @@ export default async function HomePage() {
     <>
       <WebSiteJsonLd siteUrl={siteUrl} name={shopName} description={description} />
       <PuckHome
+        slug="home"
         data={puckData ?? DEFAULT_HOME_PUCK_DATA}
         useFallbackWhenEmpty={!pageBuilder || !published}
         metadata={{

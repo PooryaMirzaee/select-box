@@ -14,6 +14,10 @@ const ALLOWED_TAGS = new Set([
   "home-banners-all",
 ]);
 
+function tagAllowed(tag: string) {
+  return ALLOWED_TAGS.has(tag) || /^page-builder-[a-z0-9_-]+$/i.test(tag);
+}
+
 /**
  * پس از انتشار صفحه‌ساز / ظاهر — کش Next را تازه می‌کند.
  * نیاز به JWT ادمین معتبر دارد.
@@ -44,10 +48,12 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { tags?: string[]; paths?: string[] };
     if (Array.isArray(body.tags) && body.tags.length) {
-      tags = body.tags.filter((t) => ALLOWED_TAGS.has(t));
+      tags = body.tags.filter((t) => typeof t === "string" && tagAllowed(t));
     }
     if (Array.isArray(body.paths) && body.paths.length) {
-      paths = body.paths.filter((p) => typeof p === "string" && p.startsWith("/"));
+      paths = body.paths.filter(
+        (p) => typeof p === "string" && (p === "/" || /^\/p\/[a-z0-9_-]+$/i.test(p)),
+      );
     }
   } catch {
     /* keep defaults */
