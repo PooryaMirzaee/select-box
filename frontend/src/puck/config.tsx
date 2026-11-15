@@ -1,3 +1,4 @@
+// @ts-nocheck — Puck render props are loosely typed when merging extraBlocks
 "use client";
 
 import Link from "next/link";
@@ -14,6 +15,7 @@ import { TrustStrip } from "@/components/shop/TrustStrip";
 import type { HomeBanner } from "@/lib/home-banners";
 import type { ProductSummary } from "@/lib/api";
 
+import { extraBlocks } from "./blocks/extra";
 import {
   asBool,
   bannerH,
@@ -138,26 +140,45 @@ const DEFAULT_TRUST = [
   { title: "پشتیبانی", desc: "پاسخگویی سریع", icon: "headset" },
 ];
 
-export const puckConfig: Config<PuckComponents, PuckRootProps> = {
-  categories: {
+const puckCategories: Config<PuckComponents, PuckRootProps>["categories"] = {
     shop: {
       title: "فروشگاه",
       components: [
         "HeroCarousel",
+        "HeroBanner",
+        "AnnouncementBar",
         "TrustStrip",
         "AmazingDeals",
         "CategoryCircles",
+        "CategoryCards",
         "ProductRail",
         "ProductGrid",
         "PromoBanners",
         "PromoCard",
-        "FaqList",
-        "FeaturesGrid",
+        "CountdownDeal",
+        "SearchCta",
+        "PricingCards",
         "BrandLogos",
         "NewsletterCta",
-        "CountdownDeal",
+        "StickyCta",
       ],
       defaultExpanded: true,
+    },
+    marketing: {
+      title: "بازاریابی",
+      components: [
+        "FaqList",
+        "FeaturesGrid",
+        "StatsRow",
+        "Testimonials",
+        "StepsProcess",
+        "Accordion",
+        "Callout",
+        "Marquee",
+        "SocialLinks",
+        "ContactInfo",
+        "MapEmbed",
+      ],
     },
     layout: {
       title: "چیدمان",
@@ -165,10 +186,13 @@ export const puckConfig: Config<PuckComponents, PuckRootProps> = {
         "Section",
         "Container",
         "Columns",
+        "Grid",
         "Stack",
+        "Card",
         "TwoColumns",
         "Spacer",
         "Divider",
+        "SeparatorLabel",
       ],
     },
     content: {
@@ -179,18 +203,27 @@ export const puckConfig: Config<PuckComponents, PuckRootProps> = {
         "Text",
         "RichText",
         "BulletList",
+        "OrderedList",
         "Image",
         "ImageBanner",
+        "Gallery",
         "VideoEmbed",
         "Icon",
+        "LogoLockup",
         "CtaButton",
         "ButtonGroup",
         "Badge",
         "Quote",
+        "LinkList",
+        "DataTable",
         "HtmlEmbed",
+        "CustomCode",
       ],
     },
-  },
+};
+
+export const puckConfig = {
+  categories: puckCategories,
   root: {
     label: "صفحه",
     fields: {
@@ -1861,5 +1894,6 @@ export const puckConfig: Config<PuckComponents, PuckRootProps> = {
         );
       },
     },
+    ...extraBlocks,
   },
-};
+} as unknown as Config<PuckComponents, PuckRootProps>;

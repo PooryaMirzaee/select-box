@@ -18,6 +18,29 @@ export type ManualProduct = { title: string; price: string; imageUrl: string; hr
 export type ManualCategory = { title: string; imageUrl: string; href: string };
 export type BrandItem = { name: string; imageUrl: string; href?: string };
 export type ButtonItem = { label: string; href: string; variant: "primary" | "outline" };
+export type StatItem = { value: string; label: string; suffix?: string };
+export type TestimonialItem = {
+  name: string;
+  role: string;
+  text: string;
+  rating: number;
+  avatarUrl?: string;
+};
+export type PricingItem = {
+  name: string;
+  price: string;
+  period: string;
+  features: string;
+  ctaLabel: string;
+  ctaHref: string;
+  highlighted: boolean;
+};
+export type StepItem = { title: string; desc: string };
+export type AccordionItem = { title: string; body: string };
+export type SocialItem = { label: string; href: string; icon?: string };
+export type GalleryItem = { imageUrl: string; alt: string; href?: string };
+export type LinkItem = { label: string; href: string };
+export type TableRow = { cells: string };
 
 export type PuckComponents = {
   HeroCarousel: C & {
@@ -190,6 +213,133 @@ export type PuckComponents = {
   };
   TwoColumns: C & {
     colGap: "sm" | "md" | "lg";
+  };
+  AnnouncementBar: C & {
+    text: string;
+    href: string;
+    hrefLabel: string;
+    dismissible: boolean;
+  };
+  HeroBanner: C & {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    imageUrl: string;
+    ctaLabel: string;
+    ctaHref: string;
+    secondaryLabel: string;
+    secondaryHref: string;
+    minHeight: string;
+    overlay: string;
+  };
+  StatsRow: C & {
+    title: string;
+    items: StatItem[];
+  };
+  Testimonials: C & {
+    title: string;
+    columns: "1" | "2" | "3";
+    items: TestimonialItem[];
+  };
+  PricingCards: C & {
+    title: string;
+    items: PricingItem[];
+  };
+  StepsProcess: C & {
+    title: string;
+    items: StepItem[];
+  };
+  Accordion: C & {
+    title: string;
+    items: AccordionItem[];
+  };
+  MapEmbed: C & {
+    embedUrl: string;
+    title: string;
+    height: string;
+  };
+  SocialLinks: C & {
+    title: string;
+    items: SocialItem[];
+  };
+  ContactInfo: C & {
+    title: string;
+    phone: string;
+    mobile: string;
+    email: string;
+    address: string;
+    hours: string;
+  };
+  Gallery: C & {
+    title: string;
+    columns: "2" | "3" | "4";
+    items: GalleryItem[];
+  };
+  Callout: C & {
+    title: string;
+    body: string;
+    tone: "info" | "success" | "warning" | "accent";
+  };
+  LinkList: C & {
+    title: string;
+    items: LinkItem[];
+  };
+  Marquee: C & {
+    text: string;
+    speed: "slow" | "normal" | "fast";
+  };
+  OrderedList: C & {
+    items: { text: string }[];
+  };
+  DataTable: C & {
+    title: string;
+    headers: string;
+    rows: TableRow[];
+  };
+  Card: C & {
+    content: Slot;
+  };
+  Grid: C & {
+    columns: "2" | "3" | "4";
+    colGap: "sm" | "md" | "lg";
+    cell1: Slot;
+    cell2: Slot;
+    cell3: Slot;
+    cell4: Slot;
+  };
+  CustomCode: C & {
+    html: string;
+    css: string;
+  };
+  StickyCta: C & {
+    text: string;
+    buttonLabel: string;
+    buttonHref: string;
+    position: "top" | "bottom";
+  };
+  LogoLockup: C & {
+    imageUrl: string;
+    brandName: string;
+    tagline: string;
+    href: string;
+    logoHeight: string;
+  };
+  SearchCta: C & {
+    title: string;
+    placeholder: string;
+    buttonLabel: string;
+    href: string;
+  };
+  CategoryCards: C & {
+    sourceMode: SourceMode;
+    title: string;
+    limit: number;
+    columns: "2" | "3" | "4";
+    manualCategories: ManualCategory[];
+  };
+  SeparatorLabel: C & {
+    label: string;
+    lineColor: string;
   };
 };
 

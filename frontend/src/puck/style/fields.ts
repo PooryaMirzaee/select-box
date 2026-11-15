@@ -139,8 +139,7 @@ export const CHROME_FIELD_KEYS = {
 /** فیلدهای استایل را به فیلدهای محتوای بلوک اضافه می‌کند */
 export function withChromeFields<T extends Record<string, unknown>>(
   contentFields: T,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+) {
   return {
     ...contentFields,
     ...spacingFields,
