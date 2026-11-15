@@ -1,30 +1,47 @@
 import type { Fields } from "@puckeditor/core";
 import { DEFAULT_CHROME, type ChromeProps } from "./types";
+import {
+  BORDER_WIDTH_PRESETS,
+  FONT_SIZE_PRESETS,
+  GRADIENT_PRESETS,
+  LINE_HEIGHT_PRESETS,
+  MAX_WIDTH_PRESETS,
+  RADIUS_PRESETS,
+  SPACE_PRESETS,
+  colorField,
+  opacityField,
+  presetField,
+} from "./controls";
 
 type AnyFields = Fields<Record<string, unknown>>;
 
 const spacingFields = {
-  padT: { type: "text" as const, label: "پدینگ بالا" },
-  padR: { type: "text" as const, label: "پدینگ راست" },
-  padB: { type: "text" as const, label: "پدینگ پایین" },
-  padL: { type: "text" as const, label: "پدینگ چپ" },
-  marginT: { type: "text" as const, label: "مارجین بالا" },
-  marginB: { type: "text" as const, label: "مارجین پایین" },
-  gap: { type: "text" as const, label: "فاصله داخلی (gap)" },
-  padTMobile: { type: "text" as const, label: "پدینگ بالا (موبایل)" },
-  padBMobile: { type: "text" as const, label: "پدینگ پایین (موبایل)" },
+  padT: presetField("پدینگ بالا", SPACE_PRESETS, { placeholder: "مثلاً 1.25rem" }),
+  padR: presetField("پدینگ راست", SPACE_PRESETS, { placeholder: "مثلاً 1rem" }),
+  padB: presetField("پدینگ پایین", SPACE_PRESETS, { placeholder: "مثلاً 1.25rem" }),
+  padL: presetField("پدینگ چپ", SPACE_PRESETS, { placeholder: "مثلاً 1rem" }),
+  marginT: presetField("مارجین بالا", SPACE_PRESETS, { placeholder: "مثلاً 1rem" }),
+  marginB: presetField("مارجین پایین", SPACE_PRESETS, { placeholder: "مثلاً 1rem" }),
+  gap: presetField("فاصله داخلی (gap)", SPACE_PRESETS, { placeholder: "مثلاً 1rem" }),
+  padTMobile: presetField("پدینگ بالا (موبایل)", SPACE_PRESETS, {
+    placeholder: "مثلاً 0.75rem",
+  }),
+  padBMobile: presetField("پدینگ پایین (موبایل)", SPACE_PRESETS, {
+    placeholder: "مثلاً 0.75rem",
+  }),
 };
 
 const appearanceFields = {
-  bgColor: { type: "text" as const, label: "رنگ پس‌زمینه" },
-  bgGradient: {
-    type: "text" as const,
-    label: "گرادیان (مثلاً linear-gradient(...))",
-  },
+  bgColor: colorField("رنگ پس‌زمینه"),
+  bgGradient: presetField("گرادیان پس‌زمینه", GRADIENT_PRESETS, {
+    placeholder: "linear-gradient(...)",
+  }),
   bgImage: { type: "text" as const, label: "آدرس تصویر پس‌زمینه" },
-  bgOverlay: { type: "text" as const, label: "پوشش پس‌زمینه (رنگ/شفافیت)" },
-  textColor: { type: "text" as const, label: "رنگ متن" },
-  fontSize: { type: "text" as const, label: "اندازه فونت" },
+  bgOverlay: colorField("پوشش پس‌زمینه"),
+  textColor: colorField("رنگ متن"),
+  fontSize: presetField("اندازه فونت", FONT_SIZE_PRESETS, {
+    placeholder: "مثلاً 1.125rem",
+  }),
   fontWeight: {
     type: "select" as const,
     label: "وزن فونت",
@@ -37,8 +54,19 @@ const appearanceFields = {
       { label: "خیلی ضخیم", value: "800" },
     ],
   },
-  lineHeight: { type: "text" as const, label: "ارتفاع خط" },
-  letterSpacing: { type: "text" as const, label: "فاصله حروف" },
+  lineHeight: presetField("ارتفاع خط", LINE_HEIGHT_PRESETS, {
+    placeholder: "مثلاً 1.6",
+  }),
+  letterSpacing: presetField(
+    "فاصله حروف",
+    [
+      { label: "عادی", value: "0" },
+      { label: "کمی باز", value: "0.02em" },
+      { label: "باز", value: "0.05em" },
+      { label: "خیلی باز", value: "0.1em" },
+    ],
+    { placeholder: "مثلاً 0.03em" },
+  ),
   textAlign: {
     type: "radio" as const,
     label: "تراز متن",
@@ -48,7 +76,9 @@ const appearanceFields = {
       { label: "چپ", value: "end" },
     ],
   },
-  borderWidth: { type: "text" as const, label: "ضخامت حاشیه" },
+  borderWidth: presetField("ضخامت حاشیه", BORDER_WIDTH_PRESETS, {
+    placeholder: "مثلاً 1px",
+  }),
   borderStyle: {
     type: "select" as const,
     label: "سبک حاشیه",
@@ -59,19 +89,21 @@ const appearanceFields = {
       { label: "none", value: "none" },
     ],
   },
-  borderColor: { type: "text" as const, label: "رنگ حاشیه" },
-  borderRadius: { type: "text" as const, label: "گردی گوشه" },
+  borderColor: colorField("رنگ حاشیه"),
+  borderRadius: presetField("گردی گوشه", RADIUS_PRESETS, {
+    placeholder: "مثلاً 12px یا 1rem",
+  }),
   shadow: {
-    type: "select" as const,
+    type: "radio" as const,
     label: "سایه",
     options: [
-      { label: "بدون سایه", value: "none" },
+      { label: "بدون", value: "none" },
       { label: "نرم", value: "soft" },
       { label: "کارت", value: "card" },
       { label: "سفارشی", value: "custom" },
     ],
   },
-  shadowCustom: { type: "text" as const, label: "سایه سفارشی (CSS)" },
+  shadowCustom: { type: "text" as const, label: "سایه سفارشی (CSS box-shadow)" },
   widthMode: {
     type: "radio" as const,
     label: "عرض بلوک",
@@ -81,7 +113,9 @@ const appearanceFields = {
       { label: "سفارشی", value: "custom" },
     ],
   },
-  maxWidth: { type: "text" as const, label: "حداکثر عرض (سفارشی)" },
+  maxWidth: presetField("حداکثر عرض (سفارشی)", MAX_WIDTH_PRESETS, {
+    placeholder: "مثلاً 720px",
+  }),
 };
 
 const advancedFields = {
@@ -107,7 +141,7 @@ const advancedFields = {
       { label: "بله", value: true },
     ],
   },
-  opacity: { type: "text" as const, label: "شفافیت (۰–۱)" },
+  opacity: opacityField("شفافیت"),
   overflow: {
     type: "select" as const,
     label: "Overflow",
@@ -118,13 +152,24 @@ const advancedFields = {
       { label: "auto", value: "auto" },
     ],
   },
-  zIndex: { type: "text" as const, label: "z-index" },
+  zIndex: presetField(
+    "z-index",
+    [
+      { label: "خودکار", value: "" },
+      { label: "۱", value: "1" },
+      { label: "۱۰", value: "10" },
+      { label: "۲۰", value: "20" },
+      { label: "۴۰", value: "40" },
+      { label: "۵۰", value: "50" },
+    ],
+    { placeholder: "عدد دلخواه" },
+  ),
   animation: {
-    type: "select" as const,
+    type: "radio" as const,
     label: "انیمیشن ورود",
     options: [
       { label: "بدون", value: "none" },
-      { label: "محو شدن", value: "fadeIn" },
+      { label: "محو", value: "fadeIn" },
       { label: "از پایین", value: "slideUp" },
     ],
   },

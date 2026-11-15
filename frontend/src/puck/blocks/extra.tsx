@@ -8,6 +8,7 @@ import {
   BlockShell,
   StyleFieldTabs,
   chromeDefaults,
+  colorField,
   withChromeFields,
 } from "../style";
 
@@ -1369,14 +1370,16 @@ export const extraBlocks: Record<string, unknown> = {
     label: "جداکننده با متن",
     fields: withChromeFields({
       label: { type: "text", label: "متن وسط" },
-      lineColor: { type: "text", label: "رنگ خط" },
+      lineColor: colorField("رنگ خط"),
     }),
     defaultProps: {
       ...chromeDefaults({ padT: "1rem", padB: "1rem", textAlign: "center" }),
       label: "یا",
       lineColor: "var(--border)",
     },
-    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["label", "lineColor"]} />,
+    renderFields: ({ fields }) => (
+      <StyleFieldTabs fields={fields} content={["label", "lineColor"]} />
+    ),
     render: ({ label, lineColor, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome}>
         <div className="flex items-center gap-3">

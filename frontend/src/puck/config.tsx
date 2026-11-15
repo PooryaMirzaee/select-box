@@ -33,6 +33,7 @@ import {
   scopeCss,
   StyleFieldTabs,
   withChromeFields,
+  colorField,
   SCHEMA_VERSION,
 } from "./style";
 import type { PuckComponents, PuckRootProps } from "./types";
@@ -237,7 +238,7 @@ export const puckConfig = {
           { label: "متوسط", value: "md" },
         ],
       },
-      pageBg: { type: "text", label: "پس‌زمینه صفحه" },
+      pageBg: colorField("پس‌زمینه صفحه"),
       pageCustomCss: {
         type: "textarea",
         label: "CSS سفارشی صفحه (با scope خودکار)",
@@ -1332,15 +1333,26 @@ export const puckConfig = {
     Divider: {
       label: "جداکننده",
       fields: withChromeFields({
-        thickness: { type: "text", label: "ضخامت" },
-        color: { type: "text", label: "رنگ" },
+        thickness: {
+          type: "select",
+          label: "ضخامت",
+          options: [
+            { label: "۱px", value: "1px" },
+            { label: "۲px", value: "2px" },
+            { label: "۳px", value: "3px" },
+            { label: "۴px", value: "4px" },
+          ],
+        },
+        color: colorField("رنگ"),
       }),
       defaultProps: {
         ...chromeDefaults({ padT: "0.75rem", padB: "0.75rem" }),
         thickness: "1px",
         color: "var(--border)",
       },
-      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["thickness", "color"]} />,
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["thickness", "color"]} />
+      ),
       render: ({ thickness, color, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <hr
