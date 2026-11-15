@@ -2,20 +2,27 @@ import { FieldGroup, FieldTab } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { CHROME_FIELD_KEYS } from "./fields";
 
+type FieldsMap = Record<string, ReactNode>;
+
 type TabbedFieldsProps = {
+  fields: FieldsMap;
   content?: string[];
   contentLabel?: string;
   extraAppearance?: string[];
   extraSpacing?: string[];
   extraAdvanced?: string[];
-  children?: ReactNode;
 };
+
+function pick(fields: FieldsMap, keys: string[]) {
+  return keys.map((key) => fields[key]).filter(Boolean);
+}
 
 /**
  * قالب مشترک تب‌های فارسی محتوا / ظاهر / فاصله‌ها / پیشرفته
- * باید داخل `renderFields` کامپوننت Puck استفاده شود.
+ * باید داخل `renderFields` با propهای `{ fields }` استفاده شود.
  */
 export function StyleFieldTabs({
+  fields,
   content = [],
   contentLabel = "محتوا",
   extraAppearance = [],
@@ -25,25 +32,34 @@ export function StyleFieldTabs({
   return (
     <>
       {content.length > 0 ? (
-        <FieldTab label={contentLabel}>
-          <FieldGroup label={contentLabel}>{content}</FieldGroup>
+        <FieldTab label={contentLabel} value="content">
+          <FieldGroup label={contentLabel} defaultExpanded>
+            {pick(fields, content)}
+          </FieldGroup>
         </FieldTab>
       ) : null}
-      <FieldTab label="ظاهر">
-        <FieldGroup label="پس‌زمینه و تایپوگرافی">
-          {[...CHROME_FIELD_KEYS.appearance, ...extraAppearance]}
+      <FieldTab label="ظاهر" value="appearance">
+        <FieldGroup label="پس‌زمینه و تایپوگرافی" defaultExpanded>
+          {pick(fields, [...CHROME_FIELD_KEYS.appearance, ...extraAppearance])}
         </FieldGroup>
       </FieldTab>
-      <FieldTab label="فاصله‌ها">
-        <FieldGroup label="پدینگ و مارجین">
-          {[...CHROME_FIELD_KEYS.spacing, ...extraSpacing]}
+      <FieldTab label="فاصله‌ها" value="spacing">
+        <FieldGroup label="پدینگ و مارجین" defaultExpanded>
+          {pick(fields, [...CHROME_FIELD_KEYS.spacing, ...extraSpacing])}
         </FieldGroup>
       </FieldTab>
-      <FieldTab label="پیشرفته">
-        <FieldGroup label="CSS و نمایش">
-          {[...CHROME_FIELD_KEYS.advanced, ...extraAdvanced]}
+      <FieldTab label="پیشرفته" value="advanced">
+        <FieldGroup label="CSS و نمایش" defaultExpanded>
+          {pick(fields, [...CHROME_FIELD_KEYS.advanced, ...extraAdvanced])}
         </FieldGroup>
       </FieldTab>
     </>
   );
+}
+
+/** کمک برای تعریف کوتاه renderFields در کامپوننت‌ها */
+export function styleTabs(opts: Omit<TabbedFieldsProps, "fields">) {
+  return function RenderStyleTabs({ fields }: { fields: FieldsMap }) {
+    return <StyleFieldTabs fields={fields} {...opts} />;
+  };
 }

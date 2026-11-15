@@ -325,8 +325,9 @@ export const puckConfig = {
         intervalMs: 5000,
         slides: [],
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={["sourceMode", "autoplay", "intervalMs", "slides"]}
         />
       ),
@@ -382,7 +383,7 @@ export const puckConfig = {
         ...chromeDefaults({ widthMode: "full" }),
         items: DEFAULT_TRUST,
       },
-      renderFields: () => <StyleFieldTabs content={["items"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["items"]} />,
       render: ({ items, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <TrustStrip items={items?.length ? items : DEFAULT_TRUST} />
@@ -431,8 +432,9 @@ export const puckConfig = {
         source: "amazing",
         manualProducts: [],
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={[
             "sourceMode",
             "title",
@@ -499,8 +501,9 @@ export const puckConfig = {
         href: "/browse",
         manualCategories: [],
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={["sourceMode", "title", "limit", "href", "manualCategories"]}
         />
       ),
@@ -590,8 +593,9 @@ export const puckConfig = {
         source: "latest",
         manualProducts: [],
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={[
             "sourceMode",
             "title",
@@ -695,8 +699,9 @@ export const puckConfig = {
         columns: "4",
         manualProducts: [],
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={[
             "sourceMode",
             "title",
@@ -776,8 +781,8 @@ export const puckConfig = {
         sourceMode: "live",
         showFallback: true,
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["sourceMode", "showFallback"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["sourceMode", "showFallback"]} />
       ),
       render: ({ showFallback, puck, id, ...chrome }) => {
         const banners = meta(puck).promoBanners || [];
@@ -830,8 +835,9 @@ export const puckConfig = {
         ctaHref: "/catalog",
         cardStyle: "gradient",
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={["eyebrow", "title", "subtitle", "ctaLabel", "ctaHref", "cardStyle"]}
         />
       ),
@@ -926,7 +932,7 @@ export const puckConfig = {
           { question: "گارانتی دارید؟", answer: "بله، گارانتی اصلی سازنده." },
         ],
       },
-      renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
       render: ({ title, items, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome} as="section" className="py-6">
           {title ? <h2 className="mb-4 text-lg font-bold sm:text-xl">{title}</h2> : null}
@@ -979,7 +985,7 @@ export const puckConfig = {
           { title: "پشتیبانی", desc: "همیشه در کنار شما", icon: "💬" },
         ],
       },
-      renderFields: () => <StyleFieldTabs content={["title", "columns", "items"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "columns", "items"]} />,
       render: ({ title, columns, items, id, ...chrome }) => {
         const cols =
           columns === "2"
@@ -1024,7 +1030,7 @@ export const puckConfig = {
         title: "برندها",
         items: [],
       },
-      renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
       render: ({ title, items, id, puck, ...chrome }) => {
         if (!items?.length) {
           return meta(puck).editing ? (
@@ -1082,8 +1088,9 @@ export const puckConfig = {
         buttonLabel: "عضویت",
         note: "بدون اسپم — فقط پیشنهادهای واقعی.",
       },
-      renderFields: () => (
+      renderFields: ({ fields }) => (
         <StyleFieldTabs
+          fields={fields}
           content={["title", "subtitle", "placeholder", "buttonLabel", "note"]}
         />
       ),
@@ -1139,8 +1146,8 @@ export const puckConfig = {
         ctaLabel: "خرید کنید",
         ctaHref: "/catalog",
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["title", "subtitle", "endsAt", "ctaLabel", "ctaHref"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["title", "subtitle", "endsAt", "ctaLabel", "ctaHref"]} />
       ),
       render: ({ title, subtitle, endsAt, ctaLabel, ctaHref, id, ...chrome }) => {
         let label = "—";
@@ -1183,7 +1190,7 @@ export const puckConfig = {
         ...chromeDefaults({ widthMode: "full", padT: "1rem", padB: "1rem" }),
         content: [],
       },
-      renderFields: () => <StyleFieldTabs content={["content"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["content"]} />,
       render: ({ content: Content, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome} as="section" className="relative">
           <Content />
@@ -1199,7 +1206,7 @@ export const puckConfig = {
         ...chromeDefaults({ widthMode: "container" }),
         content: [],
       },
-      renderFields: () => <StyleFieldTabs content={["content"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["content"]} />,
       render: ({ content: Content, id, ...chrome }) => (
         <BlockShell id={id} chrome={{ ...chrome, widthMode: chrome.widthMode || "container" }}>
           <Content />
@@ -1241,8 +1248,8 @@ export const puckConfig = {
         col3: [],
         col4: [],
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["columns", "colGap", "col1", "col2", "col3", "col4"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["columns", "colGap", "col1", "col2", "col3", "col4"]} />
       ),
       render: ({ columns, colGap, col1: C1, col2: C2, col3: C3, col4: C4, id, ...chrome }) => {
         const n = Number(columns) || 2;
@@ -1282,7 +1289,7 @@ export const puckConfig = {
         stackGap: "md",
         content: [],
       },
-      renderFields: () => <StyleFieldTabs content={["stackGap", "content"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["stackGap", "content"]} />,
       render: ({ stackGap, content: Content, id, ...chrome }) => (
         <BlockShell
           id={id}
@@ -1309,7 +1316,7 @@ export const puckConfig = {
         customHeight: { type: "text", label: "ارتفاع سفارشی (مثلاً 48px)" },
       }),
       defaultProps: { ...chromeDefaults({ widthMode: "full" }), size: "md", customHeight: "" },
-      renderFields: () => <StyleFieldTabs content={["size", "customHeight"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["size", "customHeight"]} />,
       render: ({ size, customHeight, id, ...chrome }) => (
         <BlockShell
           id={id}
@@ -1333,7 +1340,7 @@ export const puckConfig = {
         thickness: "1px",
         color: "var(--border)",
       },
-      renderFields: () => <StyleFieldTabs content={["thickness", "color"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["thickness", "color"]} />,
       render: ({ thickness, color, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <hr
@@ -1364,7 +1371,7 @@ export const puckConfig = {
         text: "عنوان بخش",
         level: "h2",
       },
-      renderFields: () => <StyleFieldTabs content={["text", "level"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text", "level"]} />,
       render: ({ text, level, id, ...chrome }) => {
         const safeLevel = level === "h1" || level === "h3" ? level : "h2";
         const cls =
@@ -1390,7 +1397,7 @@ export const puckConfig = {
         ...chromeDefaults({ padT: "0.5rem", padB: "0.5rem" }),
         text: "متن پاراگراف…",
       },
-      renderFields: () => <StyleFieldTabs content={["text"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text"]} />,
       render: ({ text, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <p className="max-w-2xl text-sm text-muted sm:text-base whitespace-pre-wrap">{text}</p>
@@ -1406,7 +1413,7 @@ export const puckConfig = {
         ...chromeDefaults({ padT: "0.5rem", padB: "0.5rem" }),
         text: "توضیح کوتاه این بخش…",
       },
-      renderFields: () => <StyleFieldTabs content={["text"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text"]} />,
       render: ({ text, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <p className="max-w-2xl text-sm text-muted sm:text-base whitespace-pre-wrap">{text}</p>
@@ -1422,7 +1429,7 @@ export const puckConfig = {
         ...chromeDefaults(),
         text: "متن چندخطی…",
       },
-      renderFields: () => <StyleFieldTabs content={["text"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text"]} />,
       render: ({ text, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[var(--fg)]">
@@ -1446,7 +1453,7 @@ export const puckConfig = {
         ...chromeDefaults(),
         items: [{ text: "مورد اول" }, { text: "مورد دوم" }],
       },
-      renderFields: () => <StyleFieldTabs content={["items"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["items"]} />,
       render: ({ items, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <ul className="list-disc space-y-1 pe-5 text-sm">
@@ -1479,8 +1486,8 @@ export const puckConfig = {
         href: "",
         objectFit: "cover",
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["imageUrl", "alt", "href", "objectFit"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["imageUrl", "alt", "href", "objectFit"]} />
       ),
       render: ({ imageUrl, alt, href, objectFit, id, puck, ...chrome }) => {
         if (!imageUrl) {
@@ -1543,8 +1550,8 @@ export const puckConfig = {
         height: "md",
         rounded: true,
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["imageUrl", "href", "alt", "height", "rounded"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["imageUrl", "href", "alt", "height", "rounded"]} />
       ),
       render: ({ imageUrl, href, alt, height, rounded, puck, id, ...chrome }) => {
         if (!imageUrl) {
@@ -1596,7 +1603,7 @@ export const puckConfig = {
         title: "ویدیو",
         aspect: "16:9",
       },
-      renderFields: () => <StyleFieldTabs content={["url", "title", "aspect"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["url", "title", "aspect"]} />,
       render: ({ url, title, aspect, id, puck, ...chrome }) => {
         if (!url) {
           return meta(puck).editing ? (
@@ -1641,7 +1648,7 @@ export const puckConfig = {
         name: "⭐",
         size: "2rem",
       },
-      renderFields: () => <StyleFieldTabs content={["name", "size"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["name", "size"]} />,
       render: ({ name, size, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <span style={{ fontSize: size || "2rem" }} aria-hidden>
@@ -1679,8 +1686,8 @@ export const puckConfig = {
         variant: "primary",
         fullWidth: true,
       },
-      renderFields: () => (
-        <StyleFieldTabs content={["label", "href", "variant", "fullWidth"]} />
+      renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["label", "href", "variant", "fullWidth"]} />
       ),
       render: ({ label, href, variant, fullWidth, id, ...chrome }) => {
         const wide = asBool(fullWidth, true);
@@ -1743,7 +1750,7 @@ export const puckConfig = {
           { label: "تماس", href: "/contact", variant: "outline" },
         ],
       },
-      renderFields: () => <StyleFieldTabs content={["align", "buttons"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["align", "buttons"]} />,
       render: ({ align, buttons, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome}>
           <div
@@ -1791,7 +1798,7 @@ export const puckConfig = {
         label: "جدید",
         tone: "accent",
       },
-      renderFields: () => <StyleFieldTabs content={["label", "tone"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["label", "tone"]} />,
       render: ({ label, tone, id, ...chrome }) => {
         const cls =
           tone === "hot"
@@ -1826,7 +1833,7 @@ export const puckConfig = {
         text: "نقل‌قول مشتری…",
         cite: "",
       },
-      renderFields: () => <StyleFieldTabs content={["text", "cite"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text", "cite"]} />,
       render: ({ text, cite, id, ...chrome }) => (
         <BlockShell id={id} chrome={chrome} as="blockquote">
           <p className="text-base italic">«{text}»</p>
@@ -1846,7 +1853,7 @@ export const puckConfig = {
         ...chromeDefaults(),
         html: "<p>محتوای HTML</p>",
       },
-      renderFields: () => <StyleFieldTabs content={["html"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["html"]} />,
       render: ({ html, id, ...chrome }) => {
         const cleaned = String(html || "")
           .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
@@ -1876,7 +1883,7 @@ export const puckConfig = {
         ...chromeDefaults(),
         colGap: "md",
       },
-      renderFields: () => <StyleFieldTabs content={["colGap"]} />,
+      renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["colGap"]} />,
       render: (props) => {
         const { colGap, id, ...chrome } = props;
         const legacyGap = (props as { gap?: "sm" | "md" | "lg" }).gap;

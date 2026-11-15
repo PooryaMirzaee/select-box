@@ -50,8 +50,8 @@ export const extraBlocks: Record<string, unknown> = {
       hrefLabel: "مشاهده",
       dismissible: false,
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["text", "href", "hrefLabel", "dismissible"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["text", "href", "hrefLabel", "dismissible"]} />
     ),
     render: ({ text, href, hrefLabel, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="div">
@@ -103,8 +103,9 @@ export const extraBlocks: Record<string, unknown> = {
       minHeight: "420px",
       overlay: "rgba(0,0,0,0.45)",
     },
-    renderFields: () => (
-      <StyleFieldTabs
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs
+        fields={fields}
         content={[
           "eyebrow",
           "title",
@@ -203,7 +204,7 @@ export const extraBlocks: Record<string, unknown> = {
         { value: "24", label: "پشتیبانی", suffix: "/۷" },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
         {title ? <h2 className="mb-5 text-lg font-bold sm:text-xl">{title}</h2> : null}
@@ -283,7 +284,7 @@ export const extraBlocks: Record<string, unknown> = {
         },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "columns", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "columns", "items"]} />,
     render: ({ title, columns, items, id, ...chrome }) => {
       const cols =
         columns === "1"
@@ -389,7 +390,7 @@ export const extraBlocks: Record<string, unknown> = {
         },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
         {title ? <h2 className="mb-5 text-lg font-bold sm:text-xl">{title}</h2> : null}
@@ -469,7 +470,7 @@ export const extraBlocks: Record<string, unknown> = {
         { title: "تحویل", desc: "ارسال سریع به سراسر کشور." },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
         {title ? <h2 className="mb-6 text-lg font-bold sm:text-xl">{title}</h2> : null}
@@ -511,7 +512,7 @@ export const extraBlocks: Record<string, unknown> = {
         { title: "مرجوعی", body: "تا ۷ روز در صورت سلامت کالا." },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
         {title ? <h2 className="mb-4 text-lg font-bold">{title}</h2> : null}
@@ -540,7 +541,7 @@ export const extraBlocks: Record<string, unknown> = {
       title: "موقعیت فروشگاه",
       height: "320px",
     },
-    renderFields: () => <StyleFieldTabs content={["embedUrl", "title", "height"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["embedUrl", "title", "height"]} />,
     render: ({ embedUrl, title, height, id, puck, ...chrome }) => {
       const url = safeHttps(embedUrl);
       if (!url) {
@@ -591,7 +592,7 @@ export const extraBlocks: Record<string, unknown> = {
         { label: "واتساپ", href: "https://wa.me", icon: "💬" },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
         {title ? <h2 className="mb-4 text-lg font-bold">{title}</h2> : null}
@@ -641,8 +642,8 @@ export const extraBlocks: Record<string, unknown> = {
       address: "",
       hours: "",
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["title", "phone", "mobile", "email", "address", "hours"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["title", "phone", "mobile", "email", "address", "hours"]} />
     ),
     render: ({ title, phone, mobile, email, address, hours, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
@@ -710,7 +711,7 @@ export const extraBlocks: Record<string, unknown> = {
       columns: "3",
       items: [],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "columns", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "columns", "items"]} />,
     render: ({ title, columns, items, id, puck, ...chrome }) => {
       if (!items?.length) {
         return meta(puck).editing ? <EmptyHint>تصویر به گالری اضافه کنید.</EmptyHint> : <></>;
@@ -778,7 +779,7 @@ export const extraBlocks: Record<string, unknown> = {
       body: "متن مهم برای کاربر…",
       tone: "info",
     },
-    renderFields: () => <StyleFieldTabs content={["title", "body", "tone"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "body", "tone"]} />,
     render: ({ title, body, tone, id, ...chrome }) => {
       const tones: Record<string, string> = {
         info: "border-sky-300 bg-sky-50 text-sky-950",
@@ -819,7 +820,7 @@ export const extraBlocks: Record<string, unknown> = {
         { label: "تماس", href: "/contact" },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "items"]} />,
     render: ({ title, items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="nav">
         {title ? <h2 className="mb-3 text-base font-bold">{title}</h2> : null}
@@ -861,7 +862,7 @@ export const extraBlocks: Record<string, unknown> = {
       text: "ارسال سریع · گارانتی اصلی · پرداخت امن · ",
       speed: "normal",
     },
-    renderFields: () => <StyleFieldTabs content={["text", "speed"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["text", "speed"]} />,
     render: ({ text, speed, id, ...chrome }) => {
       const dur = speed === "slow" ? "40s" : speed === "fast" ? "14s" : "24s";
       const line = `${text || ""} ${text || ""}`;
@@ -895,7 +896,7 @@ export const extraBlocks: Record<string, unknown> = {
       ...chromeDefaults(),
       items: [{ text: "مورد اول" }, { text: "مورد دوم" }, { text: "مورد سوم" }],
     },
-    renderFields: () => <StyleFieldTabs content={["items"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["items"]} />,
     render: ({ items, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome}>
         <ol className="list-decimal space-y-1 pe-5 text-sm">
@@ -932,7 +933,7 @@ export const extraBlocks: Record<string, unknown> = {
         { cells: "ارسال | ۲ تا ۵ روز" },
       ],
     },
-    renderFields: () => <StyleFieldTabs content={["title", "headers", "rows"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["title", "headers", "rows"]} />,
     render: ({ title, headers, rows, id, ...chrome }) => {
       const heads = String(headers || "")
         .split("|")
@@ -993,7 +994,7 @@ export const extraBlocks: Record<string, unknown> = {
       }),
       content: [],
     },
-    renderFields: () => <StyleFieldTabs content={["content"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["content"]} />,
     render: ({ content: Content, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="div">
         <Content />
@@ -1036,8 +1037,8 @@ export const extraBlocks: Record<string, unknown> = {
       cell3: [],
       cell4: [],
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["columns", "colGap", "cell1", "cell2", "cell3", "cell4"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["columns", "colGap", "cell1", "cell2", "cell3", "cell4"]} />
     ),
     render: ({
       columns,
@@ -1081,7 +1082,7 @@ export const extraBlocks: Record<string, unknown> = {
       html: "<div class='note'>محتوای سفارشی</div>",
       css: ".note { font-weight: 600; }",
     },
-    renderFields: () => <StyleFieldTabs content={["html", "css"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["html", "css"]} />,
     render: ({ html, css, id, customCss, ...chrome }) => {
       const cleaned = String(html || "")
         .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
@@ -1129,8 +1130,8 @@ export const extraBlocks: Record<string, unknown> = {
       buttonHref: "/catalog",
       position: "bottom",
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["text", "buttonLabel", "buttonHref", "position"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["text", "buttonLabel", "buttonHref", "position"]} />
     ),
     render: ({ text, buttonLabel, buttonHref, position, id, ...chrome }) => (
       <BlockShell
@@ -1175,8 +1176,8 @@ export const extraBlocks: Record<string, unknown> = {
       href: "/",
       logoHeight: "48px",
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["imageUrl", "brandName", "tagline", "href", "logoHeight"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["imageUrl", "brandName", "tagline", "href", "logoHeight"]} />
     ),
     render: ({ imageUrl, brandName, tagline, href, logoHeight, id, ...chrome }) => {
       const inner = (
@@ -1226,8 +1227,8 @@ export const extraBlocks: Record<string, unknown> = {
       buttonLabel: "جستجو",
       href: "/catalog",
     },
-    renderFields: () => (
-      <StyleFieldTabs content={["title", "placeholder", "buttonLabel", "href"]} />
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs fields={fields} content={["title", "placeholder", "buttonLabel", "href"]} />
     ),
     render: ({ title, placeholder, buttonLabel, href, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome} as="section">
@@ -1291,8 +1292,9 @@ export const extraBlocks: Record<string, unknown> = {
       columns: "4",
       manualCategories: [],
     },
-    renderFields: () => (
-      <StyleFieldTabs
+    renderFields: ({ fields }) => (
+        <StyleFieldTabs
+        fields={fields}
         content={["sourceMode", "title", "limit", "columns", "manualCategories"]}
       />
     ),
@@ -1374,7 +1376,7 @@ export const extraBlocks: Record<string, unknown> = {
       label: "یا",
       lineColor: "var(--border)",
     },
-    renderFields: () => <StyleFieldTabs content={["label", "lineColor"]} />,
+    renderFields: ({ fields }) => <StyleFieldTabs fields={fields} content={["label", "lineColor"]} />,
     render: ({ label, lineColor, id, ...chrome }) => (
       <BlockShell id={id} chrome={chrome}>
         <div className="flex items-center gap-3">
